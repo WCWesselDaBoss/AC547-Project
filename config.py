@@ -94,9 +94,19 @@ SEC_BULK_FILES = {
 # nightly and results must be traceable to a specific download.
 DOWNLOAD_MANIFEST = RAW_DIR / "download_manifest.json"
 
+# Downloaded bulk files, by name, so readers never rebuild these paths.
+COMPANYFACTS_ZIP = RAW_DIR / "companyfacts.zip"
+SUBMISSIONS_ZIP = RAW_DIR / "submissions.zip"
+
 # Retry policy for SEC "slow down" (429) and server (5xx) responses.
 SEC_MAX_RETRIES = 3
 SEC_RETRY_BACKOFF_SECONDS = 10
+
+# ---------------------------------------------------------------------------
+# Processed tables and logs (CLAUDE.md section 4)
+# ---------------------------------------------------------------------------
+COMPANIES_PATH = PROCESSED_DIR / "companies.parquet"
+COMPANIES_EXCLUSION_LOG = LOG_DIR / "companies_exclusions.csv"
 
 # ---------------------------------------------------------------------------
 # Prices
