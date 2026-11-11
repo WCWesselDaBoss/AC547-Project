@@ -73,6 +73,21 @@ def round_robin_by_division(candidates_df, count):
     return chosen
 
 
+def case_study_ciks(path=config.CASE_STUDIES_PATH):
+    """Return the CIKs listed in data/case_studies.csv, or [] if none.
+
+    Phase 3 owns that file (CLAUDE.md section 4). Reading it here means a
+    new case study reaches the sample by rebuilding it, without anyone
+    editing Phase 1 code or keeping a second list in sync.
+    """
+    if not path.exists():
+        return []
+    case_studies_df = pd.read_csv(path)
+    if "cik" not in case_studies_df.columns:
+        raise ValueError(f"{path} has no cik column (see CLAUDE.md section 4)")
+    return [int(cik) for cik in case_studies_df["cik"].dropna()]
+
+
 def select_sample_ciks(
     profiles_df,
     size=config.SAMPLE_SIZE,
@@ -81,8 +96,9 @@ def select_sample_ciks(
 ):
     """Return the sample CIKs: anchors and extras first, then the quotas.
 
-    Anchors and case-study extras are always included, even if that makes
-    the sample larger than size, because the demo depends on them.
+    Anchors and extras (case studies plus config.SAMPLE_EXTRA_CIKS) are
+    always included, even if that makes the sample larger than size,
+    because the demo depends on them.
     """
     chosen = list(dict.fromkeys(list(anchors) + list(extras)))
 
@@ -136,7 +152,11 @@ def main():
     profiles_df = company_profiles(
         tables["companies"], tables["financials_annual"], tables["prices"]
     )
-    ciks = select_sample_ciks(profiles_df)
+    case_ciks = case_study_ciks()
+    ciks = select_sample_ciks(
+        profiles_df, extras=case_ciks + config.SAMPLE_EXTRA_CIKS
+    )
+    print(f"  case-study companies included: {len(case_ciks)}")
     config.SAMPLE_DIR.mkdir(parents=True, exist_ok=True)
     for name, table in sample_tables(tables, ciks).items():
         table.to_parquet(config.SAMPLE_DIR / f"{name}.parquet", index=False)

@@ -208,8 +208,8 @@ the paper when Phase 2 cites it.
 
 `data/sample/` holds the four Phase 1 tables cut to 50 companies, so a
 fresh clone runs the app with no downloads. Companies are chosen by a
-fixed rule, not at random: Apple and any CIKs in
-`config.SAMPLE_EXTRA_CIKS` (case studies) first; then 30 companies with
+fixed rule, not at random: Apple, every CIK in `data/case_studies.csv`
+(owned by Phase 3) and any in `config.SAMPLE_EXTRA_CIKS` first; then 30 companies with
 full price history, 10 that stopped filing and have no prices, and 5 with
 a ticker but partial prices, each group taken in turn across SIC
 divisions and ordered by most size-floor years, then CIK. Prices include

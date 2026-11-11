@@ -40,7 +40,7 @@ Then:
 | --- | --- |
 | `python run_pipeline.py` | Download SEC bulk files (~3 GB) and prices, then rebuild every table and the sample |
 | `python run_pipeline.py --skip-download` | Rebuild from files already in `data/raw/` (works offline, about 7 minutes) |
-| `python run_pipeline.py --sample-only` | Rebuild only `data/sample/`, e.g. after adding case-study CIKs to `config.SAMPLE_EXTRA_CIKS` |
+| `python run_pipeline.py --sample-only` | Rebuild only `data/sample/`, e.g. after changing `data/case_studies.csv` (needs `data/processed/`) |
 | `python -m src.pipeline.tag_coverage` | Re-run the tag coverage report that justified the tag map |
 | `python -m src.pipeline.tieout` | Rebuild the hand-verification sheet in `verification/` |
 

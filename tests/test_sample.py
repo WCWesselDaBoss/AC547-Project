@@ -158,3 +158,18 @@ def test_tieout_traces_value_to_original_fact():
     assert row["pipeline_value_millions"] == 500.0
     assert row["accession"] == "A1"
     assert row["matches"] == ""
+
+
+def test_case_study_ciks_read_from_csv(tmp_path):
+    """CIKs come from the Phase 3 file; a missing file means none."""
+    from src.pipeline import sample as sample_module
+
+    path = tmp_path / "case_studies.csv"
+    assert sample_module.case_study_ciks(path) == []
+    lines = [
+        "cik,name,event_type,event_date,source_url,note",
+        "1024401,Example A,fraud,2001-10-16,https://x,demo",
+        "320193,Apple,control,2024-11-01,https://y,demo",
+    ]
+    path.write_text("\n".join(lines) + "\n")
+    assert sample_module.case_study_ciks(path) == [1024401, 320193]

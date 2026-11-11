@@ -141,8 +141,10 @@ PRICES_MANIFEST = PRICES_RAW_DIR / "manifest.json"
 SAMPLE_SIZE = 50
 # Always included so the demo has a familiar company to show.
 SAMPLE_ANCHOR_CIKS = [320193]  # Apple
-# Case-study companies chosen by the team (Phase 3). Add CIKs here and run
-# "python run_pipeline.py --sample-only"; no code change is needed.
+# Case studies are read from this file (owned by Phase 3, section 4) and
+# always included in the sample, so no one edits Phase 1 code to add one.
+CASE_STUDIES_PATH = DATA_DIR / "case_studies.csv"
+# Any other companies the team wants in the sample, beyond case studies.
 SAMPLE_EXTRA_CIKS = []
 
 
