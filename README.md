@@ -88,4 +88,7 @@ for invalid adjusted prices and seven returned no data.
 `verification/phase1_tieout.csv` lists revenue, net income, total assets
 and CFO for Apple, Walmart and Coca-Cola (FY2024) as stored by the
 pipeline, with the XBRL tag and filing link, for comparison with each
-10-K by hand. Results are recorded in that file.
+10-K by hand. **All 12 values matched the 10-Ks** (checked by hand on
+November 11, 2026). The three companies cover September (Apple), January
+(Walmart, labeled FY2024 under the Compustat convention) and December
+(Coca-Cola) fiscal year ends.
