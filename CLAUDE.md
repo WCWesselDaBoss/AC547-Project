@@ -86,6 +86,13 @@ Phases hand off only through these Parquet tables in `data/processed/`. Column n
 - A comparative-only year (for example, the year before a company's first 10-K, known only from that 10-K's comparative columns) is included so the first 10-K year can be scored. Its `accession` and `filed_date` are the later 10-K that first reported it, so `filed_date` is not that year's own filing date.
 - Share counts are restated in later filings after stock splits. For F-Score signal 7, compare the current year's shares with the prior-year figure reported in the same 10-K (available in `facts_long`), not with the prior year's original value, or a split will look like a share issuance.
 
+**Sample data and case studies:**
+
+- `data/sample/` is committed and holds the four Phase 1 tables (`companies`, `facts_long`, `financials_annual`, `prices`) for 50 real companies plus SPY, with exactly the columns and types above. Phases 2 and 3 develop and demo against it whenever `data/processed/` is not present locally. Unit tests still use small hand-checkable fixtures in `tests/fixtures/` with the same columns and types, because sample values can change when the data is refreshed.
+- Peer groups and percentile ranks computed on the 50-company sample are illustrative only; real rankings need the full tables.
+- Every CIK in `data/case_studies.csv` is automatically included in the sample (`src/pipeline/sample.py` reads that file). After adding or changing a case study, rebuild the sample with `python run_pipeline.py --sample-only` and commit `data/sample/`. Do not add case-study CIKs to Phase 1 code or `config.py`.
+- Rebuilding the sample needs the full tables in `data/processed/`, which are gitignored. If they are missing, do not edit Phase 1 code to work around it: either run `python run_pipeline.py` (downloads about 3 GB; needs `SEC_USER_AGENT` set) or ask the Phase 1 owner to rebuild and push the sample.
+
 ## 5. Score formulas
 
 All coefficients and cutoffs below come from the original papers as commonly reproduced. Phase 2 must check each one against the source paper before final use and cite it in `docs/methodology.md`. Subscript t is the current fiscal year; t-1 is the prior year.
