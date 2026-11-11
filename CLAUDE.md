@@ -77,6 +77,14 @@ Phases hand off only through these Parquet tables in `data/processed/`. Column n
 - Annual flow items (revenue, net income, cash flow) must cover roughly a full year (period length 350 to 380 days). Balance sheet items are instant values at `period_end`.
 - The same period's value appears in several filings (as a comparative, or restated). Mark the value from the **earliest** filing as `is_original = True`. Scores use original values, because that is what investors saw at the time. Later values are kept for the restatement stretch feature.
 - `filing_url` links to the filing on EDGAR, built from the CIK and accession number. This is what click-to-trace opens.
+- When a company reports two mapped tags for the same line item and period, `facts_long` keeps only the company's preferred tag (the one it reports in the most years), so each company, line item and period has exactly one original value. FY2011 facts are kept only so FY2012 has a prior year.
+
+**Rules for `financials_annual`:**
+
+- Company-years come from each company's original 10-K filings, so a year with missing data appears with NaN values rather than disappearing. Rows run FY2011 to FY2025; FY2011 rows exist only as prior-year values and are never scored.
+- Rows that fail the size floor are kept with `passes_size_floor = False`, because they can still be the prior year for a passing year. Phase 2 scores only rows that pass.
+- A comparative-only year (for example, the year before a company's first 10-K, known only from that 10-K's comparative columns) is included so the first 10-K year can be scored. Its `accession` and `filed_date` are the later 10-K that first reported it, so `filed_date` is not that year's own filing date.
+- Share counts are restated in later filings after stock splits. For F-Score signal 7, compare the current year's shares with the prior-year figure reported in the same 10-K (available in `facts_long`), not with the prior year's original value, or a split will look like a share issuance.
 
 ## 5. Score formulas
 
