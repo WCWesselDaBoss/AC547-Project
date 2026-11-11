@@ -11,7 +11,7 @@ We are building a Streamlit dashboard that helps an equity analyst decide whethe
 **Which companies are included:**
 
 - **Filers:** companies that file Form 10-K (and 10-K/A) with US GAAP XBRL data, including companies that were later delisted. Foreign filers (20-F, 40-F) are excluded by this rule.
-- **Excluded industries:** SIC codes 6000 to 6799. This removes banks, insurers, REITs, and blank-check shell companies (SIC 6770) in one rule.
+- **Excluded industries:** SIC codes 6000 to 6799. This removes banks, insurers, REITs, and blank-check shell companies (SIC 6770) in one rule. Companies with no SIC code are also excluded, because they cannot be placed in an industry or peer group; they are logged with exclusion_reason "missing_sic" and counted.
 - **Size floor:** revenue of at least $100M **or** total assets of at least $100M, tested **separately in each fiscal year** (nominal dollars). A company that shrank later still counts for the years it qualified.
 - **Years:** fiscal years 2012 through the latest complete fiscal year (expected FY2025). Earlier years are excluded because smaller filers phased into detailed XBRL tagging around 2011.
 - **Complete data:** a company-year gets a score only if every input for that score exists for both the current and prior year. Missing inputs produce no score, never an estimate. The pipeline reports how many company-years were dropped and why.
@@ -48,7 +48,7 @@ earnings-quality-radar/
 
 ## 4. Data contracts
 
-Phases hand off only through these Parquet tables in `data/processed/`. Column names and types are frozen once agreed; any change goes into this section first. Phases 2 and 3 start immediately by building small fake versions of these tables in `tests/fixtures/` with the exact same columns.
+Phases hand off only through these Parquet tables in `data/processed/`. Column names and types are frozen once agreed; any change goes into this section first. `cik` is a whole number (int64) in every table; it is zero-padded to 10 digits only when building SEC URLs. `sic` is a nullable whole number (pandas Int64). Phases 2 and 3 start immediately by building small fake versions of these tables in `tests/fixtures/` with the exact same columns.
 
 | Table | Built by | Used by | One row per | Columns |
 | --- | --- | --- | --- | --- |
@@ -59,6 +59,17 @@ Phases hand off only through these Parquet tables in `data/processed/`. Column n
 | `scores` | Phase 2 | 3 | company, fiscal year | cik, fiscal_year, m_score, m_flag, the 8 M-Score indexes, z_score, z_zone, f_score, the 9 F-Score signals, accruals_ratio, cash_conversion, peer_group, percentile ranks per score, missing_inputs |
 | `returns` (stretch) | Phase 2 | 3 | company, fiscal year | cik, fiscal_year, filed_date, ticker, ret_12m, mkt_ret_12m, excess_ret_12m, has_full_price_history |
 | `case_studies.csv` | Phase 3 | 3 | case | cik, name, event_type, event_date, source_url, note |
+
+**Column types (agreed; fixtures must use the same types):**
+
+- **General rules.** Money is `float64` in whole US dollars (not thousands). Missing values are always NaN/NA, never 0. Text is pandas `string`. Dates are `datetime64[ns]` with no time part. Returns and ratios are decimals (0.12 = 12%). Percentile ranks run 0 to 100. Flags that can be undetermined (no score) are nullable `boolean`.
+- **companies:** name, sic_description, ticker, exclusion_reason `string` (ticker and exclusion_reason nullable); is_excluded `bool`.
+- **facts_long:** line_item, xbrl_tag, unit (`USD` or `shares`), form, filing_url `string`; accession `string` with dashes (e.g. `0000320193-26-000026`); value `float64`; period_start `datetime64[ns]` (NaT for balance sheet instants); period_end, filed_date `datetime64[ns]`; fiscal_year `int64`; is_original `bool`.
+- **financials_annual:** fiscal_year `int64`; period_end, filed_date `datetime64[ns]`; accession `string`; passes_size_floor `bool`; each line-item column `float64` (NaN when missing; shares_outstanding is in shares).
+- **prices:** ticker `string`; date `datetime64[ns]`; adj_close `float64`.
+- **scores:** m_score, the 8 indexes, z_score, accruals_ratio, cash_conversion `float64` (NaN when not computable); m_flag nullable `boolean`; z_zone `string` (`safe`, `grey`, `distress`, or null); f_score nullable `Int64` (0 to 9); the 9 F-Score signals nullable `boolean`; peer_group `string`; missing_inputs `string` ("; "-separated, null when complete); percentile ranks `float64` (0 to 100).
+- **returns:** filed_date `datetime64[ns]`; ticker `string`; ret_12m, mkt_ret_12m, excess_ret_12m `float64` (decimals); has_full_price_history `bool`.
+- **case_studies.csv:** cik integer; name, event_type, source_url, note text; event_date `YYYY-MM-DD`.
 
 **Rules for `facts_long` (these are where XBRL data goes wrong):**
 
