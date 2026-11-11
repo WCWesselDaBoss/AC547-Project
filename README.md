@@ -15,7 +15,7 @@ The shared build spec is `CLAUDE.md`; formulas and design choices are in
 
 ## Setup
 
-Python 3.11 or later.
+Python 3.12 or later (the pinned numpy 2.5.3 requires it).
 
 ```
 pip install -r requirements.txt

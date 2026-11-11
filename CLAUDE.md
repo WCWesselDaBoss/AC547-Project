@@ -18,7 +18,7 @@ We are building a Streamlit dashboard that helps an equity analyst decide whethe
 
 ## 3. Tech stack and repo structure
 
-**Stack:** Python 3.11+, pandas, pyarrow (Parquet files), requests, Streamlit, Plotly, pytest, yfinance (prices only), and black for formatting. Pin exact versions in `requirements.txt`.
+**Stack:** Python 3.12+ (the pinned numpy 2.5.3 requires it), pandas, pyarrow (Parquet files), requests, Streamlit, Plotly, pytest, yfinance (prices only), and black for formatting. Pin exact versions in `requirements.txt`.
 
 All calculations live in `src/`. The Streamlit app in `app/` only loads finished tables, filters them, and draws them. It never computes a score itself, so every number can be tested outside the dashboard.
 
