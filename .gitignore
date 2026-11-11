@@ -1,0 +1,20 @@
+# Raw SEC and price downloads: several GB, rebuilt by run_pipeline.py
+data/raw/
+
+# Processed Parquet tables: rebuilt by run_pipeline.py. The committed
+# data/sample/ copy lets a fresh clone run the app without them.
+data/processed/
+
+# Pipeline logs are regenerated on every run
+data/logs/
+
+# Python and tooling caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Local secrets (e.g. SEC_USER_AGENT kept in a .env file)
+.env
+.streamlit/secrets.toml
