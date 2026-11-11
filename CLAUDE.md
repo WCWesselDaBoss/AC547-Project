@@ -93,6 +93,14 @@ Phases hand off only through these Parquet tables in `data/processed/`. Column n
 - Every CIK in `data/case_studies.csv` is automatically included in the sample (`src/pipeline/sample.py` reads that file). After adding or changing a case study, rebuild the sample with `python run_pipeline.py --sample-only` and commit `data/sample/`. Do not add case-study CIKs to Phase 1 code or `config.py`.
 - Rebuilding the sample needs the full tables in `data/processed/`, which are gitignored. If they are missing, do not edit Phase 1 code to work around it: either run `python run_pipeline.py` (downloads about 3 GB; needs `SEC_USER_AGENT` set) or ask the Phase 1 owner to rebuild and push the sample.
 
+**Open decisions and known limitations from Phase 1.** Evidence and full explanations are in `docs/methodology.md` (Phase 1 sections); read them before changing score inputs or interpreting results. Counts are for the 39,853 size-floor company-years, FY2012 to FY2025.
+
+- `long_term_debt` is missing in 19,027 years, mostly because companies with no debt do not tag it. Treating missing as zero would be an estimate, which section 2 forbids. The team must agree a rule for M-Score LVGI and F-Score signal 5 (for example, a neutral value plus a `missing_inputs` flag, like SGA) and record it in section 5 before Phase 2 relies on it.
+- `cost_of_revenue` is missing in 13,612 years (many service, software and pharma companies report no COGS), so GMI and F-Score signal 8 cannot be computed there. `sga` is missing in 19,136 years; section 5's SGAI rule covers that.
+- `income_continuing_ops` and `total_liabilities` are often calculated from other reported facts; `derived_items` names them in each row. The continuing-operations calculation agrees with reported values only 70 to 79% of the time where both exist, a limitation of the TATA input to state in results.
+- `depreciation` uses depreciation, depletion and amortization first. Verify that this matches Beneish's (1999) definition when citing the paper.
+- Survivorship bias: 2,414 of the 2,422 scored companies that stopped filing by FY2023 have no prices, so any return test covers mainly survivors. Weigh this at the December 1 go/no-go.
+
 ## 5. Score formulas
 
 All coefficients and cutoffs below come from the original papers as commonly reproduced. Phase 2 must check each one against the source paper before final use and cite it in `docs/methodology.md`. Subscript t is the current fiscal year; t-1 is the prior year.
@@ -166,8 +174,8 @@ Nine pass/fail signals, one point each (0 to 9):
 
 - [ ] Nov 11: proposal memo submitted
 - [ ] Nov 13: repo live, `CLAUDE.md` committed, data contracts frozen, fixture tables built
-- [ ] Nov 20: Phase 1 delivers `companies` and `facts_long` on real data
-- [ ] Nov 24: Phase 1 delivers `financials_annual` and `prices` (before Thanksgiving)
+- [x] Nov 20: Phase 1 delivers `companies` and `facts_long` on real data (done Nov 11)
+- [x] Nov 24: Phase 1 delivers `financials_annual` and `prices` (before Thanksgiving) (done Nov 11)
 - [ ] Nov 30: scores on real data; dashboard running on real tables
 - [ ] Dec 1: return test go/no-go; case studies verified
 - [ ] Dec 2: user feedback session done, fixes made
