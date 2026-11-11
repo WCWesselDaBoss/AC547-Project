@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import time
+import zipfile
 from datetime import datetime, timezone
 
 import requests
@@ -22,6 +23,15 @@ import config
 # 5xx means a temporary server problem. Anything else (404, 403) is a real
 # error that retrying will not fix.
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+
+# Network failures worth retrying. A multi-GB download can be cut off
+# mid-stream (the first real run lost submissions.zip at 1.1 GB with a
+# ConnectionResetError, which requests raises as ChunkedEncodingError).
+RETRYABLE_ERRORS = (
+    requests.ConnectionError,
+    requests.Timeout,
+    requests.exceptions.ChunkedEncodingError,
+)
 
 # Read and write in 1 MB pieces so a multi-GB file never sits in memory.
 CHUNK_BYTES = 1024 * 1024
@@ -105,30 +115,60 @@ def download_file(
     dest_path.parent.mkdir(parents=True, exist_ok=True)
     part_path = dest_path.with_name(dest_path.name + ".part")
 
+    last_problem = None
     for attempt in range(max_retries + 1):
-        limiter.wait()
-        response = session.get(url, stream=True, timeout=60)
-        if response.status_code in RETRYABLE_STATUS_CODES:
-            response.close()
-            if attempt == max_retries:
-                break
+        if attempt > 0:
             # Wait longer after each failure (10s, 20s, 30s) to give SEC
             # room, instead of hammering it with immediate retries.
-            sleep(backoff_seconds * (attempt + 1))
+            sleep(backoff_seconds * attempt)
+        limiter.wait()
+        try:
+            response = session.get(url, stream=True, timeout=60)
+            if response.status_code in RETRYABLE_STATUS_CODES:
+                response.close()
+                last_problem = f"status {response.status_code}"
+                continue
+            # Non-retryable errors (403, 404) stop here with a clear message.
+            response.raise_for_status()
+            with open(part_path, "wb") as handle:
+                for chunk in response.iter_content(chunk_size=CHUNK_BYTES):
+                    handle.write(chunk)
+            response.close()
+        except RETRYABLE_ERRORS as error:
+            # Start the next attempt from scratch; a half-written .part
+            # file must never be mistaken for a complete one.
+            part_path.unlink(missing_ok=True)
+            last_problem = f"{type(error).__name__}: {error}"
             continue
-        # Non-retryable errors (403, 404) stop here with a clear message.
-        response.raise_for_status()
-        with open(part_path, "wb") as handle:
-            for chunk in response.iter_content(chunk_size=CHUNK_BYTES):
-                handle.write(chunk)
-        response.close()
+
+        if not file_is_complete(part_path):
+            part_path.unlink(missing_ok=True)
+            last_problem = "downloaded ZIP failed the integrity check"
+            continue
         part_path.replace(dest_path)
         return "downloaded"
 
     raise RuntimeError(
         f"Gave up on {url} after {max_retries + 1} attempts "
-        f"(last status {response.status_code})."
+        f"(last problem: {last_problem})."
     )
+
+
+def file_is_complete(path):
+    """Return False if a .zip download is truncated or corrupt.
+
+    A ZIP's table of contents sits at the very end of the file, so a
+    download cut off early cannot be opened. Non-ZIP files pass, since
+    there is no cheap structural check for them.
+    """
+    if not path.name.removesuffix(".part").endswith(".zip"):
+        return True
+    try:
+        with zipfile.ZipFile(path) as archive:
+            archive.namelist()
+    except zipfile.BadZipFile:
+        return False
+    return True
 
 
 def update_manifest(manifest_path, file_name, url, file_path):

@@ -94,19 +94,19 @@ def test_session_sends_user_agent():
 
 def test_download_writes_file_and_leaves_no_part(tmp_path):
     """A successful download lands at dest_path with no .part leftover."""
-    dest = tmp_path / "file.zip"
+    dest = tmp_path / "file.bin"
     session = FakeSession([FakeResponse(200, b"abc" * 1000)])
     status = download.download_file(
         "https://x", dest, session, NoWaitLimiter()
     )
     assert status == "downloaded"
     assert dest.read_bytes() == b"abc" * 1000
-    assert not (tmp_path / "file.zip.part").exists()
+    assert not (tmp_path / "file.bin.part").exists()
 
 
 def test_existing_file_is_skipped(tmp_path):
     """An existing, non-empty file is not downloaded again."""
-    dest = tmp_path / "file.zip"
+    dest = tmp_path / "file.bin"
     dest.write_bytes(b"already here")
     session = FakeSession([])
     status = download.download_file(
@@ -118,7 +118,7 @@ def test_existing_file_is_skipped(tmp_path):
 
 def test_force_redownloads_existing_file(tmp_path):
     """force=True replaces an existing file."""
-    dest = tmp_path / "file.zip"
+    dest = tmp_path / "file.bin"
     dest.write_bytes(b"old")
     session = FakeSession([FakeResponse(200, b"new")])
     download.download_file(
@@ -129,7 +129,7 @@ def test_force_redownloads_existing_file(tmp_path):
 
 def test_retries_after_429_then_succeeds(tmp_path):
     """A 429 'slow down' is retried after a back-off wait."""
-    dest = tmp_path / "file.zip"
+    dest = tmp_path / "file.bin"
     session = FakeSession([FakeResponse(429), FakeResponse(200, b"ok")])
     waits = []
     status = download.download_file(
@@ -147,7 +147,7 @@ def test_retries_after_429_then_succeeds(tmp_path):
 
 def test_gives_up_after_max_retries(tmp_path):
     """Repeated 503s end in a clear error, not an endless loop."""
-    dest = tmp_path / "file.zip"
+    dest = tmp_path / "file.bin"
     session = FakeSession([FakeResponse(503)] * 3)
     with pytest.raises(RuntimeError):
         download.download_file(
@@ -163,7 +163,7 @@ def test_gives_up_after_max_retries(tmp_path):
 
 def test_404_is_not_retried(tmp_path):
     """A 404 means a wrong URL; retrying would not help."""
-    dest = tmp_path / "file.zip"
+    dest = tmp_path / "file.bin"
     session = FakeSession([FakeResponse(404)])
     with pytest.raises(download.requests.HTTPError):
         download.download_file("https://x", dest, session, NoWaitLimiter())
@@ -186,3 +186,64 @@ def test_download_all_writes_manifest(tmp_path):
     assert entry["url"] == "https://x/a.json"
     assert entry["bytes"] == 2
     assert len(entry["sha256"]) == 64
+
+
+class DroppingResponse(FakeResponse):
+    """Response whose stream is cut off partway, like a connection reset."""
+
+    def iter_content(self, chunk_size):
+        """Yield one chunk, then fail the way requests does mid-stream."""
+        yield b"partial"
+        raise download.requests.exceptions.ChunkedEncodingError("reset")
+
+
+def make_zip_bytes(tmp_path):
+    """Return the bytes of a small valid ZIP holding one JSON member."""
+    import zipfile
+
+    zip_path = tmp_path / "source.zip"
+    with zipfile.ZipFile(zip_path, "w") as archive:
+        archive.writestr("CIK0000000001.json", "{}")
+    return zip_path.read_bytes()
+
+
+def test_connection_drop_mid_stream_is_retried(tmp_path):
+    """A connection reset during the body is retried from scratch."""
+    dest = tmp_path / "file.bin"
+    session = FakeSession(
+        [DroppingResponse(200), FakeResponse(200, b"complete")]
+    )
+    status = download.download_file(
+        "https://x", dest, session, NoWaitLimiter(), sleep=lambda s: None
+    )
+    assert status == "downloaded"
+    assert dest.read_bytes() == b"complete"
+    assert not (tmp_path / "file.bin.part").exists()
+
+
+def test_truncated_zip_is_rejected(tmp_path):
+    """A ZIP cut short fails the integrity check and is never saved."""
+    dest = tmp_path / "data.zip"
+    truncated = make_zip_bytes(tmp_path)[:-10]
+    session = FakeSession([FakeResponse(200, truncated)] * 2)
+    with pytest.raises(RuntimeError, match="integrity"):
+        download.download_file(
+            "https://x",
+            dest,
+            session,
+            NoWaitLimiter(),
+            max_retries=1,
+            sleep=lambda s: None,
+        )
+    assert not dest.exists()
+    assert not (tmp_path / "data.zip.part").exists()
+
+
+def test_valid_zip_is_accepted(tmp_path):
+    """A complete ZIP passes the check and is saved."""
+    dest = tmp_path / "data.zip"
+    session = FakeSession([FakeResponse(200, make_zip_bytes(tmp_path))])
+    status = download.download_file(
+        "https://x", dest, session, NoWaitLimiter()
+    )
+    assert status == "downloaded"
