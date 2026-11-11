@@ -19,3 +19,25 @@ One row per company with an XBRL companyfacts file. Built by
 
 Exclusion reason values: `financial_sic_6000_6799`, `missing_sic`,
 `no_10k_filings`, `no_xbrl_facts` (companyfacts file is empty), `no_submissions_record`.
+
+## facts_long
+
+One row per company, line item, period and filing. Built by
+`src/pipeline/facts.py` for included companies, FY2011-FY2025 (FY2011
+only supplies prior-year values for FY2012).
+
+| Column | Type | Meaning | Source |
+| --- | --- | --- | --- |
+| cik | int64 | Company | companyfacts file name |
+| line_item | string | Standard line item or derivation component | `tag_map.ALL_ITEMS` |
+| xbrl_tag | string | us-gaap tag the value was reported under | companyfacts |
+| value | float64 | Reported value in whole dollars (or shares) | companyfacts `val` |
+| unit | string | `USD`, or `shares` for shares_outstanding | companyfacts unit |
+| period_start | datetime64[ns] | Start of a flow period; NaT for balance sheet instants | companyfacts `start` |
+| period_end | datetime64[ns] | End of the period or the balance sheet date | companyfacts `end` |
+| fiscal_year | int64 | From period_end, Compustat convention (Jan-May ends -> prior year) | `config.fiscal_year_from_period_end` |
+| form | string | `10-K` or `10-K/A` | companyfacts `form` |
+| accession | string | SEC accession number, with dashes | companyfacts `accn` |
+| filed_date | datetime64[ns] | Date the filing was filed | companyfacts `filed` |
+| filing_url | string | EDGAR filing index page | `facts.edgar_filing_url` |
+| is_original | bool | True for the earliest filing of this company, line item and period | `facts.mark_is_original` |

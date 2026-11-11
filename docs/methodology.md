@@ -117,3 +117,24 @@ decide whether LVGI and F-Score signal 5 need a rule like the SGA rule.
 listed first. Beneish (1999) used Compustat data, whose depreciation item
 is understood to include amortization; this should be verified against
 the paper when Phase 2 cites it.
+
+### facts_long (src/pipeline/facts.py)
+
+- Only us-gaap facts for mapped tags, from 10-K and 10-K/A filings, in USD
+  (shares for shares_outstanding).
+- Flow items must span 350-380 days (counting both end dates), which keeps
+  52/53-week years and drops quarterly and year-to-date values that 10-Ks
+  also contain. Balance sheet items are instants.
+- Fiscal year comes from period_end (see Fiscal year assignment), never
+  from SEC's `fy` field. FY2011 is kept so FY2012 has a prior year.
+- When a company reports two mapped tags for the same line item and
+  period, only its preferred tag is kept (the tag it reports in the most
+  years; see Tag mapping), so each company, line item and period has a
+  single original value.
+- Every filing that reported the chosen value is kept. The earliest filing
+  is `is_original`; ties on filing date put a 10-K before a 10-K/A, then
+  the lower accession number.
+- `filing_url` is the EDGAR filing index page built from the CIK and the
+  accession number.
+- Every removed fact is counted by reason in
+  `data/logs/facts_long_drops.csv`.

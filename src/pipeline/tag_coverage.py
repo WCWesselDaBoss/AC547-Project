@@ -24,9 +24,8 @@ import pandas as pd
 import config
 from src.pipeline import derived_items, periods, tag_map
 
-# Prior year is needed to score the first year, so facts start one year
-# before the first scored fiscal year.
-FIRST_FACT_YEAR = config.FIRST_FISCAL_YEAR - 1
+# The fact filters are shared with facts_long so both apply identical rules.
+from src.pipeline.facts import annual_facts_from_company
 
 # A fact belongs to a 10-K's company-year only if its end date is within
 # this many days of the 10-K's report date. This absorbs 52/53-week
@@ -52,60 +51,6 @@ def combined_candidate_regex():
         tag_map.SUPPORT_PATTERNS.values()
     )
     return re.compile("|".join(exact + patterns))
-
-
-def annual_facts_from_company(cik, company_facts, tag_regex):
-    """Return a list of annual 10-K fact dicts for one companyfacts JSON.
-
-    Keeps only us-gaap tags matching tag_regex, units USD or shares, forms
-    10-K/10-K/A, durations of 350-380 days or instants, and fiscal years
-    in range. Fiscal year comes from the period end, never the fy field.
-
-    The CIK is passed in from the file name (the same source the companies
-    table uses) because some files in SEC's bulk download are just "{}"
-    with no cik field; files without facts simply yield no rows.
-    """
-    rows = []
-    us_gaap = company_facts.get("facts", {}).get("us-gaap", {})
-    for tag, tag_info in us_gaap.items():
-        if not tag_regex.search(tag):
-            continue
-        for unit in ("USD", "shares"):
-            for fact in tag_info["units"].get(unit, []):
-                if fact.get("form") not in config.ANNUAL_FORMS:
-                    continue
-                end = periods.to_date(fact["end"])
-                start = periods.to_date(fact.get("start"))
-                if start is not None and not periods.is_annual_duration(
-                    start, end
-                ):
-                    continue
-                fiscal_year = config.fiscal_year_from_period_end(end)
-                if (
-                    not FIRST_FACT_YEAR
-                    <= fiscal_year
-                    <= config.LAST_FISCAL_YEAR
-                ):
-                    continue
-                rows.append(
-                    {
-                        "cik": cik,
-                        "tag": tag,
-                        "unit": unit,
-                        "period_type": (
-                            tag_map.INSTANT
-                            if start is None
-                            else tag_map.DURATION
-                        ),
-                        "period_start": start,
-                        "period_end": end,
-                        "fiscal_year": fiscal_year,
-                        "value": float(fact["val"]),
-                        "accession": fact["accn"],
-                        "filed_date": periods.to_date(fact["filed"]),
-                    }
-                )
-    return rows
 
 
 def keep_earliest_filed(facts_df):
