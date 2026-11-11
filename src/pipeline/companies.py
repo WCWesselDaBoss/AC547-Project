@@ -9,6 +9,7 @@ Run on its own with:
 """
 
 import json
+import re
 import zipfile
 
 import pandas as pd
@@ -89,16 +90,36 @@ def is_financial_sic(sic):
     return config.EXCLUDED_SIC_MIN <= sic <= config.EXCLUDED_SIC_MAX
 
 
-def pick_ticker(tickers):
-    """Return the first ticker SEC lists, or None if there are none.
+# Tickers that are not common stock. SEC writes share-class suffixes after
+# a dash (BRK-B is common; CTA-PB is a preferred, HTZ-WT a warrant), and
+# Nasdaq marks warrants, units and rights with a fifth letter W, U or R
+# (HTZWW, ABCDU). Four-letter tickers ending in those letters (SNOW) are
+# ordinary common stock, so only five or more letters are tested.
+NON_COMMON_TICKER = re.compile(
+    r"-(P|W|WT|WS|U|UN|R|RT)[A-Z]?$"  # preferred, warrant, unit, right
+    r"|^[A-Z]{4}(W|WW|U|R)$"  # Nasdaq 5th-letter codes
+)
 
-    Delisted companies usually have no ticker in SEC's data. We leave them
-    blank rather than guess, because a wrong ticker would attach another
-    company's prices (CLAUDE.md section 6, No silent fixes).
+
+def is_common_stock_ticker(ticker):
+    """Return True unless the ticker is a preferred, warrant, unit or right."""
+    return not NON_COMMON_TICKER.search(ticker)
+
+
+def pick_ticker(tickers):
+    """Return the first common-stock ticker SEC lists, or None.
+
+    SEC does not always list the common stock first (Hertz lists its
+    warrant HTZWW before HTZ). A warrant's or preferred's price is not the
+    company's equity, so those are skipped; a company with only preferred
+    tickers gets None. Delisted companies usually have no ticker at all.
+    We leave them blank rather than guess, because a wrong ticker would
+    attach another company's prices (CLAUDE.md section 6, No silent fixes).
     """
-    if not tickers:
-        return None
-    return tickers[0]
+    for ticker in tickers or []:
+        if is_common_stock_ticker(ticker):
+            return ticker
+    return None
 
 
 def has_annual_report(forms):

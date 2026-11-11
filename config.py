@@ -110,12 +110,29 @@ COMPANIES_PATH = PROCESSED_DIR / "companies.parquet"
 COMPANIES_EXCLUSION_LOG = LOG_DIR / "companies_exclusions.csv"
 FACTS_LONG_PATH = PROCESSED_DIR / "facts_long.parquet"
 FINANCIALS_PATH = PROCESSED_DIR / "financials_annual.parquet"
+PRICES_PATH = PROCESSED_DIR / "prices.parquet"
 
 # ---------------------------------------------------------------------------
 # Prices
 # ---------------------------------------------------------------------------
 # SPY is the market benchmark for the 12-month return test (stretch goal).
 MARKET_BENCHMARK_TICKER = "SPY"
+
+# Daily prices start with calendar 2012, the first scored fiscal year;
+# returns run 12 months after each 10-K filing date.
+PRICE_START_DATE = "2012-01-01"
+
+# Yahoo Finance throttles bursts and yfinance's threaded mode locks its
+# SQLite cache on Windows, so downloads run unthreaded in small batches.
+PRICE_BATCH_SIZE = 50
+PRICE_PAUSE_SECONDS = 2
+
+# A company has "full" price history if its prices start within this many
+# days of the first needed date and end within this many of the last.
+PRICE_COVERAGE_TOLERANCE_DAYS = 7
+
+PRICES_RAW_DIR = RAW_DIR / "prices"  # one Parquet file per ticker
+PRICES_MANIFEST = PRICES_RAW_DIR / "manifest.json"
 
 
 def fiscal_year_from_period_end(period_end):

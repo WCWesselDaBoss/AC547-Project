@@ -29,7 +29,10 @@ with a reason, if:
   are not wrongly excluded. This rule also removes foreign (20-F, 40-F)
   filers.
 
-The ticker is the first one SEC lists; companies with none are left blank
+The ticker is the first common-stock ticker SEC lists (SEC does not always
+list it first: Hertz lists its warrant HTZWW before HTZ); warrants, units,
+rights and preferreds are skipped, and a company with only those gets no
+ticker. Companies with none are left blank
 rather than matched by name, so no company is given another's prices.
 Whether a company has US GAAP facts is tested when facts_long is built
 (step 5), not here, to avoid reading 19.5 GB of facts twice.
@@ -164,3 +167,39 @@ the paper when Phase 2 cites it.
   they can still serve as a prior year; a year with neither value cannot
   pass. FY2012-FY2025: 39,853 pass, 28,550 fail, 475 untestable.
 - Counts are in `data/logs/financials_annual_log.csv`.
+
+### prices (src/pipeline/prices.py)
+
+- **Which companies.** Scored companies are those with at least one
+  size-floor year from FY2012 on. Only tickers in SEC's own data are used;
+  companies without one stay unmatched rather than being matched by name,
+  because a wrong match would attach another company's prices.
+- **Download.** yfinance, `auto_adjust=False`, keeping only `Adj Close`
+  from 2012-01-01 to the download date, in unthreaded batches of 50 with a
+  pause between batches (threaded mode locked yfinance's SQLite cache on
+  Windows). A ticker that returns no data is retried once alone; tickers
+  still failing are listed in the manifest. Each ticker is cached in
+  `data/raw/prices/`, so reruns skip finished tickers.
+- **Adjusted prices change over time.** Yahoo recalculates adjusted closes
+  after each split or dividend, so the manifest records the download
+  date; reproducing results exactly requires the same cached files.
+- **Full price history** means a company's prices start within 7 days of
+  its first passing year's 10-K filing date and end within 7 days of 12
+  months after its last passing year's filing (capped at the latest
+  trading day). Counts are in `data/logs/prices_coverage.csv`, and each
+  company's status is in `data/logs/prices_by_company.csv`.
+- **Survivorship bias (limitation).** SEC and Yahoo both drop tickers
+  once a company stops trading, so companies that were acquired, delisted
+  or went bankrupt mostly have no prices. These are exactly the outcomes
+  that earnings manipulation tends to precede, so any return test on this
+  data understates what happened to the worst companies.
+- **Invalid adjusted prices.** A ticker whose adjusted close is ever zero
+  or negative is removed entirely, because a wrong adjustment factor
+  mis-scales the whole series, not just those days. Six tickers were
+  removed in the November 2026 download (CBIO, CODQL, DEC, LIANY, NFE,
+  VATE; listed in the manifest).
+- **Results (November 11, 2026 download).** Of 5,493 scored companies,
+  2,705 have an SEC common-stock ticker, 2,692 have prices and 2,606 have
+  full price history. Seven tickers returned no data from Yahoo
+  ("possibly delisted"). Of the 2,422 scored companies that stopped filing
+  10-Ks by FY2023, 2,414 have no prices.

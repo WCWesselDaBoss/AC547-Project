@@ -13,7 +13,7 @@ One row per company with an XBRL companyfacts file. Built by
 | name | string | Current EDGAR conformed name | submissions `name` |
 | sic | Int64 (nullable) | Standard Industrial Classification code | submissions `sic` |
 | sic_description | string (nullable) | SEC's label for the SIC code | submissions `sicDescription` |
-| ticker | string (nullable) | First ticker SEC lists; null if none (often delisted) | submissions `tickers[0]` |
+| ticker | string (nullable) | First common-stock ticker SEC lists (warrants, units, rights and preferreds skipped); null if none (often delisted) | `companies.pick_ticker` on submissions `tickers` |
 | is_excluded | bool | True if any exclusion rule applies | `companies.exclusion_reasons` |
 | exclusion_reason | string (nullable) | All reasons, joined with "; " | `companies.exclusion_reasons` |
 
@@ -60,3 +60,15 @@ trace any value through facts_long by cik, line_item and fiscal_year.
 | derived_items | string (nullable) | Line items calculated from other reported facts ("; "-separated) |
 | revenue ... shares_outstanding | float64 | The 18 standard line items (see `tag_map.LINE_ITEMS`); NaN when missing |
 | income_discontinued_ops ... redeemable_nci | float64 | The 6 derivation components (see `tag_map.COMPONENT_ITEMS`) |
+
+## prices
+
+One row per ticker and trading day. Built by `src/pipeline/prices.py`
+from Yahoo Finance via yfinance, for every scored company with an SEC
+ticker plus SPY (market benchmark).
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| ticker | string | The company's ticker from the companies table, or SPY |
+| date | datetime64[ns] | Trading day |
+| adj_close | float64 | Yahoo's close adjusted for splits and dividends, as of the download date in `data/raw/prices/manifest.json` |

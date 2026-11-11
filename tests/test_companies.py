@@ -64,6 +64,31 @@ def test_pick_ticker_never_guesses():
     assert companies.pick_ticker(None) is None
 
 
+def test_pick_ticker_skips_warrants_and_preferreds():
+    """Hertz lists its warrant first; preferred-only companies get None."""
+    assert companies.pick_ticker(["HTZWW", "HTZ"]) == "HTZ"
+    assert companies.pick_ticker(["CTA-PB", "CTA-PA"]) is None
+    assert companies.pick_ticker(["XYZ-WT", "XYZ"]) == "XYZ"
+
+
+@pytest.mark.parametrize(
+    "ticker, expected",
+    [
+        ("AAPL", True),
+        ("BRK-B", True),  # share class B is common stock
+        ("SNOW", True),  # 4 letters ending in W: ordinary common
+        ("HTZWW", False),  # Nasdaq warrant
+        ("ABCDU", False),  # Nasdaq unit
+        ("ABCDR", False),  # Nasdaq right
+        ("TRTN-PA", False),  # preferred series A
+        ("XYZ-WT", False),  # NYSE warrant
+    ],
+)
+def test_is_common_stock_ticker(ticker, expected):
+    """Common stock passes; warrants, units, rights, preferreds do not."""
+    assert companies.is_common_stock_ticker(ticker) is expected
+
+
 def test_exclusion_reasons_lists_every_reason():
     """A company failing two rules gets both reasons."""
     assert companies.exclusion_reasons(None, False) == [
