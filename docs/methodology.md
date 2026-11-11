@@ -203,3 +203,15 @@ the paper when Phase 2 cites it.
   full price history. Seven tickers returned no data from Yahoo
   ("possibly delisted"). Of the 2,422 scored companies that stopped filing
   10-Ks by FY2023, 2,414 have no prices.
+
+### Committed sample (src/pipeline/sample.py)
+
+`data/sample/` holds the four Phase 1 tables cut to 50 companies, so a
+fresh clone runs the app with no downloads. Companies are chosen by a
+fixed rule, not at random: Apple and any CIKs in
+`config.SAMPLE_EXTRA_CIKS` (case studies) first; then 30 companies with
+full price history, 10 that stopped filing and have no prices, and 5 with
+a ticker but partial prices, each group taken in turn across SIC
+divisions and ordered by most size-floor years, then CIK. Prices include
+SPY. Peer percentile ranks computed on 50 companies are illustrative only;
+real rankings need the full tables.

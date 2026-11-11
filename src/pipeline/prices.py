@@ -255,23 +255,32 @@ def write_manifest(tickers, failed_tickers, end, invalid_tickers=()):
     config.PRICES_MANIFEST.write_text(json.dumps(manifest, indent=2))
 
 
-def main():
-    """Download prices for scored companies plus SPY; write table and logs."""
+def main(download=True):
+    """Build the prices table for scored companies plus SPY.
+
+    With download=False nothing is fetched: the table is rebuilt from the
+    cached ticker files, so the pipeline can run offline. Tickers with no
+    cache file are then reported as failed.
+    """
     companies_df = pd.read_parquet(config.COMPANIES_PATH)
     financials_df = pd.read_parquet(config.FINANCIALS_PATH)
     scored_df = scored_companies(companies_df, financials_df)
     tickers = sorted(scored_df["ticker"].dropna().unique())
     tickers.append(config.MARKET_BENCHMARK_TICKER)
-
     config.PRICES_RAW_DIR.mkdir(parents=True, exist_ok=True)
-    # Keep yfinance's timezone cache inside the project, not the user's
-    # profile, so runs are self-contained.
-    yf.set_tz_cache_location(str(config.RAW_DIR / "yfinance_cache"))
-    end = date.today().isoformat()
-    print(f"Downloading prices for {len(tickers):,} tickers")
-    failed = download_prices(tickers, end=end)
+
+    if download:
+        # Keep yfinance's timezone cache inside the project, not the
+        # user's profile, so runs are self-contained.
+        yf.set_tz_cache_location(str(config.RAW_DIR / "yfinance_cache"))
+        end = date.today().isoformat()
+        print(f"Downloading prices for {len(tickers):,} tickers")
+        failed = download_prices(tickers, end=end)
+    else:
+        failed = [t for t in tickers if not ticker_cache_path(t).exists()]
     prices_df, invalid = drop_invalid_series(load_cached_prices(tickers))
-    write_manifest(tickers, failed, end, invalid)
+    if download:
+        write_manifest(tickers, failed, end, invalid)
 
     config.PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     prices_df.to_parquet(config.PRICES_PATH, index=False)

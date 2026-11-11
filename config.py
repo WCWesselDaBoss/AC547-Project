@@ -134,6 +134,17 @@ PRICE_COVERAGE_TOLERANCE_DAYS = 7
 PRICES_RAW_DIR = RAW_DIR / "prices"  # one Parquet file per ticker
 PRICES_MANIFEST = PRICES_RAW_DIR / "manifest.json"
 
+# ---------------------------------------------------------------------------
+# Committed sample (CLAUDE.md section 6, Reproducible)
+# ---------------------------------------------------------------------------
+# A fresh clone runs the app from these small tables, with no downloads.
+SAMPLE_SIZE = 50
+# Always included so the demo has a familiar company to show.
+SAMPLE_ANCHOR_CIKS = [320193]  # Apple
+# Case-study companies chosen by the team (Phase 3). Add CIKs here and run
+# "python run_pipeline.py --sample-only"; no code change is needed.
+SAMPLE_EXTRA_CIKS = []
+
 
 def fiscal_year_from_period_end(period_end):
     """Return the fiscal year label for a period ending on period_end.
