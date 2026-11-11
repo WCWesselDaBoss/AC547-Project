@@ -6,6 +6,7 @@ Fixture companies (tests/fixtures/sec/):
     3  SIC 3711, 10-K only in an overflow file      -> included
     4  blank SIC, files 20-F (foreign)              -> excluded, two reasons
     5  SIC 6770 (blank check), 10-K/A, no ticker    -> excluded, financial
+    6  SIC 3571, 10-K, but companyfacts file is {}  -> excluded, no facts
 """
 
 import zipfile
@@ -66,7 +67,7 @@ def test_pick_ticker_never_guesses():
 def test_exclusion_reasons_lists_every_reason():
     """A company failing two rules gets both reasons."""
     assert companies.exclusion_reasons(None, False) == [
-        companies.REASON_SIC_MISSING,
+        companies.REASON_MISSING_SIC,
         companies.REASON_NO_10K,
     ]
     assert companies.exclusion_reasons(3571, True) == []
@@ -89,7 +90,7 @@ def test_columns_match_section_4_contract(companies_result):
 def test_every_companyfacts_cik_is_kept(companies_result):
     """Excluded companies are labeled, never dropped."""
     companies_df, _ = companies_result
-    assert companies_df["cik"].tolist() == [1, 2, 3, 4, 5]
+    assert companies_df["cik"].tolist() == [1, 2, 3, 4, 5, 6]
 
 
 def test_fixture_exclusions(companies_result):
@@ -98,8 +99,9 @@ def test_fixture_exclusions(companies_result):
     by_cik = companies_df.set_index("cik")
     assert not by_cik.loc[1, "is_excluded"]
     assert by_cik.loc[2, "exclusion_reason"] == "financial_sic_6000_6799"
-    assert by_cik.loc[4, "exclusion_reason"] == "sic_missing; no_10k_filings"
+    assert by_cik.loc[4, "exclusion_reason"] == "missing_sic; no_10k_filings"
     assert by_cik.loc[5, "exclusion_reason"] == "financial_sic_6000_6799"
+    assert by_cik.loc[6, "exclusion_reason"] == "no_xbrl_facts"
 
 
 def test_overflow_file_finds_older_10k(companies_result):
@@ -120,14 +122,30 @@ def test_missing_values_are_null_not_blank(companies_result):
 
 
 def test_summary_counts(companies_result):
-    """Log counts: 5 companies, 3 excluded, 2 included, 1 multi-ticker."""
+    """Log counts: 6 companies, 4 excluded, 2 included, 1 multi-ticker."""
     summary = companies.summarize_exclusions(*companies_result)
     counts = dict(zip(summary["measure"], summary["count"]))
-    assert counts["companies_with_xbrl_facts"] == 5
-    assert counts["excluded_total"] == 3
+    assert counts["companies_with_xbrl_facts"] == 6
+    assert counts["excluded_total"] == 4
     assert counts["included_total"] == 2
     assert counts["reason:financial_sic_6000_6799"] == 2
-    assert counts["reason:sic_missing"] == 1
+    assert counts["reason:missing_sic"] == 1
     assert counts["reason:no_10k_filings"] == 1
+    assert counts["reason:no_xbrl_facts"] == 1
     assert counts["included_without_ticker"] == 0
     assert counts["included_with_multiple_tickers"] == 1
+
+
+def test_empty_facts_file_is_detected(tmp_path):
+    """Only the file holding "{}" is reported as having no facts."""
+    facts_zip = zip_fixture_folder(
+        FIXTURE_DIR / "companyfacts", tmp_path / "companyfacts.zip"
+    )
+    assert companies.find_ciks_without_facts(facts_zip) == {6}
+
+
+def test_no_facts_reason_comes_first():
+    """A company with no facts is labeled even if other rules pass."""
+    assert companies.exclusion_reasons(3571, True, has_facts=False) == [
+        companies.REASON_NO_XBRL_FACTS
+    ]

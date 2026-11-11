@@ -17,5 +17,5 @@ One row per company with an XBRL companyfacts file. Built by
 | is_excluded | bool | True if any exclusion rule applies | `companies.exclusion_reasons` |
 | exclusion_reason | string (nullable) | All reasons, joined with "; " | `companies.exclusion_reasons` |
 
-Exclusion reason values: `financial_sic_6000_6799`, `sic_missing`,
-`no_10k_filings`, `no_submissions_record`.
+Exclusion reason values: `financial_sic_6000_6799`, `missing_sic`,
+`no_10k_filings`, `no_xbrl_facts` (companyfacts file is empty), `no_submissions_record`.

@@ -18,8 +18,16 @@ import config
 # Exclusion reason labels. They are written into the table and the log, so
 # they are spelled out rather than coded as numbers.
 REASON_FINANCIAL_SIC = "financial_sic_6000_6799"
-REASON_SIC_MISSING = "sic_missing"
+REASON_MISSING_SIC = "missing_sic"
 REASON_NO_10K = "no_10k_filings"
+REASON_NO_XBRL_FACTS = "no_xbrl_facts"
+
+# Files at or below this size are opened to check whether they hold any
+# facts. In SEC's November 2026 download, 2,464 files had no facts: 62
+# were just "{}" and 2,402 had a name but an empty facts section. A file
+# with real facts is far larger than this, so bigger files are not opened
+# (that would mean reading all 19.5 GB here).
+SMALL_FACTS_FILE_BYTES = 4096
 
 # Separator when a company has more than one exclusion reason. Keeping all
 # reasons (not just the first) means each rule's count is complete.
@@ -47,6 +55,23 @@ def list_companyfacts_ciks(companyfacts_zip):
             for name in archive.namelist()
             if name.startswith("CIK") and name.endswith(".json")
         )
+
+
+def find_ciks_without_facts(companyfacts_zip):
+    """Return the set of CIKs whose companyfacts file holds no facts.
+
+    These companies are listed in SEC's XBRL bulk file but have no
+    financial data, so they are labeled rather than counted as included.
+    """
+    empty = set()
+    with zipfile.ZipFile(companyfacts_zip) as archive:
+        for info in archive.infolist():
+            if info.file_size > SMALL_FACTS_FILE_BYTES:
+                continue
+            company_facts = json.loads(archive.read(info.filename))
+            if not company_facts.get("facts"):
+                empty.add(cik_from_member_name(info.filename))
+    return empty
 
 
 def parse_sic(raw_sic):
@@ -99,11 +124,13 @@ def filed_annual_report(submission, archive):
     return False
 
 
-def exclusion_reasons(sic, filed_10k):
+def exclusion_reasons(sic, filed_10k, has_facts=True):
     """Return the list of exclusion reasons for one company (empty = keep)."""
     reasons = []
+    if not has_facts:
+        reasons.append(REASON_NO_XBRL_FACTS)
     if sic is None:
-        reasons.append(REASON_SIC_MISSING)
+        reasons.append(REASON_MISSING_SIC)
     elif is_financial_sic(sic):
         reasons.append(REASON_FINANCIAL_SIC)
     if not filed_10k:
@@ -111,10 +138,12 @@ def exclusion_reasons(sic, filed_10k):
     return reasons
 
 
-def build_company_row(cik, submission, archive):
+def build_company_row(cik, submission, archive, has_facts=True):
     """Return one companies-table row (a dict) from a submissions record."""
     sic = parse_sic(submission.get("sic"))
-    reasons = exclusion_reasons(sic, filed_annual_report(submission, archive))
+    reasons = exclusion_reasons(
+        sic, filed_annual_report(submission, archive), has_facts
+    )
     return {
         "cik": cik,
         "name": submission.get("name"),
@@ -137,6 +166,7 @@ def build_companies(companyfacts_zip, submissions_zip):
     is looked up in submissions.zip for its name, SIC and filing history.
     """
     rows = []
+    ciks_without_facts = find_ciks_without_facts(companyfacts_zip)
     with zipfile.ZipFile(submissions_zip) as archive:
         available = set(archive.namelist())
         for cik in list_companyfacts_ciks(companyfacts_zip):
@@ -159,7 +189,11 @@ def build_companies(companyfacts_zip, submissions_zip):
                 )
                 continue
             submission = json.loads(archive.read(member))
-            rows.append(build_company_row(cik, submission, archive))
+            rows.append(
+                build_company_row(
+                    cik, submission, archive, cik not in ciks_without_facts
+                )
+            )
 
     companies_df = pd.DataFrame(rows)
     ticker_counts = companies_df.pop("_ticker_count")

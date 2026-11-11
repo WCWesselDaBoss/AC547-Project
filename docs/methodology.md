@@ -34,7 +34,20 @@ rather than matched by name, so no company is given another's prices.
 Whether a company has US GAAP facts is tested when facts_long is built
 (step 5), not here, to avoid reading 19.5 GB of facts twice.
 
+Companies whose companyfacts file contains no facts (62 files are just
+"{}", 2,402 have a name but an empty facts section) are excluded as
+`no_xbrl_facts`; only 12 of these 2,464 were not already excluded by
+another rule.
+
 Counts from the November 11, 2026 download (`data/logs/companies_exclusions.csv`):
-20,571 companies with XBRL facts; 9,900 excluded (5,631 no 10-K, 4,630
-financial SIC, 3,017 blank SIC; a company can have more than one reason);
-10,671 included before the size floor.
+20,571 companies in the companyfacts file; 9,912 excluded (5,631 no 10-K,
+4,630 financial SIC, 3,017 missing SIC, 2,464 no XBRL facts; a company can
+have more than one reason); 10,659 included before the size floor.
+
+Of the 3,017 missing-SIC companies, 213 filed a 10-K and 184 meet the
+$100M floor in at least one year (627 company-years). A keyword screen of
+their names (Capital, Credit, Fund, Trust, Insurance, Account, etc.)
+flags 201 of 213 as financial; most appear to be business development
+companies, funds and insurance separate accounts that the financial-SIC
+rule would exclude anyway. The screen is approximate, not a formal
+classification.
