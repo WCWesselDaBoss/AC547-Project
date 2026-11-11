@@ -41,3 +41,22 @@ only supplies prior-year values for FY2012).
 | filed_date | datetime64[ns] | Date the filing was filed | companyfacts `filed` |
 | filing_url | string | EDGAR filing index page | `facts.edgar_filing_url` |
 | is_original | bool | True for the earliest filing of this company, line item and period | `facts.mark_is_original` |
+
+## financials_annual
+
+One row per company and fiscal year, FY2011-FY2025 (FY2011 rows exist only
+as prior-year values for FY2012). Built by `src/pipeline/financials.py`.
+Values are the ORIGINALLY reported ones (`is_original` in facts_long);
+trace any value through facts_long by cik, line_item and fiscal_year.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| cik | int64 | Company |
+| fiscal_year | int64 | Compustat convention, from period_end |
+| period_end | datetime64[ns] | Fiscal year end (the 10-K's report date) |
+| filed_date | datetime64[ns] | Filing date of the 10-K for this year; for a comparative-only year, of the 10-K that first reported it |
+| accession | string | That 10-K's accession number |
+| passes_size_floor | bool | Revenue or total assets of at least $100M this year |
+| derived_items | string (nullable) | Line items calculated from other reported facts ("; "-separated) |
+| revenue ... shares_outstanding | float64 | The 18 standard line items (see `tag_map.LINE_ITEMS`); NaN when missing |
+| income_discontinued_ops ... redeemable_nci | float64 | The 6 derivation components (see `tag_map.COMPONENT_ITEMS`) |

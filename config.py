@@ -109,6 +109,7 @@ SEC_RETRY_BACKOFF_SECONDS = 10
 COMPANIES_PATH = PROCESSED_DIR / "companies.parquet"
 COMPANIES_EXCLUSION_LOG = LOG_DIR / "companies_exclusions.csv"
 FACTS_LONG_PATH = PROCESSED_DIR / "facts_long.parquet"
+FINANCIALS_PATH = PROCESSED_DIR / "financials_annual.parquet"
 
 # ---------------------------------------------------------------------------
 # Prices

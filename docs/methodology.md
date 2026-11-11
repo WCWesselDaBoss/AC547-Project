@@ -138,3 +138,29 @@ the paper when Phase 2 cites it.
   accession number.
 - Every removed fact is counted by reason in
   `data/logs/facts_long_drops.csv`.
+
+### financials_annual (src/pipeline/financials.py)
+
+- **Company-years** come from each company's original 10-K filings in
+  submissions (recent and overflow files), not from the facts, so a year
+  with missing data shows up as missing rather than disappearing. The
+  10-K's report date is the fiscal year end. If a change of year end gives
+  two 10-Ks the same fiscal-year label, the earlier is kept (167 cases,
+  logged).
+- **Comparative-only years.** A company's first 10-K also reports the
+  prior year. No 10-K exists for that prior year, but its values are
+  original 10-K data and are needed to score the first 10-K year. Such a
+  year is added when an original total-assets balance is dated within 7
+  days of one year before or after an existing 10-K's year end; its
+  accession and filed_date are the 10-K that first reported it (3,626
+  company-years, mostly the year before a first 10-K).
+- **Matching values to years.** Each original fact is attached to the
+  year whose fiscal year end is nearest its period end, within 7 days.
+  Facts with no year (43,546) are mostly balances dated at quarter ends or
+  other dates inside a year (median 92 days from year end), which are not
+  fiscal-year-end values.
+- **Size floor.** `passes_size_floor` is true when revenue or total assets
+  is at least $100M in that year (nominal). Rows that fail are kept, since
+  they can still serve as a prior year; a year with neither value cannot
+  pass. FY2012-FY2025: 39,853 pass, 28,550 fail, 475 untestable.
+- Counts are in `data/logs/financials_annual_log.csv`.
