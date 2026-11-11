@@ -69,6 +69,35 @@ SEC_USER_AGENT = os.environ.get("SEC_USER_AGENT", SEC_USER_AGENT_PLACEHOLDER)
 # leave a safety margin.
 SEC_MAX_REQUESTS_PER_SECOND = 8
 
+# SEC bulk files, confirmed on SEC's "EDGAR Application Programming
+# Interfaces" and "Accessing EDGAR Data" pages. The two ZIPs are rebuilt
+# nightly (about 3:00 a.m. ET); bulk files are far kinder to SEC than
+# thousands of per-company API calls (CLAUDE.md section 6).
+SEC_BULK_FILES = {
+    # Every company's XBRL facts (one JSON per CIK inside the ZIP).
+    "companyfacts.zip": (
+        "https://www.sec.gov/Archives/edgar/daily-index/xbrl/companyfacts.zip"
+    ),
+    # Every company's name, SIC, tickers and filing history.
+    "submissions.zip": (
+        "https://www.sec.gov/Archives/edgar/daily-index/bulkdata/"
+        "submissions.zip"
+    ),
+    # CIK-ticker-exchange map. SEC does not guarantee its accuracy, so it
+    # is a cross-check for tickers, not the primary source.
+    "company_tickers_exchange.json": (
+        "https://www.sec.gov/files/company_tickers_exchange.json"
+    ),
+}
+
+# Records what was downloaded and when, because the bulk files change
+# nightly and results must be traceable to a specific download.
+DOWNLOAD_MANIFEST = RAW_DIR / "download_manifest.json"
+
+# Retry policy for SEC "slow down" (429) and server (5xx) responses.
+SEC_MAX_RETRIES = 3
+SEC_RETRY_BACKOFF_SECONDS = 10
+
 # ---------------------------------------------------------------------------
 # Prices
 # ---------------------------------------------------------------------------
