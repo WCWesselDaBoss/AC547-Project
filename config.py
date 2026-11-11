@@ -19,6 +19,7 @@ RAW_DIR = DATA_DIR / "raw"  # SEC and price downloads (gitignored)
 PROCESSED_DIR = DATA_DIR / "processed"  # Parquet tables from section 4
 SAMPLE_DIR = DATA_DIR / "sample"  # small committed copy for fresh clones
 LOG_DIR = DATA_DIR / "logs"  # drop counts and coverage reports
+INTERIM_DIR = DATA_DIR / "interim"  # cached extracts between steps
 
 # ---------------------------------------------------------------------------
 # Universe rules (CLAUDE.md section 2)

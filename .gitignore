@@ -18,3 +18,6 @@ venv/
 # Local secrets (e.g. SEC_USER_AGENT kept in a .env file)
 .env
 .streamlit/secrets.toml
+
+# Cached intermediate extracts, rebuilt from data/raw/
+data/interim/

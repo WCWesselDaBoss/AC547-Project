@@ -51,3 +51,69 @@ flags 201 of 213 as financial; most appear to be business development
 companies, funds and insurance separate accounts that the financial-SIC
 rule would exclude anyway. The screen is approximate, not a formal
 classification.
+
+### Tag mapping (src/pipeline/tag_map.py)
+
+Each standard line item maps to an ordered list of us-gaap tags. A tag
+was added only with evidence from the coverage report
+(`python -m src.pipeline.tag_coverage`, logs in `data/logs/`): in
+company-years where the candidate and an existing mapped tag are both
+reported, how often the values agree within 0.5%. The denominator is
+every fiscal year in which an included company filed an original 10-K
+(67,122 company-years, FY2012-FY2025; 38,675 meet the size floor).
+
+Tags added after the first report (each last in its list):
+
+| Line item | Tag added | Agreement | Company-years filled |
+| --- | --- | --- | --- |
+| total_assets | LiabilitiesAndStockholdersEquity | 99.9% | 256 |
+| revenue | RevenueFromContractWithCustomerIncludingAssessedTax | 65.8% (gap is sales/excise tax) | 2,301 |
+| cfo | NetCashProvidedByUsedInOperatingActivitiesContinuingOperations | 68.3% (gap is discontinued operations) | 5,965 |
+| receivables | AccountsReceivableNet | 65.2% (unclassified balance sheets) | 2,072 |
+
+Tags rejected because they measure a different concept:
+GeneralAndAdministrativeExpense for SG&A (29% agreement; excludes
+selling), CostsAndExpenses for cost of revenue (0.6%), ProfitLoss for net
+income (61.5%; includes noncontrolling interests),
+CommonStockSharesIssued for shares outstanding (80.5%; includes treasury
+shares), LongTermDebt and LongTermDebtAndCapitalLeaseObligations for
+noncurrent long-term debt (27% and 61%).
+
+**Company-consistent tag choice.** The scores compare year t with t-1, so
+a company switching tags between years (for example, depreciation and
+amortization one year, depreciation only the next) can move a ratio with
+no change in the business. Each company uses the mapped tag it reports in
+the most years (ties keep the map order); other tags fill only years where
+that tag is missing (`tag_map.company_tag_order`). Year-to-year tag
+switches fell from 2,072 to 574 for depreciation, 2,792 to 2,186 for
+revenue (most remaining revenue switches are the 2018 ASC 606 change,
+which kept the concept), and 1,575 to 1,319 for cost of revenue.
+
+**Derived line items (src/pipeline/derived_items.py).** Used only when the
+item's own tag is missing; every use is named in the `derived_items`
+column.
+
+- *Income from continuing operations* = net income - income from
+  discontinued operations (missing discontinued line treated as none,
+  since it must be presented separately when it exists). Tagged value
+  coverage was only 16%. Where both can be compared, the calculation
+  matches the tagged value in 79% of company-years with discontinued
+  operations and 70% without: moderate agreement, recorded here as a
+  limitation of the TATA input. Coverage rises to 92.6%.
+- *Total liabilities* = total liabilities and equity - equity including
+  noncontrolling interests (parent equity if not reported) - temporary
+  equity. Matches the tagged value in 95.6% of 50,146 company-years; when
+  it misses, the miss is often large (median 33% of total assets), which
+  is why derived values are labeled. Coverage rises from 76.6% to 96.1%.
+
+**Not fixed: long-term debt (35.6% of all company-years, 52.4% above the
+size floor).** Many companies with no debt do not tag it. Treating a
+missing tag as zero would be an estimate, which section 2 of CLAUDE.md
+forbids, and deriving it as total debt minus the current portion fills
+only 1,181 company-years at 75% agreement. Phase 2 and the team should
+decide whether LVGI and F-Score signal 5 need a rule like the SGA rule.
+
+**Depreciation tag order.** Depreciation, depletion and amortization is
+listed first. Beneish (1999) used Compustat data, whose depreciation item
+is understood to include amortization; this should be verified against
+the paper when Phase 2 cites it.
