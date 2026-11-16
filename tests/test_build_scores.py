@@ -127,3 +127,31 @@ def test_below_floor_year_still_serves_as_prior_year(
     assert row(scores_df, 101, 2023)["m_score"] == pytest.approx(
         -2.48438, abs=1e-6
     )
+
+
+def test_tieout_workbook_builds_from_fixture(
+    tmp_path, financials_fixture, facts_long_fixture, companies_fixture
+):
+    """The tie-out builder writes one sheet per case, and each Python
+    column holds the scores-table value (Steady Co FY2023 M = -2.48438).
+    Formula evaluation is checked separately (verification notes)."""
+    from openpyxl import load_workbook
+
+    from src.scores import tieout
+
+    scores_df, _ = build_scores.build_scores(
+        financials_fixture, facts_long_fixture, companies_fixture
+    )
+    financials_fixture.to_parquet(tmp_path / "financials_annual.parquet")
+    facts_long_fixture.to_parquet(tmp_path / "facts_long.parquet")
+    scores_df.to_parquet(tmp_path / "scores.parquet")
+    output = tmp_path / "tieout.xlsx"
+    tieout.build_workbook(
+        tmp_path, cases=[(101, 2023, "Steady FY2023", "test")], output=output
+    )
+    workbook = load_workbook(output)
+    assert workbook.sheetnames == ["README", "Steady FY2023", "Coefficients"]
+    sheet = workbook["Steady FY2023"]
+    m_row = tieout.CALC_FIRST_ROW + 8
+    assert sheet.cell(m_row, 1).value == "M-Score"
+    assert sheet.cell(m_row, 3).value == pytest.approx(-2.48438, abs=1e-6)
