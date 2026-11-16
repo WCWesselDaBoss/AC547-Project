@@ -288,3 +288,45 @@ against the paper when verifying the coefficients:
   (`shares_t-1_same_filing_ambiguous`).
 - **Cash conversion** is blank when net income is zero or negative
   (`net_income_not_positive`), because dividing by a loss flips the sign.
+
+### 12-month return test (stretch goal, src/scores/returns.py)
+
+For each scored company-year with a ticker, the return window starts on
+the first trading day after the 10-K's `filed_date`, so the filing was
+public before the hypothetical purchase. It ends on the last trading day
+on or before start + 12 months.
+
+- `ret_12m` is the buy-and-hold return on adjusted close, which includes
+  dividends and splits.
+- `excess_ret_12m` subtracts SPY's return over the same dates.
+- A return is computed only when the stock has a price within 7 days of
+  both dates (`has_full_price_history`). A stock delisted mid-window gets
+  no return, because a partial-window return would be an estimate.
+
+The summary compares companies flagged by the M-Score (-1.78) with those
+not flagged: count, mean and median excess return. Company-years with no
+M-Score are in neither group.
+
+**Limitations. State these with any result.**
+
+- **Survivorship bias.** Most companies that stopped filing have no
+  Yahoo prices. Phase 1 found 2,414 of 2,422 such scored companies with
+  no prices. Failed companies, likely including real manipulators, drop
+  out, so the results are **biased upward** and describe mainly
+  survivors.
+- **Correlation, not cause.** A return gap between the groups does not
+  show that the flag causes or predicts returns. The groups differ in
+  size, industry and timing, and nothing here controls for that.
+- **Overlapping windows.** Most 10-Ks are filed in February and March,
+  so windows overlap in calendar time and observations are not
+  independent. Counts, means and medians are descriptive; no
+  significance test is reported.
+- **Tickers.** Tickers are current SEC tickers. A reused ticker could
+  attach another company's prices to an old filing.
+
+On the 50-company sample (illustrative only): 665 scored years, 553
+with a ticker, and 472 with a full 12-month window. Of those, 19 flagged
+company-years had a mean excess return of -2.0% (median +2.2%), and 255
+unflagged ones had a mean of +2.6% (median -2.9%). With 19 flagged
+observations, this says nothing yet. The full-universe run decides the
+December 1 go/no-go.
