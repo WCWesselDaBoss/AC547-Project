@@ -4,6 +4,7 @@ Usage:
     python run_pipeline.py                  # download, then build all
     python run_pipeline.py --skip-download  # build from data/raw only
     python run_pipeline.py --sample-only    # rebuild data/sample/ only
+    python run_pipeline.py --scores-only    # rebuild scores only (Phase 2)
 
 Stages run in dependency order; each one reads the previous one's output
 from data/processed/ (CLAUDE.md section 4), so any stage can also be run
@@ -15,6 +16,7 @@ import time
 
 from src.pipeline import companies, download, facts, financials
 from src.pipeline import prices, sample
+from src.scores import build_scores
 
 
 def run_stage(name, function, *args, **kwargs):
@@ -38,20 +40,32 @@ def parse_args(argv=None):
         action="store_true",
         help="only rebuild data/sample/ from data/processed/",
     )
+    parser.add_argument(
+        "--scores-only",
+        action="store_true",
+        help="only rebuild scores from the Phase 1 tables already built",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv=None):
     """Run each pipeline stage in order."""
     args = parse_args(argv)
-    if not args.sample_only:
+    if not (args.sample_only or args.scores_only):
         if not args.skip_download:
             run_stage("1. Download SEC bulk files", download.download_all)
         run_stage("2. companies", companies.main)
         run_stage("3. facts_long", facts.main)
         run_stage("4. financials_annual", financials.main)
         run_stage("5. prices", prices.main, download=not args.skip_download)
-    run_stage("6. sample", sample.main)
+    if not args.sample_only:
+        run_stage("6. scores", build_scores.main, [])
+    if not args.scores_only:
+        run_stage("7. sample", sample.main)
+    # Scores for the sample are computed from the sample's own tables, so
+    # a fresh clone's app shows numbers it can reproduce (peer ranks on
+    # 50 companies are illustrative only, CLAUDE.md section 4).
+    run_stage("8. sample scores", build_scores.main, ["--sample"])
 
 
 if __name__ == "__main__":

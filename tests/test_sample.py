@@ -107,13 +107,16 @@ def test_pipeline_runs_stages_in_order(monkeypatch):
         "3. facts_long",
         "4. financials_annual",
         "5. prices",
-        "6. sample",
+        "6. scores",
+        "7. sample",
+        "8. sample scores",
     ]
     assert calls[3][1] == {"download": False}
 
 
 def test_sample_only_runs_just_the_sample(monkeypatch):
-    """--sample-only touches nothing but data/sample/."""
+    """--sample-only touches nothing but data/sample/ (the sample tables,
+    then scores computed from them)."""
     calls = []
     monkeypatch.setattr(
         run_pipeline,
@@ -121,7 +124,19 @@ def test_sample_only_runs_just_the_sample(monkeypatch):
         lambda name, function, *a, **k: calls.append(name),
     )
     run_pipeline.main(["--sample-only"])
-    assert calls == ["6. sample"]
+    assert calls == ["7. sample", "8. sample scores"]
+
+
+def test_scores_only_skips_phase_1(monkeypatch):
+    """--scores-only rebuilds scores (full, then sample) and nothing else."""
+    calls = []
+    monkeypatch.setattr(
+        run_pipeline,
+        "run_stage",
+        lambda name, function, *a, **k: calls.append(name),
+    )
+    run_pipeline.main(["--scores-only"])
+    assert calls == ["6. scores", "8. sample scores"]
 
 
 def test_tieout_traces_value_to_original_fact():
