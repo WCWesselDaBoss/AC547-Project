@@ -215,3 +215,76 @@ a ticker but partial prices, each group taken in turn across SIC
 divisions and ordered by most size-floor years, then CIK. Prices include
 SPY. Peer percentile ranks computed on 50 companies are illustrative only;
 real rankings need the full tables.
+
+## Phase 2: score engine
+
+### Coefficient sources (to verify against the original papers)
+
+Every coefficient and cutoff the code uses is in `config.py` and listed
+below. "Confidence" says how sure we are of the citation, not the number.
+The numbers match CLAUDE.md section 5 and widely reproduced versions of
+each model, but **each must be checked against the original paper
+before it is cited in the report**. Mark the "Checked" column when done.
+
+| Constant (`config.py`) | Value | Source | Confidence | Checked |
+| --- | --- | --- | --- | --- |
+| `BENEISH_INTERCEPT` | -4.84 | Beneish, M. D. (1999). The detection of earnings manipulation. *Financial Analysts Journal*, 55(5), 24-36. Unweighted probit, 8 variables. | High | [ ] |
+| `BENEISH_COEFFICIENTS` dsri 0.920, gmi 0.528, aqi 0.404, sgi 0.892, depi 0.115, sgai -0.172, tata 4.679, lvgi -0.327 | see left | Beneish (1999), same table as the intercept | High | [ ] |
+| `BENEISH_FLAG_CUTOFF` | -1.78 | Beneish (1999); secondary sources tie -1.78 to a 20:1 relative cost of missing a manipulator vs. a false alarm | Medium: confirm the cost ratio in the paper | [ ] |
+| `BENEISH_ALTERNATE_CUTOFF` | -2.22 | Widely used by practitioners; **origin not confirmed**. It may come from a later paper or the 5-variable model. Present it only as a "commonly used" alternative unless the source is found. | Low | [ ] |
+| `ALTMAN_Z2_COEFFICIENTS` x1 6.56, x2 3.26, x3 6.72, x4 1.05 | see left | Altman's Z'' model for non-manufacturers. First appeared in Altman, E. I. (1983), *Corporate Financial Distress* (Wiley); restated in Altman (2000), "Predicting Financial Distress of Companies: Revisiting the Z-Score and ZETA Models" (NYU Stern working paper). Secondary sources cite 1983, 1993, 2000 and 2002 editions, so confirm which edition you cite. | Medium | [ ] |
+| `ALTMAN_Z2_SAFE_ABOVE`, `ALTMAN_Z2_DISTRESS_BELOW` | 2.60, 1.10 | Same as the Z'' coefficients | Medium | [ ] |
+| (no constant) | none | The "+3.25" emerging-market variant (Altman, Hartzell & Peck, 1995) is a different model and is **not** used | High | [ ] |
+| Piotroski signal definitions (no numeric coefficients) | 9 binary signals | Piotroski, J. D. (2000). Value investing: The use of historical financial statement information to separate winners from losers. *Journal of Accounting Research*, 38 (Supplement), 1-41. | High (one source lists the issue as 38(3); check the JSTOR record) | [ ] |
+| `F_SCORE_TIE_TOLERANCE` | 1e-9 | Our choice, not from a paper; only stops floating-point rounding from deciding a signal | n/a | n/a |
+
+### Known differences from the papers (state these in results)
+
+These are deliberate simplifications or data constraints. Check each
+against the paper when verifying the coefficients:
+
+1. **TATA uses the cash-flow form.** We compute (income from continuing
+   operations - CFO) / total assets, as CLAUDE.md section 5 specifies. As
+   we understand it, Beneish (1999) computed total accruals from balance
+   sheet changes (change in current assets excluding cash, less change in
+   current liabilities excluding current debt and taxes payable, less
+   depreciation); the cash-flow form is used in later work such as
+   Beneish, Lee and Nichols (2013). **Verify** this in the paper. The
+   coefficients were estimated on the balance-sheet form.
+2. **Depreciation** includes depletion and amortization where companies
+   tag them together (Phase 1 limitation).
+3. **Z'' EBIT** is operating income, which excludes non-operating items.
+4. **Piotroski ROA** uses net income. Piotroski used net income before
+   extraordinary items. Extraordinary items were removed from US GAAP in
+   2015 (ASU 2015-01), so the difference matters only for early years.
+5. **Piotroski EQ_OFFER** (signal 7) asks whether the firm issued common
+   equity. We test whether shares outstanding rose, which also catches
+   option and RSU vesting but misses issuance offset by buybacks.
+6. **Coefficients are from the 1980s-90s samples** and were never
+   re-estimated on our data. Scores rank companies; they are not
+   calibrated probabilities.
+
+### Missing inputs, zero denominators and ties
+
+- **Prior year.** Each score matches year t with exactly fiscal year t-1
+  (and t-2 for the F-Score), never an older year
+  (`src/scores/common.with_prior_years`).
+- **Zero denominators** give NaN, never infinity or 0
+  (`common.safe_divide`). Infinity would sort to the top or bottom of
+  every percentile rank. The row's `missing_inputs` says
+  `<index>_zero_denominator`.
+- **Neutral values** (section 5): SGAI = 1 when SGA is missing, LVGI = 1
+  when long-term debt is missing, but only if that item is the index's
+  only missing input. Noted as `sgai_set_to_1` / `lvgi_set_to_1`.
+- **F-Score.** NA if any signal is NA, except signal 5 when only
+  long-term debt is missing (0 points, noted `f_leverage_down_no_point`).
+  Ties earn no point.
+- **Signal 7** uses the prior-year share count reported in year t's own
+  10-K, matched on the prior balance-sheet date. In the 50-company sample
+  this exists for 359 of 370 scored years with shares (97%). It avoids
+  stock-split errors (Apple's 2014 7-for-1 split) and at least one
+  scaling error in an original filing (CIK 45012 FY2011 shows 921
+  shares). If the filing gives two values for that date, signal 7 is NA
+  (`shares_t-1_same_filing_ambiguous`).
+- **Cash conversion** is blank when net income is zero or negative
+  (`net_income_not_positive`), because dividing by a loss flips the sign.
