@@ -21,3 +21,6 @@ venv/
 
 # Cached intermediate extracts, rebuilt from data/raw/
 data/interim/
+
+# macOS Finder metadata, not project files
+.DS_Store
