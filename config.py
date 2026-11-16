@@ -111,6 +111,53 @@ COMPANIES_EXCLUSION_LOG = LOG_DIR / "companies_exclusions.csv"
 FACTS_LONG_PATH = PROCESSED_DIR / "facts_long.parquet"
 FINANCIALS_PATH = PROCESSED_DIR / "financials_annual.parquet"
 PRICES_PATH = PROCESSED_DIR / "prices.parquet"
+SCORES_PATH = PROCESSED_DIR / "scores.parquet"
+SCORES_LOG = LOG_DIR / "scores_log.csv"
+RETURNS_PATH = PROCESSED_DIR / "returns.parquet"
+
+# ---------------------------------------------------------------------------
+# Score coefficients and cutoffs (CLAUDE.md section 5)
+# ---------------------------------------------------------------------------
+# These are the ONLY hard-coded numbers allowed outside data (section 6).
+# Sources and page references are in docs/methodology.md, "Phase 2:
+# coefficient sources"; check them against the papers before citing.
+
+# Beneish (1999), 8-variable unweighted probit model. Keys are the index
+# column names in the scores table.
+BENEISH_INTERCEPT = -4.84
+BENEISH_COEFFICIENTS = {
+    "dsri": 0.920,
+    "gmi": 0.528,
+    "aqi": 0.404,
+    "sgi": 0.892,
+    "depi": 0.115,
+    "sgai": -0.172,
+    "tata": 4.679,
+    "lvgi": -0.327,
+}
+# m_flag uses the 8-variable cutoff; the dashboard slider also offers the
+# widely used -2.22 so the analyst can see how sensitive the flag is.
+BENEISH_FLAG_CUTOFF = -1.78
+BENEISH_ALTERNATE_CUTOFF = -2.22
+
+# Altman Z'' (non-manufacturer, book-equity model). Keys are the ratio
+# column names in the scores table. No constant term: the 3.25 "emerging
+# market" constant is a different variant and is not used here.
+ALTMAN_Z2_COEFFICIENTS = {
+    "z_x1": 6.56,
+    "z_x2": 3.26,
+    "z_x3": 6.72,
+    "z_x4": 1.05,
+}
+# Above SAFE is safe; below DISTRESS is distress; the boundaries
+# themselves (exactly 2.60 or 1.10) fall in the grey zone.
+ALTMAN_Z2_SAFE_ABOVE = 2.60
+ALTMAN_Z2_DISTRESS_BELOW = 1.10
+
+# Two F-Score ratios differing by no more than this fraction of the larger
+# one count as a tie (no point). Without it, rounding in the 15th decimal
+# place could award or deny a point (CLAUDE.md section 5).
+F_SCORE_TIE_TOLERANCE = 1e-9
 
 # ---------------------------------------------------------------------------
 # Prices
