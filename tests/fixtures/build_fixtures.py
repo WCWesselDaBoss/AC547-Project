@@ -17,8 +17,9 @@ Three made-up companies, FY2021 to FY2023. FY2021 is a prior year only
   does not earn a point.
 - cik 102, Stretch Co: FY2022 looks like aggressive accounting
   (receivables triple while sales grow 50%, profit not backed by cash);
-  FY2023 collapses into a loss. Covers a flagged M-Score, negative net
-  income and a distress-zone Z''.
+  FY2023 collapses into a loss and does a 2-for-1 stock split. Covers a
+  flagged M-Score, negative net income, a distress-zone Z'' and the
+  same-filing share comparison for F-Score signal 7.
 - cik 103, Service Co: reports no cost_of_revenue in any year, like the
   13,612 real company-years in CLAUDE.md section 4. This is the missing
   input: GMI and F-Score signal 8 cannot be computed.
@@ -39,10 +40,11 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.pipeline import financials  # noqa: E402
+from src.pipeline import facts, financials  # noqa: E402
 
 FIXTURE_DIR = Path(__file__).resolve().parent
 FINANCIALS_FIXTURE_PATH = FIXTURE_DIR / "financials_annual_fixture.parquet"
+FACTS_LONG_FIXTURE_PATH = FIXTURE_DIR / "facts_long_fixture.parquet"
 
 # Money is entered in millions so the table is easy to read, then scaled
 # to whole dollars, because section 4 stores money in whole US dollars.
@@ -91,8 +93,9 @@ FIXTURE_ROWS = [
      50, 200, 200, 500, 100, 100, 250, 100, 250, 50_000_000),
     (102, 2022, 750, 500, 100, 25, 125, 100, 100, 20,
      150, 350, 250, 800, 200, 200, 500, 200, 300, 60_000_000),
+    # FY2023: 2-for-1 stock split, so 60M shares became 120M.
     (102, 2023, 600, 480, 120, 25, -25, -50, -50, -10,
-     120, 300, 260, 800, 300, 250, 600, 150, 200, 60_000_000),
+     120, 300, 260, 800, 300, 250, 600, 150, 200, 120_000_000),
     # Service Co: no cost_of_revenue reported (NaN, never 0).
     (103, 2021, 200, NAN, 50, 10, 40, 30, 30, 40,
      20, 80, 100, 300, 50, 100, 150, 60, 150, 20_000_000),
@@ -149,11 +152,72 @@ def build_financials_fixture():
     return financials.to_contract_types(fixture_df)
 
 
+# Prior-year share counts as printed in each 10-K's comparative column,
+# keyed by (cik, fiscal year of the 10-K). Stretch Co's FY2023 10-K shows
+# FY2022 as 120M, not the 60M originally reported, because the 2-for-1
+# split is applied to the comparative figure. F-Score signal 7 must use
+# this restated number (CLAUDE.md section 4).
+PRIOR_SHARES_IN_FILING = {
+    (101, 2022): 100_000_000,
+    (101, 2023): 100_000_000,
+    (102, 2022): 50_000_000,
+    (102, 2023): 120_000_000,
+    (103, 2022): 20_000_000,
+    (103, 2023): 20_000_000,
+}
+
+
+def build_facts_long_fixture(financials_df):
+    """Return a facts_long fixture holding the share-count facts.
+
+    Each 10-K reports its own year's shares (the original value) and,
+    where listed in PRIOR_SHARES_IN_FILING, the prior year's shares as a
+    comparative (not original). Only shares are included because signal
+    7 is the only score input read from facts_long.
+    """
+    fact_rows = []
+    for row in financials_df.itertuples():
+        filing = {
+            "cik": row.cik,
+            "line_item": "shares_outstanding",
+            "tag": "CommonStockSharesOutstanding",
+            "unit": "shares",
+            "period_start": pd.NaT,
+            "form": "10-K",
+            "accession": row.accession,
+            "filed_date": row.filed_date,
+        }
+        fact_rows.append(
+            filing
+            | {
+                "value": row.shares_outstanding,
+                "period_end": row.period_end,
+                "fiscal_year": row.fiscal_year,
+                "is_original": True,
+            }
+        )
+        prior_shares = PRIOR_SHARES_IN_FILING.get((row.cik, row.fiscal_year))
+        if prior_shares is not None:
+            fact_rows.append(
+                filing
+                | {
+                    "value": prior_shares,
+                    "period_end": row.period_end - pd.DateOffset(years=1),
+                    "fiscal_year": row.fiscal_year - 1,
+                    "is_original": False,
+                }
+            )
+    return facts.to_contract_types(pd.DataFrame(fact_rows))
+
+
 def main():
-    """Write the fixture Parquet file next to this script."""
+    """Write the fixture Parquet files next to this script."""
     financials_df = build_financials_fixture()
     financials_df.to_parquet(FINANCIALS_FIXTURE_PATH, index=False)
     print(f"Wrote {len(financials_df)} rows to {FINANCIALS_FIXTURE_PATH}")
+    facts_long_df = build_facts_long_fixture(financials_df)
+    facts_long_df.to_parquet(FACTS_LONG_FIXTURE_PATH, index=False)
+    print(f"Wrote {len(facts_long_df)} rows to {FACTS_LONG_FIXTURE_PATH}")
 
 
 if __name__ == "__main__":
