@@ -95,7 +95,7 @@ Phases hand off only through these Parquet tables in `data/processed/`. Column n
 
 **Open decisions and known limitations from Phase 1.** Evidence and full explanations are in `docs/methodology.md` (Phase 1 sections); read them before changing score inputs or interpreting results. Counts are for the 39,853 size-floor company-years, FY2012 to FY2025.
 
-- `long_term_debt` is missing in 19,027 years, mostly because companies with no debt do not tag it. Treating missing as zero would be an estimate, which section 2 forbids. The team must agree a rule for M-Score LVGI and F-Score signal 5 (for example, a neutral value plus a `missing_inputs` flag, like SGA) and record it in section 5 before Phase 2 relies on it.
+- `long_term_debt` is missing in 19,027 years. Treating missing as zero would be an estimate, which section 2 forbids. Resolved Nov 16: LVGI is neutral and signal 5 earns no point, both flagged in `missing_inputs` (see section 5).
 - `cost_of_revenue` is missing in 13,612 years (many service, software and pharma companies report no COGS), so GMI and F-Score signal 8 cannot be computed there. `sga` is missing in 19,136 years; section 5's SGAI rule covers that.
 - `income_continuing_ops` and `total_liabilities` are often calculated from other reported facts; `derived_items` names them in each row. The continuing-operations calculation agrees with reported values only 70 to 79% of the time where both exist, a limitation of the TATA input to state in results.
 - `depreciation` uses depreciation, depletion and amortization first. Verify that this matches Beneish's (1999) definition when citing the paper.
@@ -124,6 +124,8 @@ M = -4.84 + 0.920*DSRI + 0.528*GMI + 0.404*AQI + 0.892*SGI + 0.115*DEPI - 0.172*
 
 Default flag cutoff: M greater than -1.78 (the 8-variable cutoff). Many practitioners use -2.22, so the dashboard exposes the cutoff as a slider. If SGA is missing, SGAI is set to 1 (neutral) and the row is flagged in `missing_inputs`; document this choice.
 
+If long-term debt is missing in year t or t-1, LVGI is set to 1 (neutral) and the row is flagged in `missing_inputs`, the same treatment as SGAI. Missing is not treated as zero: in the sample, companies with no `long_term_debt` tag still have a median of 28% of assets in noncurrent liabilities, so a missing tag does not mean "no debt". (Decided Nov 16, Phase 2.)
+
 ### Altman Z'' (Altman's model for non-manufacturers)
 
 We use Z'' for every company because the universe mixes industries, and Z'' uses book equity, so it does not depend on price data. The original Z-Score (built for public manufacturers) is a stretch goal.
@@ -147,6 +149,12 @@ Nine pass/fail signals, one point each (0 to 9):
 7. No new shares issued (shares outstanding not higher than last year)
 8. Gross margin higher than last year
 9. Asset turnover (sales / beginning total assets) higher than last year
+
+**Missing inputs and ties (decided Nov 16, Phase 2).**
+
+- Each signal is True, False, or NA (cannot be determined). Following section 2, `f_score` is NA if any signal is NA. The one exception is signal 5: if long-term debt is missing in any year it needs, signal 5 is NA but counts as 0 points, `f_score` is still computed, and the row is flagged in `missing_inputs`. This matches the LVGI rule. A missing value never earns a point, so the exception can only understate a score.
+- Missing cost of revenue gets no exception. A company that reports no COGS (services, software) has no gross margin to compare, so GMI, M-Score, signal 8 and F-Score are NA.
+- "Higher" and "lower" are strict. A tie earns no point, because Piotroski awards points only for improvement. Two ratios count as tied when they differ by no more than `config.F_SCORE_TIE_TOLERANCE` (relative). This keeps floating-point rounding from deciding a signal.
 
 ### Accruals and cash conversion
 
