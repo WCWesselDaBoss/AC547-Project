@@ -467,18 +467,19 @@ M-Score are in neither group.
 **Full-universe result (rebuilt 2026-11-17 after the Phase 1
 `is_original` fix and revenue guard).**
 
-- **Coverage:** of 39,860 scored company-years, 25,643 have a ticker and
-  22,749 have a full 12-month price window.
-- **Compared:** 10,089 company-years with both an M-Score and a full
+- **Coverage:** of 39,860 scored company-years, 25,607 have a ticker and
+  22,749 have a full 12-month price window (prices through
+  2026-11-16, `data/logs/returns_coverage.csv`).
+- **Compared:** 10,098 company-years with both an M-Score and a full
   window.
 
 | Group | Count | Mean excess return | Median excess return |
 | --- | --- | --- | --- |
-| Flagged (M > -1.78) | 1,005 | +10.0% | -12.2% |
-| Not flagged | 9,084 | +2.0% | -6.3% |
+| Flagged (M > -1.78) | 1,007 | +10.1% | -12.1% |
+| Not flagged | 9,091 | +2.0% | -6.3% |
 
 The mean and median disagree. The *typical* flagged company (median)
-trailed SPY by 5.9 points more than the typical unflagged one. The mean
+trailed SPY by 5.8 points more than the typical unflagged one. The mean
 is pulled up by a few very large winners, which is common in small,
 fast-growing companies (the M-Score rewards sales growth). This is
 descriptive only, with no significance test, biased upward by missing

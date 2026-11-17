@@ -98,7 +98,7 @@ Counts after the Phase 1 `is_original` fix and revenue guard (rebuilt
 `python run_pipeline.py --skip-download`; `data/logs/scores_log.csv`).
 All 39,860 size-floor company-years (FY2012-FY2025, 5,495 companies) are
 in `scores.parquet`. Every other `financials_annual` row is counted:
-5,990 are FY2011 prior-year rows and 29,018 fail the size floor (kept
+5,991 are FY2011 prior-year rows and 29,020 fail the size floor (kept
 only as possible prior years).
 
 A score is blank when any input is missing; nothing is estimated. Each
@@ -106,10 +106,10 @@ blank has its reason in `missing_inputs`.
 
 | Score | Computed | Share | Main reasons for blanks |
 | --- | --- | --- | --- |
-| M-Score | 16,619 | 42% | No cost of revenue (13,612 years), receivables missing (9,139) |
-| Z''-Score | 33,303 | 84% | Equity, operating income or total liabilities missing |
-| F-Score | 13,426 | 34% | No same-filing prior share count (12,484) or no cost of revenue; 6,496 lack a t-2 year |
-| Accruals ratio | 35,453 | 89% | Missing prior-year total assets |
+| M-Score | 16,619 | 42% | No cost of revenue (13,612 years), receivables missing (9,137) |
+| Z''-Score | 33,304 | 84% | Equity, operating income or total liabilities missing |
+| F-Score | 13,426 | 34% | No same-filing prior share count (12,484) or no cost of revenue; 6,498 lack a t-2 year |
+| Accruals ratio | 35,452 | 89% | Missing prior-year total assets |
 | Cash conversion | 22,616 | 57% | Blank by design when net income <= 0 (14,277) |
 
 **Neutral values (CLAUDE.md section 5).** LVGI is set to 1 in 8,259 of the
@@ -122,18 +122,20 @@ and most are one component of debt, such as unsecured or senior notes),
 so the neutral-value rule stays. Evidence is in `docs/methodology.md`.
 
 **Flags and zones.** 1,708 of 16,619 M-Scores (10.3%) exceed -1.78.
-Z'' zones: 15,676 safe, 6,203 grey, 11,424 distress.
+Z'' zones: 15,677 safe, 6,203 grey, 11,424 distress.
 
 **Returns (stretch goal, `data/logs/returns_by_flag.csv`).** 22,749 of
 39,860 scored years have a ticker and a full 12-month price window.
-Flagged companies had a mean excess return over SPY of +10.0% but a median
-of -12.2% (1,005 years); unflagged companies +2.0% mean and -6.3% median
-(9,084 years). The groups disagree on direction depending on mean or
+With prices through 2026-11-16, flagged companies had a mean excess
+return over SPY of +10.1% but a median of -12.1% (1,007 years); unflagged
+companies +2.0% mean and -6.3% median (9,091 years). The groups disagree on direction depending on mean or
 median. Results are biased upward because delisted companies mostly lack
 prices, and they show correlation, not cause (see `docs/methodology.md`).
 
-**Peer groups.** 37,839 company-years are ranked within an industry-size
-group (median 46 companies); 2,014 fall back to the whole 2-digit
+**Peer groups.** 37,846 company-years are ranked within an industry-size
+group; the median `peer_group_size` over those rows is 48 companies
+(`peer_group_level == "industry_size"`; 46 if fallback rows are
+included). 2,014 fall back to the whole 2-digit
 industry because their group had fewer than 5 companies.
 
 ## Verification
