@@ -433,6 +433,51 @@ against the paper when verifying the coefficients:
 - **Cash conversion** is blank when net income is zero or negative
   (`net_income_not_positive`), because dividing by a loss flips the sign.
 
+### Verdicts and M-Score drivers (src/scores/verdicts.py, drivers.py)
+
+**Verdicts.** `f_band` labels the F-Score weak (0-3), middle (4-6) or
+strong (7-9). These bands are a team display convention: Piotroski
+(2000) compared the highest and lowest scores, not three bands.
+`flags_raised` counts warnings across the three models (M-Score above
+-1.78, Z'' distress zone, F-Score weak). A model without a score counts
+as no warning, because "unknown" cannot raise a flag; the count is null
+only when none of the three models has a score. The trade-off: a 0 can
+mean "not checked" for a model with missing inputs, so the dashboard
+must show which checks exist (`missing_inputs`). On the full data, only
+9,587 of 39,860 company-years have all three checks. The models are
+deliberately not combined into one weighted score: no published method
+supports a weighting.
+
+**Drivers.** The M-Score can be rewritten as
+`M = -2.48 + sum over the 8 components of contribution`, where -2.48 is
+the intercept plus the seven ratio coefficients (a company with every
+ratio unchanged from last year and profit equal to cash), and each
+contribution is coefficient x (index - 1), or 4.679 x TATA. So the
+contributions show exactly what moves a company's M away from "nothing
+changed". `score_drivers` keeps the up to three largest positive ones
+(pushing toward the warning zone), each with a fixed, team-approved
+sentence (`src/scores/explanations.py`). Checked on the full data: the
+baseline plus the contributions reproduces every M-Score to within
+1e-10.
+
+Points to state when presenting drivers:
+
+- **SGI is a driver whenever sales grew,** which is why it is the most
+  common top driver overall (6,565 of 16,455 years). Among flagged
+  years, AQI, DSRI and SGI lead.
+- **SGAI and LVGI drive the score when they fall,** because their
+  fitted coefficients are negative. In Beneish's Table 3 neither is
+  statistically significant (t = -0.71 and -1.22), and DEPI is not
+  either (t = 0.70); their sentences call SGAI and LVGI weak patterns.
+- **Neutral values never become drivers.** An SGAI or LVGI set to 1
+  contributes exactly 0.
+- **Rounding guard.** Contributions at or below 1e-9
+  (`config.DRIVER_MIN_CONTRIBUTION`) are ignored, so an index equal to
+  1 up to floating-point rounding is not reported. On the current data
+  no contribution falls in that range; the guard is a precaution.
+- **Ties** in contribution are broken by the fixed component order
+  (DSRI, GMI, AQI, SGI, DEPI, SGAI, TATA, LVGI).
+
 ### 12-month return test (stretch goal, src/scores/returns.py)
 
 For each scored company-year with a ticker, the return window starts on

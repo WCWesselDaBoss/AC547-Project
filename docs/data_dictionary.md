@@ -103,6 +103,7 @@ Every value traces to the named function; inputs trace to
 | z_x3 | float64 | Operating income / TA (EBIT proxy) | `altman.z_x3` |
 | z_x4 | float64 | Stockholders' equity / total liabilities | `altman.z_x4` |
 | f_score | Int64 | Number of True signals, 0-9; NA if any signal is NA (except signal 5 with missing LTD) | `piotroski.f_score` |
+| f_band | string | weak (F-Score 0-3), middle (4-6), strong (7-9); NA when there is no F-Score. Team display convention, edges in `config.py` | `verdicts.f_band` |
 | f_roa_positive | boolean | 1. NI_t / TA_t-1 > 0 | `piotroski.f_roa_positive` |
 | f_cfo_positive | boolean | 2. CFO_t > 0 | `piotroski.f_cfo_positive` |
 | f_roa_improved | boolean | 3. ROA_t > ROA_t-1 (ROA_t-1 = NI_t-1 / TA_t-2) | `piotroski.f_roa_improved` |
@@ -112,6 +113,7 @@ Every value traces to the named function; inputs trace to
 | f_no_new_shares | boolean | 7. Shares_t not above the t-1 count reported in year t's own 10-K | `piotroski.f_no_new_shares` |
 | f_gross_margin_up | boolean | 8. Gross margin higher than last year | `piotroski.f_gross_margin_up` |
 | f_asset_turnover_up | boolean | 9. Sales / beginning TA higher than last year | `piotroski.f_asset_turnover_up` |
+| flags_raised | Int64 | Warnings among the three checks, 0-3: m_flag True, z_zone distress, f_band weak. A check without a score counts as no warning; NA only when none of the three has a score | `verdicts.flags_raised` |
 | accruals_ratio | float64 | (NI - CFO)_t / average of TA_t and TA_t-1 | `accruals.accruals_ratio` |
 | cash_conversion | float64 | CFO_t / NI_t; NaN when NI <= 0 | `accruals.cash_conversion` |
 | peer_group | string | "SIC nn small/mid/large", or "SIC nn" after fallback | `peers.assign_peer_groups` |
@@ -119,6 +121,23 @@ Every value traces to the named function; inputs trace to
 | peer_group_size | int64 | Companies in the peer group used, that year | `peers.assign_peer_groups` |
 | m_score_pctile, z_score_pctile, f_score_pctile, accruals_ratio_pctile, cash_conversion_pctile | float64 | 0-100: share of other peers with a lower value (ties count half), same year; NaN if the score is blank or fewer than 2 peers have it | `peers.add_percentile_ranks` |
 | missing_inputs | string | "; "-separated reasons any value is blank or neutral (e.g. `cost_of_revenue_t-1`, `no_row_t-2`, `dsri_zero_denominator`, `sgai_set_to_1`, `shares_t-1_same_filing`); null when complete. See docs/methodology.md, Phase 2 | `common.combine_notes` |
+
+## score_drivers
+
+Zero to three rows per company-year with an M-Score: the M-Score
+components pushing that score toward the warning zone, largest first.
+Built by `src/scores/drivers.py` from `scores`. Ranking rule: CLAUDE.md
+section 4 and docs/methodology.md, "M-Score drivers".
+
+| Column | Type | Meaning | Computed by |
+| --- | --- | --- | --- |
+| cik | int64 | SEC Central Index Key | scores |
+| fiscal_year | int64 | Fiscal year t | scores |
+| driver_rank | int64 | 1 = largest contribution, up to 3 | `drivers.build_score_drivers` |
+| component | string | DSRI, GMI, AQI, SGI, DEPI, SGAI, TATA or LVGI | `drivers.build_score_drivers` |
+| component_value | float64 | The index value in `scores` (e.g. dsri) | scores |
+| contribution | float64 | coefficient x (index - 1), or coefficient x TATA for TATA; always > 0. The 8 contributions (kept or not) add up to m_score - (-2.48) | `drivers.contributions` |
+| explanation | string | Approved plain-English sentence for the component | `explanations.explain` |
 
 ## returns (stretch goal)
 

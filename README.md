@@ -45,6 +45,7 @@ Then:
 | `python -m src.pipeline.tieout` | Rebuild the hand-verification sheet in `verification/` |
 | `python run_pipeline.py --scores-only` | Rebuild only the scores and returns tables (full and sample) from existing Phase 1 tables |
 | `python -m src.scores.build_scores` | Rebuild `scores.parquet` (add `--sample` for `data/sample/`) |
+| `python -m src.scores.drivers` | Rebuild `score_drivers.parquet` (add `--sample` for `data/sample/`) |
 | `python -m src.scores.returns` | Rebuild `returns.parquet` and print the flagged vs. not-flagged comparison |
 | `python -m src.scores.tieout` | Rebuild `verification/tieout.xlsx` (Excel recomputes every score) |
 
@@ -120,6 +121,21 @@ in the same 10-K. Phase 1 tested each candidate against
 `LongTermDebtNoncurrent`: none agrees closely enough to map (best 61%,
 and most are one component of debt, such as unsecured or senior notes),
 so the neutral-value rule stays. Evidence is in `docs/methodology.md`.
+
+**Verdicts (`f_band`, `flags_raised`).** F-Score bands: 2,881 weak,
+7,936 middle, 2,609 strong (26,434 without an F-Score). Warnings per
+company-year: 21,550 with 0, 11,778 with 1, 1,753 with 2, 243 with all
+3, and 4,536 with no check available (null). Only 9,587 company-years
+have all three checks; 16,886 have just one, so their 0 means "no
+warning from the one check we have", not an all-clear. The models are
+never combined into one weighted score.
+
+**M-Score drivers (`score_drivers`, `data/logs/score_drivers_log.csv`).**
+43,672 driver rows for 16,455 of the 16,619 company-years with an
+M-Score; 164 have no component pushing the score up. Among the 1,708
+flagged years the top driver is most often AQI (517), DSRI (433) or SGI
+(416). Across all years SGI leads (6,565), because any sales growth
+counts toward the score.
 
 **Flags and zones.** 1,708 of 16,619 M-Scores (10.3%) exceed -1.78.
 Z'' zones: 15,677 safe, 6,203 grey, 11,424 distress.
