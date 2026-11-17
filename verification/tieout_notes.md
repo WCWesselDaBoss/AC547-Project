@@ -40,24 +40,27 @@ be checked against the papers (docs/methodology.md).
 
 ## Inputs vs. the 10-K
 
-The blue input cells are the values stored in `financials_annual`
-(original 10-K XBRL facts). Each row names its XBRL tag, and the sheet
-links to the year-t 10-K on EDGAR.
+All 76 year-t inputs (19 per case, including the prior-year share count
+used by signal 7) were read from the 10-K statements on 2026-11-17 and
+recorded with statement and source in `verification/tenk_values.csv`.
+Column G of each sheet shows them; column H tests the tie (within
+$0.5mm, or 0.5 million shares).
 
-- **Done:** the four Apple FY2024 inputs verified by hand in Phase 1 are
-  pre-filled in the yellow column: revenue $391,035mm, net income
-  $93,736mm, CFO $118,254mm and total assets $364,980mm. All four tie
-  ("OK").
-- **To do (team):** fill the remaining yellow cells from each 10-K's
-  financial statements, in $ millions. Column H then shows OK, or CHECK
-  for a gap over $0.5mm. Record the statement or page in column I. Prior
-  years (t-1, t-2) come from the comparative columns of the same 10-K
-  or from the prior 10-K. Our values are the ORIGINAL figures, so a
-  later 10-K may show restated comparatives that differ legitimately.
-- **Rows marked "derived"** (e.g. Apple's `income_continuing_ops`, which
-  Apple does not tag separately) were calculated by Phase 1 from other
-  reported facts (see `derived_items`). Check them against the line on
-  the income statement they represent.
+- **Sources.** The four 10-K main documents on EDGAR. Where the document
+  was too long for the reading tool, SEC's financial-report viewer pages
+  (R pages) were used; those pages are rendered from the filing's own
+  XBRL, so they confirm the filing's numbers but are a weaker
+  independent check than the printed statement. Each row names its
+  source. The values were read by Claude through web fetches, not by a
+  team member: **spot-check a few against the filings before relying on
+  them in graded work.** Phase 1's four hand-checked Apple FY2024 values
+  agree.
+- **Not printed.** No company prints "income from continuing
+  operations" (none had discontinued operations, so it equals net
+  income), and AMD and ADI print no "total liabilities" line; those
+  rows are hand-derived from printed lines, as each note says.
+- **Result: 73 of 76 tie.** The three differences are explained below
+  (findings 6 to 8).
 
 ## Differences and findings to explain
 
@@ -103,10 +106,25 @@ data and model issues, which belong in the results discussion:
    figure, shares would appear to rise 282%, failing signal 7. The
    same-filing comparison (16.98bn vs 17.77bn) correctly passes it.
 
+6. **ADI FY2017 long-term debt** ($7,551.1mm in the 10-K, missing in our
+   data): the unmapped-tag gap in finding 1.
+7. **AMD FY2018 depreciation** ($94mm ours vs $170mm D&A in the cash
+   flow statement): AMD's most-reported tag is depreciation only, and
+   Phase 1 keeps one tag per company so DEPI compares like with like.
+   By design, but definitions differ between companies.
+8. **ADI FY2017 revenue ($5,246.4mm ours vs $5,107.5mm in the 10-K): a
+   Phase 1 bug.** Our "original" value is the ASC 606 restatement from
+   the FY2019 10-K, because Phase 1 dropped the original filing's tag
+   before marking the earliest value as original. It inflates ADI's
+   FY2017 SGI (1.533 vs 1.493 on the original figure). Across the
+   universe it affects 1,582 values (>1% gap) in 1,256 company-years;
+   details and the proposed fix are in docs/methodology.md. **Raised
+   with the Phase 1 owner.**
+
 ## Still to do
 
 - Add a case-study company. `data/case_studies.csv` does not exist yet
   (Phase 3 owns it). Once a case is chosen and in the sample, add one
   line to `TIEOUT_CASES` in `src/scores/tieout.py` and rebuild.
-- Fill the yellow 10-K columns (see above).
+- Spot-check a few of the 10-K values in column G against the filings.
 - Open in Excel and confirm the README summary shows 0 differences.

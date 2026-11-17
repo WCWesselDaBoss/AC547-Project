@@ -488,7 +488,7 @@ def write_company_sheet(
         f"t (FY{fiscal_year})",
         "XBRL tag (year t)",
         "Derived? (year t)",
-        "10-K value, year t ($mm) - FILL IN",
+        "10-K value, year t (millions: $ or shares)",
         "Ties to 10-K?",
         "Where in 10-K / notes",
     ]
@@ -519,29 +519,7 @@ def write_company_sheet(
         fact = trace_value(facts_long_df, cik, item, current["period_end"])
         sheet.cell(row, 5, None if fact is None else fact["xbrl_tag"])
         sheet.cell(row, 6, "derived" if item in derived.split("; ") else "")
-        check_cell = sheet.cell(row, 7)
-        check_cell.fill = YELLOW
-        check_cell.font = BLUE
-        check_cell.number_format = "#,##0.0"
-        note_cell = sheet.cell(row, 9)
-        if (cik, fiscal_year, item) in hand_checked:
-            check_cell.value, note_cell.value = hand_checked[
-                (cik, fiscal_year, item)
-            ]
-        unit = 1 if item == "shares_outstanding" else 1e6
-        sheet.cell(
-            row,
-            8,
-            f'=IF(G{row}="","",IF(D{row}="","10-K has it; we do not",'
-            f"IF(ABS(D{row}/{unit:.0f}-G{row})<="
-            f"${MILLIONS_TOLERANCE_CELL[0]}${MILLIONS_TOLERANCE_CELL[1:]},"
-            f'"OK","CHECK")))',
-        ).font = BLACK
-        if item == "shares_outstanding":
-            check_cell.number_format = "#,##0"
-            sheet.cell(row, 7).comment = Comment(
-                "Shares: type the full count, not millions.", "tieout"
-            )
+        write_ten_k_check(sheet, row, (cik, fiscal_year, item), hand_checked)
 
     shares_row = ROWS["prior_shares"]
     sheet.cell(shares_row, 1, PRIOR_SHARES_ROW_LABEL).font = BLACK
@@ -551,11 +529,16 @@ def write_company_sheet(
         cell.font = BLUE
         cell.number_format = "#,##0"
     sheet.cell(shares_row, 5, "CommonStockSharesOutstanding (comparative)")
-    sheet.cell(
-        shares_row,
-        9,
-        "Used only by F-Score signal 7 (section 4: split-safe comparison)",
+    write_ten_k_check(
+        sheet, shares_row, (cik, fiscal_year, "prior_shares"), hand_checked
     )
+    if sheet.cell(shares_row, 9).value is None:
+        sheet.cell(
+            shares_row,
+            9,
+            "Used only by F-Score signal 7 (section 4: split-safe "
+            "comparison)",
+        )
 
     calc_headers = [
         "Metric",
@@ -665,7 +648,7 @@ def write_readme_sheet(workbook, summaries):
         ("Blue text: hard-coded value copied from our data", BLUE),
         ("Black text: Excel formula", BLACK),
         ("Green text: formula using the Coefficients sheet", GREEN),
-        ("Yellow cells: FILL IN by hand from the 10-K ($ millions)", BLACK),
+        ("Yellow cells: value read from the 10-K (millions)", BLACK),
         ("", BLACK),
         ("Summary", BOLD),
     ]
@@ -684,24 +667,59 @@ def write_readme_sheet(workbook, summaries):
     sheet.column_dimensions["B"].width = 32
 
 
-def hand_checked_values():
-    """Return Phase 1's hand-verified 10-K figures, keyed for lookup.
+def write_ten_k_check(sheet, row, key, hand_checked):
+    """Fill one row's yellow 10-K cell, its note and the 'Ties?' formula.
 
-    These four Apple FY2024 values were read from the 10-K by a team
-    member (verification/phase1_tieout.csv), so they double as the
-    example rows showing how to fill in the yellow column.
+    Everything is compared in millions: dollars as $ millions and shares
+    as millions of shares, because 10-Ks print both rounded (AMD prints
+    shares in whole millions). Column D holds our full-precision value.
     """
-    path = config.PROJECT_ROOT / "verification" / "phase1_tieout.csv"
-    if not path.exists():
-        return {}
-    phase1_df = pd.read_csv(path).dropna(subset=["ten_k_value_millions"])
-    return {
-        (row.cik, row.fiscal_year, row.line_item): (
-            float(row.ten_k_value_millions),
-            f"{row.ten_k_page_or_statement}. {row.notes}",
+    check_cell = sheet.cell(row, 7)
+    check_cell.fill = YELLOW
+    check_cell.font = BLUE
+    check_cell.number_format = "#,##0.000"
+    if key in hand_checked:
+        check_cell.value, sheet.cell(row, 9).value = hand_checked[key]
+    tolerance = f"${MILLIONS_TOLERANCE_CELL[0]}${MILLIONS_TOLERANCE_CELL[1:]}"
+    sheet.cell(
+        row,
+        8,
+        f'=IF(G{row}="","",IF(D{row}="","10-K has it; we do not",'
+        f'IF(ABS(D{row}/1000000-G{row})<={tolerance},"OK","CHECK")))',
+    ).font = BLACK
+
+
+def hand_checked_values():
+    """Return 10-K figures read by hand, keyed (cik, year, line item).
+
+    Two sources, both committed in verification/:
+    - phase1_tieout.csv: four Apple FY2024 values a team member read
+      from the 10-K in Phase 1;
+    - tenk_values.csv: every input of every tie-out case, read from the
+      10-K statements on 2026-11-17 (source and statement per row).
+    Values are in millions (dollars or shares). tenk_values.csv wins
+    where both have a row; the two agree on the Apple values.
+    """
+    checked = {}
+    verification_dir = config.PROJECT_ROOT / "verification"
+    phase1_path = verification_dir / "phase1_tieout.csv"
+    if phase1_path.exists():
+        phase1_df = pd.read_csv(phase1_path).dropna(
+            subset=["ten_k_value_millions"]
         )
-        for row in phase1_df.itertuples()
-    }
+        for row in phase1_df.itertuples():
+            checked[(row.cik, row.fiscal_year, row.line_item)] = (
+                float(row.ten_k_value_millions),
+                f"{row.ten_k_page_or_statement}. {row.notes}",
+            )
+    tenk_path = verification_dir / "tenk_values.csv"
+    if tenk_path.exists():
+        for row in pd.read_csv(tenk_path).itertuples():
+            checked[(row.cik, row.fiscal_year, row.line_item)] = (
+                float(row.ten_k_value_millions),
+                f"{row.statement}: {row.notes}. Source: {row.source}",
+            )
+    return checked
 
 
 def build_workbook(source_dir, cases=TIEOUT_CASES, output=TIEOUT_XLSX):
