@@ -130,13 +130,23 @@ the paper when Phase 2 cites it.
   also contain. Balance sheet items are instants.
 - Fiscal year comes from period_end (see Fiscal year assignment), never
   from SEC's `fy` field. FY2011 is kept so FY2012 has a prior year.
-- When a company reports two mapped tags for the same line item and
-  period, only its preferred tag is kept (the tag it reports in the most
-  years; see Tag mapping), so each company, line item and period has a
-  single original value.
-- Every filing that reported the chosen value is kept. The earliest filing
-  is `is_original`; ties on filing date put a 10-K before a 10-K/A, then
-  the lower accession number.
+- **One row per filing.** When one filing reports the same line item and
+  period under two mapped tags, the company's preferred tag is kept for
+  that filing (the tag it reports in the most years; see Tag mapping).
+  The choice is made within each filing, never across filings.
+- **Original = earliest filing under any mapped tag.** For each company,
+  line item and period, the earliest filing that reported it is
+  `is_original`, whatever tag it used; ties on filing date put a 10-K
+  before a 10-K/A, then the lower accession number. Every later filing
+  stays in the table with `is_original = False` (restatement feature).
+- **Why the order matters (fixed 2026-11-17).** The first version chose
+  the preferred tag across all filings *before* finding the earliest
+  filing. When a company switched tags, usually at the ASC 606 adoption,
+  its first 10-K's fact was discarded and a later, often restated, value
+  became "original". Example: Analog Devices FY2017 revenue was
+  $5,246.4mm (restated in the FY2019 10-K) instead of the $5,107.5mm in
+  the FY2017 10-K. Phase 2 found it in the 10-K tie-out (see Phase 2,
+  "Phase 1 data issue found by the 10-K tie-out").
 - `filing_url` is the EDGAR filing index page built from the CIK and the
   accession number.
 - Every removed fact is counted by reason in

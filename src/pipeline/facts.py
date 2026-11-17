@@ -29,7 +29,9 @@ DROP_UNIT = "unit_not_usd_or_shares"
 DROP_NOT_ANNUAL = "duration_not_350_to_380_days"
 DROP_YEAR = "fiscal_year_out_of_range"
 DROP_WRONG_UNIT_OR_PERIOD = "unit_or_period_type_wrong_for_line_item"
-DROP_OTHER_TAG = "company_reported_preferred_tag_for_same_period"
+# A filing reported the same period under two mapped tags; the company's
+# preferred one is kept for that filing.
+DROP_OTHER_TAG = "other_mapped_tag_in_same_filing"
 DROP_DUPLICATE = "duplicate_within_same_filing"
 
 # Companies per batch. Each company's facts are processed independently,
@@ -162,12 +164,13 @@ def assign_line_items(raw_df, drops):
     return pd.concat(pieces, ignore_index=True)
 
 
-def choose_company_tags(item_facts_df, drops):
-    """Keep only the company's preferred tag for each line item and period.
+def tag_preference_rank(item_facts_df):
+    """Return a sortable rank per row: lower = the company's preferred tag.
 
     The preferred tag is the one the company reports in the most fiscal
     years (ties keep the map order), the same rule as
-    tag_map.company_tag_order. Every filing of the chosen tag is kept.
+    tag_map.company_tag_order. Using one tag consistently keeps a
+    company's own years comparable for the year-over-year ratios.
     """
     years_reported = item_facts_df.groupby(["cik", "line_item", "tag"])[
         "fiscal_year"
@@ -187,28 +190,41 @@ def choose_company_tags(item_facts_df, drops):
         index=item_facts_df.index,
     )
     # One sortable number: more years first, then earlier in the map.
-    rank = -years_reported * 1000 + map_rank
-    # dropna=False keeps instants, whose period_start is empty.
-    best = rank.groupby(
-        [item_facts_df[col] for col in PERIOD_KEY], dropna=False
-    ).transform("min")
-    keep = rank == best
+    return -years_reported * 1000 + map_rank
+
+
+def choose_tag_per_filing(item_facts_df, drops):
+    """Keep one row per company, line item, period and filing.
+
+    When one filing reports the same period under two mapped tags, keep
+    the company's preferred tag. The choice is made WITHIN each filing,
+    never across filings: choosing across filings first would discard the
+    earliest filing's value whenever the company later switched tags
+    (common at the ASC 606 adoption), and a later, often restated, value
+    would then be marked original. A filing that repeats the same tag for
+    the same period keeps one row (counted as a duplicate).
+    """
+    before = len(item_facts_df)
+    item_facts_df = item_facts_df.drop_duplicates(
+        subset=PERIOD_KEY + ["accession", "tag"], keep="first"
+    )
+    drops[DROP_DUPLICATE] += before - len(item_facts_df)
+    ranked = item_facts_df.assign(rank=tag_preference_rank(item_facts_df))
+    ranked = ranked.sort_values("rank", kind="stable")
+    keep = ~ranked.duplicated(subset=PERIOD_KEY + ["accession"], keep="first")
     drops[DROP_OTHER_TAG] += int((~keep).sum())
-    return item_facts_df[keep]
+    return ranked[keep].drop(columns="rank")
 
 
-def mark_is_original(chosen_df, drops):
+def mark_is_original(chosen_df):
     """Add is_original: True for the earliest filing of each period.
 
-    Ties on filing date put the 10-K before a 10-K/A, then the lower
-    accession number, so the choice is deterministic. A filing that
-    reports the same period twice keeps one row (counted as a duplicate).
+    chosen_df has one row per filing (choose_tag_per_filing), so the
+    earliest filing that reported the period under ANY mapped tag is the
+    original: what investors saw first (CLAUDE.md section 4). Ties on
+    filing date put the 10-K before a 10-K/A, then the lower accession
+    number, so the choice is deterministic.
     """
-    before = len(chosen_df)
-    chosen_df = chosen_df.drop_duplicates(
-        subset=PERIOD_KEY + ["accession"], keep="first"
-    )
-    drops[DROP_DUPLICATE] += before - len(chosen_df)
     ordered = chosen_df.assign(
         is_amendment=chosen_df["form"] != "10-K"
     ).sort_values(["filed_date", "is_amendment", "accession"], kind="stable")
@@ -227,8 +243,11 @@ def facts_for_companies(archive, ciks, tag_regex, drops):
     if not rows:
         return pd.DataFrame()
     item_facts_df = assign_line_items(pd.DataFrame(rows), drops)
-    chosen_df = choose_company_tags(item_facts_df, drops)
-    return mark_is_original(chosen_df, drops)
+    # Tag choice happens inside each filing, BEFORE the earliest filing
+    # is found, so the original always comes from the first 10-K that
+    # reported the period (see choose_tag_per_filing).
+    chosen_df = choose_tag_per_filing(item_facts_df, drops)
+    return mark_is_original(chosen_df)
 
 
 def to_contract_types(chosen_df):

@@ -137,3 +137,74 @@ def test_drop_log_includes_kept_counts(built):
     assert counts["kept:original_rows"] == 6
     assert counts[f"dropped:{facts.DROP_OTHER_TAG}"] == 2
     assert isinstance(log, pd.DataFrame)
+
+
+# ---- Tag switch across filings (company 11, modeled on Analog Devices) -----
+# The FY2017 and FY2018 10-Ks tag revenue as SalesRevenueNet. From the
+# FY2019 10-K the company uses RevenueFromContractWith...ExcludingAssessed-
+# Tax (ASC 606) and restates FY2017 to 5,246,354,000. The new tag is the
+# company's preferred tag (4 fiscal years against 3), but the original
+# FY2017 value must still be the 5,107,503,000 first reported.
+
+REVENUE_606 = "RevenueFromContractWithCustomerExcludingAssessedTax"
+
+
+@pytest.fixture
+def tag_switch(tmp_path):
+    """Build facts_long for fixture company 11 only."""
+    zip_path = tmp_path / "companyfacts.zip"
+    with zipfile.ZipFile(zip_path, "w") as archive:
+        archive.write(
+            FIXTURE / "CIK0000000011.json", arcname="CIK0000000011.json"
+        )
+    return facts.build_facts_long(zip_path, [11])
+
+
+def revenue_rows(facts_long_df, fiscal_year):
+    """Return company 11's revenue rows for one fiscal year."""
+    revenue = rows_for(facts_long_df, "revenue")
+    return revenue[revenue["fiscal_year"] == fiscal_year]
+
+
+def test_original_comes_from_earliest_filing_across_tags(tag_switch):
+    """FY2017 original = first 10-K's 5,107,503,000, not the restatement."""
+    fy2017 = revenue_rows(tag_switch[0], 2017)
+    original = fy2017[fy2017["is_original"]]
+    assert original["value"].item() == 5_107_503_000
+    assert original["xbrl_tag"].item() == "SalesRevenueNet"
+    assert original["accession"].item() == "0000000011-17-000144"
+
+
+def test_restated_value_kept_but_not_original(tag_switch):
+    """The FY2019 10-K's restated 5,246,354,000 stays for restatements."""
+    fy2017 = revenue_rows(tag_switch[0], 2017)
+    restated = fy2017[fy2017["value"] == 5_246_354_000]
+    assert restated["xbrl_tag"].item() == REVENUE_606
+    assert not restated["is_original"].item()
+    # One row per filing: FY2017, FY2018 and FY2019 10-Ks.
+    assert len(fy2017) == 3
+
+
+def test_preferred_tag_chosen_within_a_filing(tag_switch):
+    """The FY2019 10-K reports FY2018 under both tags: its one row uses
+    the company's preferred (ASC 606) tag, and the other is counted."""
+    facts_long_df, drops = tag_switch
+    fy2018 = revenue_rows(facts_long_df, 2018)
+    in_2019_10k = fy2018[fy2018["accession"] == "0000000011-19-000144"]
+    assert in_2019_10k["xbrl_tag"].tolist() == [REVENUE_606]
+    assert drops[facts.DROP_OTHER_TAG] == 1
+    # FY2018's original is still its own 10-K's value.
+    original = fy2018[fy2018["is_original"]]
+    assert original["accession"].item() == "0000000011-18-000101"
+
+
+def test_one_original_per_period_after_tag_switch(tag_switch):
+    """Every company, line item and period still has one original."""
+    facts_long_df, _ = tag_switch
+    per_period = facts_long_df.groupby(
+        ["cik", "line_item", "period_start", "period_end"], dropna=False
+    )["is_original"].sum()
+    assert (per_period == 1).all()
+    assert sorted(
+        facts_long_df.loc[facts_long_df["is_original"], "fiscal_year"]
+    ) == [2016, 2017, 2018, 2019, 2020]
