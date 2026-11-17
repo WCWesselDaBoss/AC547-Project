@@ -154,6 +154,25 @@ calculated total: the sum of debt components reported in the same 10-K,
 accepted only where it ties to a reported total. It would need its own
 evidence and a team decision.
 
+**Re-check of shares outstanding tags (2026-11-17; no tag added).**
+`shares_outstanding` is missing in about 30% of scored years. The
+balance-sheet share counts reported alongside `CommonStockSharesOutstanding`:
+
+| Candidate | Both reported | Agree (0.5%) | Would fill (size-floor years) | Why it differs |
+| --- | --- | --- | --- | --- |
+| CommonStockSharesIssued | 48,818 | 80.5% | 5,225 | includes treasury shares |
+| SharesOutstanding | 860 | 52.9% | 175 | equity-statement total, often several classes |
+| Preferred, temporary-equity and partnership-unit counts | | 0-33% | | different securities |
+
+**Decision: no tag added.** Shares issued equal shares outstanding only
+when a company holds no treasury stock, so the issued count would
+overstate outstanding shares for the other ~20% and could flip F-Score
+signal 7. The cover-page count (`dei:EntityCommonStockSharesOutstanding`)
+was not considered: it is dated weeks after the balance sheet, so it is a
+different measurement. A possible later improvement, not done here, is to
+use shares issued only where the same 10-K reports zero treasury shares;
+that would need its own agreement test.
+
 ### facts_long (src/pipeline/facts.py)
 
 - Only us-gaap facts for mapped tags, from 10-K and 10-K/A filings, in USD
