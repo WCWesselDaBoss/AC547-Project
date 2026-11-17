@@ -142,7 +142,12 @@ November 11, 2026). The three companies cover September (Apple), January
 `verification/tieout.xlsx` recomputes all 28 score outputs with Excel
 formulas for Apple FY2024 and FY2020 (stock split), AMD FY2018 and
 Analog Devices FY2017. **All 112 Excel results match the Python
-output.** Findings and remaining hand checks are in
+output.** All 76 inputs were also read from the 10-K statements
+(`verification/tenk_values.csv`): 73 tie; the 3 differences are an
+unmapped debt tag, a company-specific depreciation definition, and a
+Phase 1 bug that uses ASC 606 restated values as "original" in 1,256
+company-years (3.2%), documented in `docs/methodology.md` for the Phase 1
+owner. Findings and remaining hand checks are in
 `verification/tieout_notes.md`. `pytest` runs 207 tests, each with an
 expected answer worked by hand from `tests/fixtures/`.
 

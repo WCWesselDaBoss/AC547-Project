@@ -252,6 +252,13 @@ results:
 - **Altman Z'' zones 2.60 / 1.10: NOT found** in Altman (2000), which gives
   zones only for the Z' model (1.23 / 2.90). The Z'' zones must be traced
   to another source (possibly a later Altman book) before citing.
+- **Update (later the same day): TATA 4.679 is corroborated** by several
+  further independent secondary sources, including the Wikipedia entry
+  citing Beneish (1999), so Svabova et al.'s 4.697 is treated as a
+  transposition and 4.679 is kept. The Z'' zones 2.60 / 1.10 are widely
+  reported and attributed to Altman, Hartzell and Peck (1995), not yet
+  read in a primary text. The origin of -2.22 remains unresolved; it is
+  used only as the slider's alternative setting.
 - **Beneish coefficients: corroborated by a secondary source only.**
   Svabova, Kramarova, Chutka and Strakova (2020), *Oeconomia Copernicana*
   11(3), 485-508, reproduce the model with eight coefficients identical
@@ -396,3 +403,42 @@ On the 39,853 scored company-years:
   neutral LVGI; its true LVGI from the unmapped `UnsecuredLongTermDebt`
   tag is 0.569 (the stock-financed Maxim deal grew assets faster than
   debt), which raises M from -1.741 to -1.600. The flag holds.
+
+### Phase 1 data issue found by the 10-K tie-out (2026-11-17)
+
+Hand-reading all 76 tie-out inputs from the 10-Ks
+(`verification/tenk_values.csv`) found 73 matches and 3 differences:
+
+1. **ADI FY2017 long-term debt**: $7,551.1mm in the 10-K, missing in our
+   data (the unmapped-tag gap described above).
+2. **AMD FY2018 depreciation**: our $94mm is depreciation only
+   (`Depreciation`, AMD's most-reported tag); the cash flow statement
+   prints depreciation and amortization of $170mm, which AMD also tags
+   (`DepreciationDepletionAndAmortization`). This is the documented
+   company-consistent tag rule working as designed: DEPI compares a
+   company with itself, so each company uses one definition, but the
+   definition can differ between companies.
+3. **ADI FY2017 revenue: a Phase 1 bug.** The FY2017 10-K reports
+   $5,107.5mm (tag `SalesRevenueNet`). Our value, $5,246.4mm, is the
+   ASC 606 restatement first reported in the FY2019 10-K under
+   `RevenueFromContractWithCustomerExcludingAssessedTax`. Phase 1 keeps
+   only the company's preferred tag for a period *before* marking the
+   earliest filing as original, so when a company switched tags, the
+   later (often restated) value became `is_original`. That breaks the
+   section 4 rule that scores use what investors saw at the time.
+
+**Extent (full data, size-floor years FY2012-FY2025).** 7,668 original
+values came from a later filing although the year's own 10-K reported
+the item under another mapped tag. 1,582 of them differ by more than 1%,
+in 1,256 company-years (3.2% of scored years) at 852 companies. Most are
+revenue (451), CFO (400), cost of revenue (191), depreciation (190) and
+net income (147), clustered in FY2016-FY2017 (ASC 606 full retrospective
+adoptions). These touch 557 M-Scores and 74 flags. Year t+1 scores that
+use these as t-1 values are also affected.
+
+**Fix (Phase 1, `src/pipeline/facts.py`):** mark `is_original` on the
+earliest filing's value for each company, line item and period across
+all mapped tags, then apply the preferred-tag rule only among facts from
+that same filing. Not changed here, because CLAUDE.md section 6 keeps
+each phase's code with its owner. Table columns and types do not change,
+so Phase 3 is unaffected apart from these values updating after the fix.
