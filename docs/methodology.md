@@ -232,11 +232,39 @@ before it is cited in the report**. Mark the "Checked" column when done.
 | `BENEISH_COEFFICIENTS` dsri 0.920, gmi 0.528, aqi 0.404, sgi 0.892, depi 0.115, sgai -0.172, tata 4.679, lvgi -0.327 | see left | Beneish (1999), same table as the intercept | High | [ ] |
 | `BENEISH_FLAG_CUTOFF` | -1.78 | Beneish (1999); secondary sources tie -1.78 to a 20:1 relative cost of missing a manipulator vs. a false alarm | Medium: confirm the cost ratio in the paper | [ ] |
 | `BENEISH_ALTERNATE_CUTOFF` | -2.22 | Widely used by practitioners; **origin not confirmed**. It may come from a later paper or the 5-variable model. Present it only as a "commonly used" alternative unless the source is found. | Low | [ ] |
-| `ALTMAN_Z2_COEFFICIENTS` x1 6.56, x2 3.26, x3 6.72, x4 1.05 | see left | Altman's Z'' model for non-manufacturers. First appeared in Altman, E. I. (1983), *Corporate Financial Distress* (Wiley); restated in Altman (2000), "Predicting Financial Distress of Companies: Revisiting the Z-Score and ZETA Models" (NYU Stern working paper). Secondary sources cite 1983, 1993, 2000 and 2002 editions, so confirm which edition you cite. | Medium | [ ] |
+| `ALTMAN_Z2_COEFFICIENTS` x1 6.56, x2 3.26, x3 6.72, x4 1.05 | see left | **Confirmed in Altman (2000), p. 27** (see below). Altman's Z'' model for non-manufacturers. First appeared in Altman, E. I. (1983), *Corporate Financial Distress* (Wiley); restated in Altman (2000), "Predicting Financial Distress of Companies: Revisiting the Z-Score and ZETA Models" (NYU Stern working paper). Secondary sources cite 1983, 1993, 2000 and 2002 editions, so confirm which edition you cite. | Medium | [ ] |
 | `ALTMAN_Z2_SAFE_ABOVE`, `ALTMAN_Z2_DISTRESS_BELOW` | 2.60, 1.10 | Same as the Z'' coefficients | Medium | [ ] |
-| (no constant) | none | The "+3.25" emerging-market variant (Altman, Hartzell & Peck, 1995) is a different model and is **not** used | High | [ ] |
+| (no constant) | none | The "+3.25" emerging-market variant (Altman, Hartzell & Peck, 1995) is a different model and is **not** used | High | [x] Altman (2000), p. 27 |
 | Piotroski signal definitions (no numeric coefficients) | 9 binary signals | Piotroski, J. D. (2000). Value investing: The use of historical financial statement information to separate winners from losers. *Journal of Accounting Research*, 38 (Supplement), 1-41. | High (one source lists the issue as 38(3); check the JSTOR record) | [ ] |
 | `F_SCORE_TIE_TOLERANCE` | 1e-9 | Our choice, not from a paper; only stops floating-point rounding from deciding a signal | n/a | n/a |
+
+**Verification attempt (2026-11-17).** Primary texts were sought online;
+results:
+
+- **Altman Z'' coefficients: confirmed** in Altman (2000), "Predicting
+  Financial Distress of Companies: Revisiting the Z-Score and ZETA
+  Models", NYU Stern working paper, p. 27: "Z" = 6.56 (X1)+ 3.26 (X2) +
+  6.72 (X3) + 1.05 (X4)"; "The book value of equity was used for X 4";
+  and the +3.25 constant belongs only to the emerging-market version
+  ("In the emerging market model, we added a constant term of +3.25").
+  The paper credits the application to Altman, Hartzell and Peck (1995)
+  and cites Altman (1983), *Corporate Financial Distress*.
+- **Altman Z'' zones 2.60 / 1.10: NOT found** in Altman (2000), which gives
+  zones only for the Z' model (1.23 / 2.90). The Z'' zones must be traced
+  to another source (possibly a later Altman book) before citing.
+- **Beneish coefficients: corroborated by a secondary source only.**
+  Svabova, Kramarova, Chutka and Strakova (2020), *Oeconomia Copernicana*
+  11(3), 485-508, reproduce the model with eight coefficients identical
+  to ours, but print TATA as **4.697**, not 4.679. Probably a transposed
+  digit, but **check the original's table**; TATA has the largest
+  coefficient.
+- **Beneish cutoffs: conflicting secondary sources.** Svabova et al.
+  (2020) attribute -2.22 to Beneish (1999); Omeir, Vasiliauskaite and
+  Soleimanizadeh (2023), *Journal of Governance and Regulation* 12(3),
+  attribute -1.78 to Beneish (1999). Settle from the original.
+- **Beneish (1999) and Piotroski (2000) full texts could not be read**
+  (paywalled or blocked). Get them through the UA library: Beneish via
+  DOI 10.2469/faj.v55.n5.2296; Piotroski via JSTOR 2672906.
 
 ### Known differences from the papers (state these in results)
 

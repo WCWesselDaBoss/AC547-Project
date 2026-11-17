@@ -119,3 +119,23 @@ Every value traces to the named function; inputs trace to
 | peer_group_size | int64 | Companies in the peer group used, that year | `peers.assign_peer_groups` |
 | m_score_pctile, z_score_pctile, f_score_pctile, accruals_ratio_pctile, cash_conversion_pctile | float64 | 0-100: share of other peers with a lower value (ties count half), same year; NaN if the score is blank or fewer than 2 peers have it | `peers.add_percentile_ranks` |
 | missing_inputs | string | "; "-separated reasons any value is blank or neutral (e.g. `cost_of_revenue_t-1`, `no_row_t-2`, `dsri_zero_denominator`, `sgai_set_to_1`, `shares_t-1_same_filing`); null when complete. See docs/methodology.md, Phase 2 | `common.combine_notes` |
+
+## returns (stretch goal)
+
+One row per scored company-year whose company has a ticker. Built by
+`src/scores/returns.py` from `scores`, `financials_annual` (filed_date),
+`companies` (ticker) and `prices`. Method and limitations:
+docs/methodology.md, "12-month return test". Results are biased upward
+(delisted companies mostly have no prices) and show correlation, not
+cause.
+
+| Column | Type | Meaning | Computed by |
+| --- | --- | --- | --- |
+| cik | int64 | SEC Central Index Key | scores |
+| fiscal_year | int64 | Fiscal year of the 10-K | scores |
+| filed_date | datetime64[ns] | 10-K filing date; the window starts the next trading day | financials_annual |
+| ticker | string | Current SEC ticker | companies |
+| ret_12m | float64 | Buy-and-hold return on adjusted close, start to start + 12 months; NaN without a full window | `returns.compute_returns` |
+| mkt_ret_12m | float64 | SPY return over the same dates | `returns.compute_returns` |
+| excess_ret_12m | float64 | ret_12m - mkt_ret_12m | `returns.compute_returns` |
+| has_full_price_history | bool | Stock has a price within 7 days of both window dates | `returns.compute_returns` |
