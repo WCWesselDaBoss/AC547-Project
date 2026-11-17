@@ -56,6 +56,11 @@ FISCAL_YEAR_CUTOFF_MONTH = 5
 MIN_ANNUAL_PERIOD_DAYS = 350
 MAX_ANNUAL_PERIOD_DAYS = 380
 
+# If one 10-K reports the same year's revenue under two mapped revenue tags
+# and one is more than this many times the other, they cannot both be total
+# revenue; the larger is used (evidence in docs/methodology.md, Tag mapping).
+REVENUE_TAG_CONFLICT_RATIO = 3
+
 # ---------------------------------------------------------------------------
 # SEC access (CLAUDE.md section 6)
 # ---------------------------------------------------------------------------

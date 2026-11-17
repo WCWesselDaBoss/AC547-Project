@@ -208,3 +208,99 @@ def test_one_original_per_period_after_tag_switch(tag_switch):
     assert sorted(
         facts_long_df.loc[facts_long_df["is_original"], "fiscal_year"]
     ) == [2016, 2017, 2018, 2019, 2020]
+
+
+# ---- Revenue tags that disagree within one filing (company 12) -------------
+# Modeled on Apogee: from its FY2014 10-K on, a small figure is tagged
+# Revenues next to the true total under SalesRevenueNet. Revenues is the
+# preferred tag (tie on years, earlier in the map), so without the guard
+# FY2014 revenue would be $72.7mm instead of $933.9mm.
+
+
+@pytest.fixture
+def revenue_conflict(tmp_path):
+    """Build facts_long for fixture company 12 only."""
+    zip_path = tmp_path / "companyfacts.zip"
+    with zipfile.ZipFile(zip_path, "w") as archive:
+        archive.write(
+            FIXTURE / "CIK0000000012.json", arcname="CIK0000000012.json"
+        )
+    return facts.build_facts_long(zip_path, [12])
+
+
+def original_revenue(facts_long_df, fiscal_year):
+    """Return the original revenue row for one fiscal year."""
+    rows = revenue_rows(facts_long_df, fiscal_year)
+    return rows[rows["is_original"]].iloc[0]
+
+
+def test_conflicting_revenue_tags_use_the_larger(revenue_conflict):
+    """$933.9mm is more than 3x $72.7mm in the same filing: use it."""
+    row = original_revenue(revenue_conflict[0], 2014)
+    assert row["value"] == 933_936_000
+    assert row["xbrl_tag"] == "SalesRevenueNet"
+    assert original_revenue(revenue_conflict[0], 2015)["value"] == 981_189_000
+
+
+def test_modest_revenue_gap_keeps_preferred_tag(revenue_conflict):
+    """1,000 vs 1,050 (5%) is not a conflict: preferred Revenues kept."""
+    row = original_revenue(revenue_conflict[0], 2016)
+    assert row["xbrl_tag"] == "Revenues"
+    assert row["value"] == 1_000_000_000
+
+
+def test_guard_counted_as_adjustment_not_drop(revenue_conflict):
+    """FY2013 (in the FY2014 10-K), FY2014 and FY2015 were overridden."""
+    facts_long_df, drops = revenue_conflict
+    assert drops[facts.ADJUSTED_REVENUE_LARGEST] == 3
+    log = facts.drop_log(facts_long_df, drops)
+    assert facts.ADJUSTED_REVENUE_LARGEST in set(log["measure"])
+    # FY2013's original is still its own 10-K's value.
+    assert original_revenue(facts_long_df, 2013)["value"] == 771_445_000
+
+
+def test_guard_only_touches_revenue():
+    """Other line items keep the preferred-tag rule even with big gaps."""
+    import pandas as pd
+
+    rows = pd.DataFrame(
+        {
+            "cik": [1, 1],
+            "line_item": ["cfo", "cfo"],
+            "tag": ["A", "B"],
+            "value": [10.0, 100.0],
+            "period_start": [None, None],
+            "period_end": [None, None],
+            "accession": ["X", "X"],
+        }
+    )
+    rank = pd.Series([0, 1])
+    drops = facts.Counter()
+    assert facts.apply_revenue_guard(rows, rank, drops).tolist() == [0, 1]
+    assert drops[facts.ADJUSTED_REVENUE_LARGEST] == 0
+
+
+def test_guard_works_when_rows_are_not_in_rank_order():
+    """Real batches are not sorted by preference: the larger value must
+    still win (regression test for a row-alignment crash)."""
+    import pandas as pd
+
+    rows = pd.DataFrame(
+        {
+            "cik": [1, 1, 2, 2],
+            "line_item": ["revenue"] * 4,
+            "tag": ["SalesRevenueNet", "Revenues", "Revenues", "Other"],
+            "value": [933.9, 72.7, 50.0, 49.0],
+            "period_start": [None] * 4,
+            "period_end": [None] * 4,
+            "accession": ["X", "X", "Y", "Y"],
+        },
+        index=[7, 3, 9, 1],
+    )
+    # Revenues preferred (rank 0) for company 1, listed second.
+    rank = pd.Series([2, 0, 0, 1], index=[7, 3, 9, 1])
+    drops = facts.Counter()
+    new_rank = facts.apply_revenue_guard(rows, rank, drops)
+    assert new_rank.idxmin() == 7  # SalesRevenueNet 933.9 now first
+    assert new_rank[9] == 0  # company 2: 50 vs 49 is no conflict
+    assert drops[facts.ADJUSTED_REVENUE_LARGEST] == 1

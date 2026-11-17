@@ -34,6 +34,11 @@ DROP_WRONG_UNIT_OR_PERIOD = "unit_or_period_type_wrong_for_line_item"
 DROP_OTHER_TAG = "other_mapped_tag_in_same_filing"
 DROP_DUPLICATE = "duplicate_within_same_filing"
 
+# Not a drop: a filing whose mapped revenue tags disagree by more than
+# config.REVENUE_TAG_CONFLICT_RATIO, where the larger value was used
+# instead of the preferred tag. Counted so the adjustment is visible.
+ADJUSTED_REVENUE_LARGEST = "adjusted:revenue_tags_disagree_used_largest"
+
 # Companies per batch. Each company's facts are processed independently,
 # so batching keeps memory flat without changing any result.
 BATCH_COMPANIES = 500
@@ -193,6 +198,53 @@ def tag_preference_rank(item_facts_df):
     return -years_reported * 1000 + map_rank
 
 
+def apply_revenue_guard(item_facts_df, rank, drops):
+    """Return rank with the largest revenue first where tags conflict.
+
+    Every mapped revenue tag is meant to be TOTAL revenue. When one filing
+    reports the same period under two of them and one value is more than
+    config.REVENUE_TAG_CONFLICT_RATIO times the other, they cannot both be
+    the total: the smaller is usually a segment or a figure entered in the
+    wrong scale (Apogee's FY2014 10-K: Revenues $72.7mm, SalesRevenueNet
+    $933.9mm). On the full data the larger value fits the company's own
+    neighbouring years in 87% of such cases, so it wins. Smaller gaps keep
+    the company's preferred tag, because some are legitimate (revenue
+    gross vs net of sales taxes).
+    """
+    is_revenue = item_facts_df["line_item"] == "revenue"
+    if not is_revenue.any():
+        return rank
+    revenue = item_facts_df.loc[is_revenue]
+    groups = revenue.groupby(PERIOD_KEY + ["accession"], dropna=False)["value"]
+    largest = groups.transform("max")
+    smallest = groups.transform("min")
+    conflict = (largest > 0) & (
+        largest > config.REVENUE_TAG_CONFLICT_RATIO * smallest
+    )
+    use_largest = conflict & (revenue["value"] == largest)
+    if not use_largest.any():
+        return rank
+    # Count filings where the guard overrides the preferred tag.
+    preferred_value = (
+        revenue.assign(rank=rank[is_revenue])
+        .sort_values("rank", kind="stable")
+        .groupby(PERIOD_KEY + ["accession"], dropna=False)["value"]
+        .transform("first")
+        # Sorting reordered the rows; put them back in the original order
+        # so the comparisons below line up row by row.
+        .reindex(revenue.index)
+    )
+    overridden = conflict & (preferred_value < largest) & use_largest
+    overridden_filings = revenue.loc[overridden].drop_duplicates(
+        PERIOD_KEY + ["accession"]
+    )
+    drops[ADJUSTED_REVENUE_LARGEST] += len(overridden_filings)
+    # Far below any tag-preference rank, so the largest value sorts first.
+    rank = rank.copy()
+    rank.loc[use_largest[use_largest].index] -= 10**9
+    return rank
+
+
 def choose_tag_per_filing(item_facts_df, drops):
     """Keep one row per company, line item, period and filing.
 
@@ -209,7 +261,9 @@ def choose_tag_per_filing(item_facts_df, drops):
         subset=PERIOD_KEY + ["accession", "tag"], keep="first"
     )
     drops[DROP_DUPLICATE] += before - len(item_facts_df)
-    ranked = item_facts_df.assign(rank=tag_preference_rank(item_facts_df))
+    rank = tag_preference_rank(item_facts_df)
+    rank = apply_revenue_guard(item_facts_df, rank, drops)
+    ranked = item_facts_df.assign(rank=rank)
     ranked = ranked.sort_values("rank", kind="stable")
     keep = ~ranked.duplicated(subset=PERIOD_KEY + ["accession"], keep="first")
     drops[DROP_OTHER_TAG] += int((~keep).sum())
@@ -300,7 +354,11 @@ def build_facts_long(companyfacts_zip, ciks):
 
 def drop_log(facts_long_df, drops):
     """Return a DataFrame of drop counts and kept-row counts for the log."""
-    rows = [(f"dropped:{reason}", count) for reason, count in drops.items()]
+    # Adjustments are labeled as such; everything else is a dropped fact.
+    rows = [
+        (reason if reason.startswith("adjusted:") else f"dropped:{reason}", n)
+        for reason, n in drops.items()
+    ]
     rows += [
         ("kept:rows", len(facts_long_df)),
         ("kept:original_rows", int(facts_long_df["is_original"].sum())),
