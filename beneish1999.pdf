@@ -1,0 +1,1165 @@
+%PDF-1.2 
+%‚„œ”
+ 
+10 0 obj
+<<
+/Length 11 0 R
+>>
+stream
+BT183.6 619.8  TD0 0 0 rg /F0 14.04  Tf0.004  Tc 0.0542  Tw (The Detection of Earnings Manipulation) Tj63.12 -63.84  TD /F1 14.04  Tf-0.0135  Tc 0.0717  Tw (Messod D. Beneish*) Tj30.48 -95.76  TD -0.0238  Tc 0.082  Tw (June 1999) Tj-30.6 -63.84  TD 0.0083  Tc 0.0499  Tw (Comments Welcome) Tj-174.6 -191.28  TD /F1 11.52  Tf0.0037  Tc -0.0421  Tw (* Associate Professor, Indiana University, Kelley School of Business, 1309 E. 10th Street) Tj0 -13.44  TD 0.0107  Tc -0.0491  Tw (Bloomington, Indiana 47405, dbeneish@indiana.edu, 812 855-2628.  I have benefited from the) TjT* -0.005  Tc -0.0334  Tw (comments of ) Tj63.36 0  TD -0.0173  Tc -0.0211  Tw (Vic Bernard, Jack ) Tj87.96 0  TD 0.0072  Tc -0.0456  Tw (Ciesielski, Linda ) Tj83.04 0  TD 0.009  Tc -0.0474  Tw (DeAngelo, Martin ) Tj89.88 0  TD -0.0012  Tc -0.0372  Tw (Fridson, Cam Harvey, David) Tj-324.24 -13.44  TD -0.0122  Tc -0.0262  Tw (Hsieh, Charles Lee, Eric Press, Bob ) Tj174.6 0  TD -0.0048  Tc -0.0336  Tw (Whaley, Mark ) Tj71.64 0  TD 0.0074  Tc -0.0458  Tw (Zmijewski, workshop participants at Duke,) Tj-246.24 -13.44  TD 0.0077  Tc -0.0461  Tw (Maryland, Michigan, and ) Tj123.84 0  TD 0.0099  Tc -0.0483  Tw (Universit\351 du ) Tj66.72 0  TD -0.0233  Tc -0.0151  Tw (Qu\351bec \340 ) Tj45.84 0  TD 0.009  Tc -0.0474  Tw (Montr\351al. I am indebted to David Hsieh for his) Tj-236.4 -13.44  TD 0.0036  Tc -0.042  Tw (generous econometric advice and the use of his estimation subroutines.  I thank Julie ) Tj400.8 0  TD 0.0048  Tc 0  Tw (Azoulay,) Tj-400.8 -13.44  TD 0.0131  Tc -0.0515  Tw (Pablo ) Tj29.76 0  TD 0.0125  Tc -0.0509  Tw (Cisilino and Melissa ) Tj99.24 0  TD -0.006  Tc -0.0324  Tw (McFadden for expert assistance.  ) TjETendstream
+endobj
+11 0 obj
+1738
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 5 0 R
+/Resources <<
+/Font <<
+/F0 6 0 R 
+/F1 8 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 10 0 R
+>>
+endobj
+13 0 obj
+<<
+/Length 14 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (2) TjETQ BT284.64 682.44  TD0 0 0 rg /F0 11.52  Tf-0.0102  Tc 0  Tw (Abstract) Tj-78.96 -26.88  TD 0.0063  Tc -0.0447  Tw (The Detection of Earnings Manipulation) Tj-97.68 -40.32  TD /F1 11.52  Tf0.0067  Tc -0.0451  Tw (The paper profiles a sample of earnings manipulators, identifies their distinguishing) Tj-36 -13.44  TD -0.0023  Tc -0.0361  Tw (characteristics, and estimates a model for detecting manipulation. The model\222s variables are) Tj0 -13.44  TD 0.0055  Tc -0.0439  Tw (designed to capture either the effects of manipulation or preconditions that may prompt firms to) TjT* 0.0055  Tc -0.0439  Tw (engage in such activity.  The results suggest a systematic relation between the probability of) TjT* 0.0057  Tc -0.0441  Tw (manipulation and financial statement variables.  The evidence is consistent with accounting data) TjT* 0.0102  Tc -0.0486  Tw (being useful in detecting manipulation and assessing the reliability of accounting earnings.) Tj36 -26.88  TD 0.0097  Tc -0.0481  Tw (In holdout sample tests, the model identifies approximately half of the companies involved) Tj-36 -13.44  TD 0.0038  Tc -0.0422  Tw (in earnings manipulation prior to public discovery. Because companies discovered manipulating) Tj0 -13.44  TD -0.0024  Tc -0.036  Tw (earnings see their stocks plummet in value, the model can be a useful screening device for) TjT* 0.0024  Tc -0.0408  Tw (investing professionals.  While the model is easily implemented-- the data can be extracted from an) TjT* 0.0034  Tc -0.0418  Tw (annual report--, the screening results require further investigation to ) Tj323.04 0  TD -0.005  Tc -0.0334  Tw (determine whether the) Tj-323.04 -13.44  TD 0.0163  Tc 0  Tw (distor) Tj26.64 0  TD 0.0031  Tc -0.0415  Tw (tions in financial statement numbers result from earnings) Tj266.76 0  TD 0.0043  Tc -0.0427  Tw ( manipulation or have another) Tj-293.4 -13.44  TD 0.005  Tc -0.0434  Tw (structural root.) TjETendstream
+endobj
+14 0 obj
+2048
+endobj
+12 0 obj
+<<
+/Type /Page
+/Parent 5 0 R
+/Resources <<
+/Font <<
+/F0 6 0 R 
+/F1 8 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 13 0 R
+>>
+endobj
+16 0 obj
+<<
+/Length 17 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (3) TjETQ BT72 709.32  TD0 0 0 rg /F0 11.52  Tf-0.0022  Tc 0  Tw (Introduction) Tj36 -26.88  TD /F1 11.52  Tf0.0043  Tc -0.0427  Tw (The extent to which earnings are manipulated has long been a question of interest to) Tj-36 -26.88  TD -0.005  Tc -0.0334  Tw (analysts, regulators, researchers, and other investment professionals.  While the SEC's recent) Tj0 -26.88  TD 0.0086  Tc -0.047  Tw (commitment to vigorously investigate earnings manipulation \(see ) Tj308.28 0  TD 0.0051  Tc -0.0435  Tw (Levitt \(1998\)\) has sparked) Tj-308.28 -26.88  TD -0.0013  Tc -0.0371  Tw (renewed interest in the area, there has been little in the academic and professional literature on the) Tj0 -26.88  TD 0.0095  Tc -0.0479  Tw (detection earnings manipulation.) Tj152.64 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (1) Tj-116.64 -32.28  TD /F1 11.52  Tf0.0066  Tc -0.045  Tw (This paper presents a model to distinguish manipulated from non-manipulated reporting.  I) Tj-36 -26.88  TD -0.0031  Tc -0.0353  Tw (define earnings manipulation as an instance where management violates Generally Accepted) Tj0 -26.88  TD 0.0088  Tc -0.0472  Tw (Accounting Principles \(GAAP\) ) Tj149.4 0  TD -0.0022  Tc -0.0362  Tw (in order to beneficially represent the firm\222s financial performance.) Tj-149.4 -26.88  TD 0.0029  Tc -0.0413  Tw (I use financial statement data to construct variables that seek to capture the effects of manipulation) Tj0 -26.88  TD 0.0096  Tc -0.048  Tw (and preconditions that may prompt firms to engage in such activity.  Since manipulation typically) TjT* 0.0073  Tc -0.0457  Tw (consists of an artificial inflation of revenues or deflation of expenses, I find that variables that take) TjT* 0.0093  Tc -0.0477  Tw (into account the simultaneous bloating in asset accounts have predictive content.  I also find that) TjT* -0.0027  Tc -0.0357  Tw (sales growth has discriminatory power since the primary characteristic of sample manipulators is) TjT* 0.0114  Tc -0.0498  Tw (that they have high growth prior to periods during which manipulation is in force. ) TjT* 0  Tc -0.0384  Tw (  ) Tj36 0  TD 0.0031  Tc -0.0415  Tw (I conduct tests using a sample of 74 firms that manipulate earnings and all COMPUSTAT) Tj-36 -26.88  TD 0.008  Tc -0.0464  Tw (firms matched by two-digit SIC for which data are available in the period 1982-1992.  I find that) Tj0 -26.88  TD 0.003  Tc -0.0414  Tw (sample manipulators typically overstate earnings by recording fictitious, unearned, or uncertain) TjT* 0.0054  Tc -0.0438  Tw (revenue, recording fictitious inventory, or improperly capitalizing costs.  The context of earnings) Tj0 -39.36  TD /F1 12  Tf0  Tc -0.06  Tw (                              ) Tj104.4 0  TD (            ) TjET72 188.64 144 0.6 re fBT72 173.76  TD/F1 9.96  Tf-0.0582  Tw (     ) Tj14.4 4.68  TD /F1 6  Tf0.012  Tc 0  Tw (1) Tj3 -4.68  TD /F1 9.96  Tf-0.0017  Tc -0.0565  Tw (  A model for detecting earnings manipulation is in Beneish \(1997\).  ) Tj279.48 0  TD 0.0044  Tc -0.0626  Tw (The model in that paper differs from the) Tj-296.88 -11.88  TD -0.0019  Tc -0.0563  Tw (model in this study in three ways: \() Tj143.28 0  TD 0.011  Tc 0  Tw (i) Tj2.76 0  TD 0.0047  Tc -0.0629  Tw (\) the model is estimated with 64 treatment firms ) Tj197.52 0  TD -0.0273  Tc 0  Tw (vs) Tj8.76 0  TD 0  Tc -0.0583  Tw ( 74 firms in the present) Tj-352.32 -11.88  TD 0.0059  Tc -0.0641  Tw (study, \(ii\) control firms are COMPUSTAT firms with the largest unexpected accruals vs. COMPUSTAT firms in) Tj0 -11.88  TD 0  Tc -0.0588  Tw (the same industry in the present study, and \(iii\) the set of ) Tj234.12 0  TD 0  Tc 0  Tw (explanators) Tj46.08 0  TD 0.004  Tc -0.0622  Tw ( differ across studies, with the present study) Tj-280.2 -11.88  TD -0.0043  Tc -0.0539  Tw (presenting a more parsimonious model.) TjETendstream
+endobj
+17 0 obj
+3961
+endobj
+15 0 obj
+<<
+/Type /Page
+/Parent 5 0 R
+/Resources <<
+/Font <<
+/F0 6 0 R 
+/F1 8 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 16 0 R
+>>
+endobj
+19 0 obj
+<<
+/Length 20 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (4) TjETQ BT72 709.32  TD0 0 0 rg /F1 11.52  Tf0.0046  Tc -0.043  Tw (manipulation is an annual report or a 10-K for about two-thirds of the sample and a security) Tj0 -26.88  TD 0.005  Tc -0.0434  Tw (offering prospectus \(initial, secondary, debt offering\) for the remaining third.  Sample) TjT* 0  Tc -0.0389  Tw (manipulators are relatively young, growth firms as such characteristics make it more likely that) TjT* -0.0012  Tc -0.0372  Tw (firms come under the scrutiny of regulators \(see Beneish \(1999\)\).) Tj36 -26.88  TD 0.0042  Tc -0.0426  Tw (I estimate a model for detecting earnings manipulation using sample manipulators and) Tj-36 -26.88  TD 0.0043  Tc -0.0427  Tw (industry-matched firms in the period 1982-1988 and evaluate the model's performance on a holdout) Tj0 -26.88  TD 0.0084  Tc -0.0468  Tw (sample in the period 1989-1992.  The model distinguishes manipulators from non-manipulators,) TjT* 0.0011  Tc -0.0395  Tw (and has pseudo-R) Tj82.56 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (2) Tj3.48 -5.4  TD /F1 11.52  Tf0.0057  Tc -0.0441  Tw (s of 30.6% and 37.1% for two different estimation methods.  The evidence) Tj-86.04 -26.88  TD 0.0116  Tc -0.05  Tw (indicates that the probability of manipulation increases with: \() Tj290.76 0  TD -0.0036  Tc -0.0348  Tw (i\) unusual increases in receivables,) Tj-290.76 -26.88  TD 0.0049  Tc -0.0433  Tw (\(ii\) deteriorating gross margins, \(iii\) decreasing asset quality \(as defined later\), \(iv\) sales growth,) Tj0 -26.88  TD 0  Tc -0.0388  Tw (and \(v\) increasing accruals.  I show that the model ) Tj240.84 0  TD 0.0033  Tc -0.0417  Tw (discriminates manipulators from non-) Tj-240.84 -26.88  TD 0.0046  Tc -0.043  Tw (manipulators in the holdout sample.   The results are robust to different estimates of the prior) Tj0 -26.88  TD 0.0069  Tc -0.0453  Tw (probability of earnings manipulation, several specifications of the model and various) TjT* 0.0019  Tc -0.0403  Tw (transformations of the explanatory variables.  The results are also insensitive to the choice of) TjT* 0.0101  Tc -0.0485  Tw (estimation and holdout samples.) Tj36 -26.88  TD 0.0025  Tc -0.0409  Tw (The evidence needs to be interpreted in light of possible sample selection biases.  The) Tj-36 -26.88  TD -0.0012  Tc -0.0372  Tw (estimation addresses the bias arising from ) Tj199.08 0  TD 0.0048  Tc -0.0432  Tw (oversampling manipulators, but it is based on a sample) Tj-199.08 -26.88  TD 0.0046  Tc -0.043  Tw (of discovered manipulators.  It is possible that there are successful, unidentified manipulators, and) Tj0 -26.88  TD 0  Tc -0.039  Tw (the results need to be interpreted assuming that sample manipulators represents a substantial) TjT* 0.0085  Tc -0.0469  Tw (portion of the manipulators in the population.  Given this caveat, the evidence of a systematic) TjT* 0.0089  Tc -0.0473  Tw (relation between the likelihood of manipulation and financial statement variables suggests that) TjT* 0.0081  Tc -0.0465  Tw (accounting data are useful in detecting manipulation and assessing the reliability of accounting) TjETendstream
+endobj
+20 0 obj
+3203
+endobj
+18 0 obj
+<<
+/Type /Page
+/Parent 5 0 R
+/Resources <<
+/Font <<
+/F1 8 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 19 0 R
+>>
+endobj
+22 0 obj
+<<
+/Length 23 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (5) TjETQ BT72 709.32  TD0 0 0 rg /F1 11.52  Tf-0.0031  Tc 0  Tw (earnings.) Tj0 -26.88  TD /F0 11.52  Tf0.0082  Tc (Sample) Tj36 -26.88  TD /F1 11.52  Tf-0.0084  Tc -0.03  Tw (The sample of earnings m) Tj121.56 0  TD 0.0037  Tc -0.0421  Tw (anipulators is obtained either from firms subject to the SEC's) Tj-157.56 -26.88  TD -0.0014  Tc -0.037  Tw (accounting enforcement actions or from a news media search.  I identified firms subject to) Tj0 -26.88  TD 0.002  Tc -0.0404  Tw (accounting enforcement actions by the SEC using Accounting and Auditing Enforcement Releases) TjT* 0.0154  Tc 0  Tw (\() Tj3.84 0  TD 0.0092  Tc -0.0476  Tw (AAERs\) numbers 132 to 502 issued from 1987 to 1993.  ) Tj270.36 0  TD 0.0163  Tc -0.0547  Tw (Of 363 ) Tj36.12 0  TD -0.0033  Tc 0  Tw (AAERs) Tj35.88 0  TD 0.0116  Tc -0.05  Tw ( examined \(#372 to #379) Tj-346.2 -26.88  TD 0.0021  Tc -0.0405  Tw (were not assigned by the SEC\), I eliminated 80 ) Tj225.24 0  TD -0.0033  Tc 0  Tw (AAERs) Tj35.88 0  TD 0.0213  Tc -0.0597  Tw ( relating to financial institutions, 15) Tj-261.12 -26.88  TD 0.0118  Tc -0.0502  Tw (relating to auditing actions against independent CPAs, nine relating to 10-Q violations that were) Tj0 -26.88  TD 0.0061  Tc -0.0445  Tw (resolved in annual filings, and 156 relating to firms for which no financial statement data are) TjT* -0.0088  Tc -0.0296  Tw (available on either COMPUSTAT, S&P Corporate Text or 10-K microfiche.  The SEC search) TjT* 0.0081  Tc -0.0465  Tw (yields a final sample of 103 ) Tj133.08 0  TD 0.0103  Tc -0.0487  Tw (AAERs relating to 49 firms that violate GAAP.   ) Tj-97.08 -26.88  TD -0.004  Tc -0.0344  Tw (I also conducted an extensive news media search on LEXIS/NEXIS in the period January) Tj-36 -26.88  TD 0.0233  Tc -0.0617  Tw (1987 to April 1993.) Tj93.72 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (2) Tj3.48 -5.4  TD /F1 11.52  Tf0.0026  Tc -0.041  Tw (   The search identified 80 firms mentioned in articles discussing earnings) Tj-97.2 -26.88  TD 0.0179  Tc -0.0563  Tw (manipulation.  ) Tj71.28 0  TD 0.0062  Tc -0.0446  Tw (In addition to eight firms that are identified by the SEC search, I eliminate ten firms) Tj-71.28 -26.88  TD -0.0028  Tc -0.0356  Tw (for which no financial statement data are available on either COMPUSTAT, S&P Corporate Text) Tj0 -26.88  TD 0.0107  Tc -0.0491  Tw (or 10-K microfiche, five financial institutions, and 17 firms mentioned in articles with no) TjT* 0.0039  Tc -0.0423  Tw (discussion of an accounting or disclosure problem.) Tj238.2 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (3) Tj3.48 -5.4  TD /F1 11.52  Tf0  Tc -0.0384  Tw (  ) Tj-241.68 -33.6  TD /F1 12  Tf-0.06  Tw (                              ) Tj104.4 0  TD (            ) TjET72 248.16 144 0.6 re fBT72 233.28  TD/F1 9.96  Tf-0.0582  Tw (     ) Tj14.4 4.68  TD /F1 6  Tf0.012  Tc 0  Tw (2) Tj3 -4.68  TD /F1 9.96  Tf0.0053  Tc -0.0635  Tw ( Specifically, the search encompassed the following data bases in LEXIS/NEXIS: ) Tj333.84 0  TD /F2 9.96  Tf-0.0029  Tc -0.0553  Tw (Barron's, Business Week,) Tj-351.24 -11.88  TD -0.0029  Tc -0.0553  Tw (Business Wire, Corporate Cash Flow, Disclosure Online, Forbes, Fortune, Institutional Investor, Investor Daily,) Tj0 -11.88  TD -0.0037  Tc -0.0545  Tw (Money, The Courier Journal, The New York Times, The Wall Street Journal, The Washington Post, and The ) Tj441.36 0  TD -0.004  Tc 0  Tw (Reuter) Tj-441.36 -11.88  TD -0.0119  Tc -0.0463  Tw (Business Report.) Tj67.68 0  TD /F1 9.96  Tf-0.0044  Tc -0.0538  Tw (  I used the following keywords: "earnings management;" "earnings manipulation;" "cooking the) Tj-67.68 -11.88  TD 0.0047  Tc -0.0629  Tw (books;" "financial statements or reports" with adjectives such as deceptive, false, fraudulent, misleading, illusive,) Tj0 -11.88  TD 0.0018  Tc -0.06  Tw (inappropriate, misstated, and spurious; and "inflated or overstated\224 ) Tj276.48 0  TD 0.008  Tc -0.0662  Tw (with either profits, earnings, or income.) Tj-276.48 -23.88  TD 0  Tc -0.0582  Tw (     ) Tj14.4 4.68  TD /F1 6  Tf0.012  Tc 0  Tw (3) Tj3 -4.68  TD /F1 9.96  Tf-0  Tc -0.0579  Tw ( For example, in an article on the manipulation of earnings at Chambers Development, Flynn and ) Tj398.88 0  TD 0.0211  Tc -0.0793  Tw (Zellner ) Tj-416.28 -11.88  TD -0.0021  Tc -0.0561  Tw (\(1992\) discuss other firms in the waste management industry such as ) Tj281.04 0  TD 0.0095  Tc -0.0677  Tw (Sanifill Inc., and Waste Management,) Tj-281.04 -11.88  TD 0.0009  Tc -0.0591  Tw (without referring to any accounting measurement or disclosure problem.) TjETendstream
+endobj
+23 0 obj
+4718
+endobj
+21 0 obj
+<<
+/Type /Page
+/Parent 5 0 R
+/Resources <<
+/Font <<
+/F0 6 0 R 
+/F1 8 0 R 
+/F2 24 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 22 0 R
+>>
+endobj
+27 0 obj
+<<
+/Length 28 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (6) TjETQ BT108 708.96  TD0 0 0 rg /F1 12  Tf0.006  Tc -0.066  Tw (I require ) Tj45.72 0  TD /F2 12  Tf0.014  Tc -0.074  Tw (ex post) Tj34.08 0  TD /F1 12  Tf0.0104  Tc -0.0704  Tw ( evidence of manipulation for the remaining 40 firms.  That is, I) Tj-115.8 -27.84  TD 0.0159  Tc -0.0759  Tw (require that firms restate earnings to comply with GAAP at the request of auditors or following) Tj0 -27.84  TD 0.0156  Tc -0.0756  Tw (the conclusion of an internal investigation.  This requirement makes sample entry consistent) TjT* 0.0111  Tc -0.0711  Tw (with the SEC search in the sense that a restatement is usually the outcome of successful SEC) TjT* 0.0179  Tc -0.0779  Tw (investigations \(in addition to a permanent injunction from future violations of security laws\). ) TjT* 0.0123  Tc -0.0723  Tw (This criterion eliminates fifteen firms and is imposed to exclude firms that manage earnings) TjT* 0.0193  Tc -0.0793  Tw (within GAAP and to reduce the likelihood that ) Tj231.6 0  TD 0.0086  Tc -0.0686  Tw (news media articles are not based on self-) Tj-231.6 -27.84  TD 0.0117  Tc -0.0717  Tw (serving rumors by interested parties.  For example, articles by Hector \(1989\) and ) Tj402.6 0  TD -0.002  Tc -0.058  Tw (Khalaf ) Tj-402.6 -27.84  TD 0.0129  Tc -0.0729  Tw (\(1992\) discuss changes in useful lives at General Motors, unusual charges at General Electric) Tj0 -27.84  TD 0.0198  Tc -0.0798  Tw (and short sellers' interest in ) Tj139.32 0  TD 0.008  Tc -0.068  Tw (Advanta Corp. ) Tj76.08 0  TD 0.0149  Tc -0.0749  Tw (Neither firm is subsequently required to reverse) Tj-215.4 -27.84  TD 0.0096  Tc -0.0696  Tw (the effects of its accounting decisions and thus, the firms are excluded from the sample.  ) Tj0 -27.84  TD 0.015  Tc -0.075  Tw (Similarly, some firms such as Battle Mountain Gold and Blockbuster voluntarily change their) TjT* 0.0111  Tc -0.0711  Tw (accounting choices or estimates as a result of pressure from the investment community. Their) TjT* 0.0171  Tc -0.0771  Tw (choices are initially within GAAP and they do not restate. ) Tj36 -39.48  TD /F1 11.52  Tf0.0028  Tc -0.0412  Tw (The 25 additional manipulators identified by the news media search have similar size,) Tj-36 -26.88  TD 0.0097  Tc -0.0481  Tw (leverage, liquidity, profitability and growth characteristics than the ) Tj318.12 0  TD -0  Tc -0.0377  Tw (49 SEC manipulators) Tj-318.12 -26.88  TD 0.0054  Tc -0.0438  Tw (suggesting that manipulators in both searches are not drawn from different populations.  The final) Tj0 -26.88  TD 0.0041  Tc -0.0425  Tw (sample consists of 74 firms that manipulated earnings and 2332 COMPUSTAT non-manipulators) TjT* 0.0025  Tc -0.0409  Tw (matched by 2-digit SIC industry and year for which financial statement data used in the model are) TjT* 0.0036  Tc 0  Tw (available.) Tj45.24 5.4  TD /F1 6.96  Tf0.0139  Tc (4) Tj3.48 -5.4  TD /F1 11.52  Tf-0.0014  Tc -0.037  Tw (  There are 63 different four-digit SIC codes represented, with four firms in SIC 7372) Tj-48.72 -34.68  TD /F1 12  Tf0  Tc -0.06  Tw (                              ) Tj104.4 0  TD (            ) TjET72 141 144 0.6 re fBT72 126.12  TD/F1 9.96  Tf-0.0582  Tw (     ) Tj14.4 4.68  TD /F1 6  Tf0.012  Tc 0  Tw (4) Tj3 -4.68  TD /F1 9.96  Tf0  Tc -0.0586  Tw (  I treat firms in the same industry for which my searches do not identify an instance of manipulation as non-) Tj-17.4 -11.88  TD -0  Tc -0.0578  Tw (manipulators. Since successful manipulators would not be identified by the searches, it is possible that the control) TjETendstream
+endobj
+28 0 obj
+3685
+endobj
+26 0 obj
+<<
+/Type /Page
+/Parent 5 0 R
+/Resources <<
+/Font <<
+/F1 8 0 R 
+/F2 24 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 27 0 R
+>>
+endobj
+31 0 obj
+<<
+/Length 32 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (7) TjETQ BT72 709.32  TD0 0 0 rg /F1 11.52  Tf0.0039  Tc -0.0423  Tw (\(Software\), and three firms in both SIC 3571 \(Computers\), and SIC 5731 \(Audio-visual retail) Tj0 -26.88  TD 0.0093  Tc -0.0477  Tw (stores\).  The distribution of manipulators by two-digit SIC groups indicates a concentration of) TjT* 0.0008  Tc -0.0392  Tw (firms in manufacturing \(SIC 30-39\) and Personal and Business Services industry groups \(SIC 70 to) TjT* 0.001  Tc -0.0394  Tw (79\) which together represent 45% of the sample. ) Tj0 -38.88  TD /F0 11.52  Tf-0  Tc -0.0377  Tw (Characteristics of Sample Firms) Tj36 -26.88  TD /F1 11.52  Tf0.0016  Tc -0.04  Tw (In Table 1, I compare manipulators' financial characteristics to those of industr) Tj371.88 0  TD -0.0052  Tc 0  Tw (y-matched) Tj-407.88 -26.88  TD 0.0077  Tc -0.0461  Tw (controls.  I find that, in the fiscal year prior to the year containing the public disclosure of earnings) Tj0 -26.88  TD -0.0025  Tc -0.0359  Tw (manipulation, manipulators are smaller \(when size is measured either in terms total assets or sales\),) TjT* 0.0038  Tc -0.0422  Tw (less profitable, and more levered.  Manipulators also differ from control firms in that they) TjT* 0.0051  Tc -0.0435  Tw (experience higher growth.  The median sales growth of manipulators \(34.4%\) is significantly) TjT* 0.0053  Tc -0.0437  Tw (larger than that of controls \(9.4%\).  This raises the question of whether growth is exogenous or) TjT* 0.0082  Tc -0.0466  Tw (results from manipulation.  In the year prior to the fiscal year of manipulation, I find that) TjT* 0.0071  Tc -0.0455  Tw (manipulators also have significantly higher growth that non-manipulators \(medians are 29.4% v.) TjT* 0.0138  Tc -0.0522  Tw (10.6%\) suggesting that growth originates ) Tj197.16 0  TD 0.0079  Tc -0.0463  Tw (exogenously.  This profile of manipulators as firms with) Tj-197.16 -26.88  TD 0.0073  Tc -0.0457  Tw (high growth prospects could explain why I find that manipulators have, on average, lower total) Tj0 -26.88  TD 0.0045  Tc -0.0429  Tw (assets but similar market value of equity than control firms.) TjT* /F0 11.52  Tf-0.0106  Tc 0  Tw (Method) Tj36 -26.88  TD /F1 11.52  Tf0.0056  Tc -0.044  Tw (This section discusses the estimation of the earnings manipulation detec) Tj335.64 0  TD 0.0141  Tc -0.0525  Tw (tion model and the) Tj-371.64 -26.88  TD 0.0054  Tc -0.0438  Tw (selection of the model's variables. The model is written as follows:) Tj68.04 -29.76  TD /F3 12  Tf0.012  Tc 0  Tw (e) TjETq 80.76 182.64 55.08 14.52 re W n BT99.12 185.28  TD(b) TjETQ q 128.28 185.52 23.76 11.64 re W n BT141.36 188.4  TD/F4 12  Tf-0.012  Tc (~) TjETQ BT138 185.28  TD/F4 12  Tf0  Tc ( ) Tj-6.48 0  TD -0.048  Tc (+) Tj-2.64 0  TD 0  Tc ( ) Tj-10.68 -1.56  TD -0.024  Tc (X) Tj-8.88 1.56  TD 0  Tc (   ) Tj-13.44 0  TD ( ) Tj-6.36 0  TD -0.048  Tc (=) Tj-2.76 0  TD 0  Tc ( ) Tj-12.72 -1.56  TD 0.012  Tc (M) Tj74.04 -0.72  TD /F4 6.96  Tf-0.1349  Tc (i) Tj-21 0.12  TD (i) Tj-42 0  TD (i) TjETq 93.96 183.12 39.96 14.04 re W n BT107.28 185.76  TD/F5 12  Tf0.036  Tc (\242) TjETQ BT152.04 185.28  TD/F1 12  Tf0  Tc -0.18  Tw ( ) Tj374.4 0  TD -0.128  Tc 0  Tw (\(1\)) Tj-454.44 -34.8  TD 0  Tc -0.06  Tw (                              ) Tj104.4 0  TD (                              ) Tj104.4 0  TD (                              ) Tj104.4 0  TD (                              ) Tj104.4 0  TD (               ) TjET72 153 468 0.6 re fBT72 138.12  TD/F1 9.96  Tf-0.0033  Tc -0.0549  Tw (sample of 2332 contains manipulators.  This biases against discriminating manipulators from non-manipulators,) Tj0 -11.88  TD 0.0016  Tc -0.0598  Tw (making the tests more conservative. ) TjETendstream
+endobj
+32 0 obj
+3863
+endobj
+29 0 obj
+<<
+/Type /Page
+/Parent 30 0 R
+/Resources <<
+/Font <<
+/F0 6 0 R 
+/F1 8 0 R 
+/F3 33 0 R 
+/F4 34 0 R 
+/F5 35 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 31 0 R
+>>
+endobj
+38 0 obj
+<<
+/Length 39 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (8) TjETQ BT72 709.32  TD0 0 0 rg /F1 11.52  Tf0.0024  Tc -0.0408  Tw (where M is a dichotomous variable coded 1 for manipulators and 0 otherwise, X is the matrix of) Tj0 -28.2  TD -0.0008  Tc -0.0376  Tw (explanatory variables, and ) TjETq 198.84 678.48 11.04 14.52 re W n BT199.92 681.12  TD/F3 12  Tf0.012  Tc 0  Tw (e) TjETQ q 198.84 682.92 11.04 10.08 re W n BT201.24 685.8  TD/F4 12  Tf-0.012  Tc 0  Tw (~) TjETQ BT209.88 681.12  TD/F1 12  Tf-0.1069  Tc -0.0731  Tw ( is a vector of residuals.) Tj-137.88 -27.6  TD /F0 11.52  Tf0.0238  Tc 0  Tw (Estimation) Tj36 -26.88  TD /F1 11.52  Tf-0.0045  Tc -0.0339  Tw (Earnings manipulators are ) Tj126.12 0  TD 0.0098  Tc -0.0482  Tw (oversampled relative to their true proportion in the population. ) Tj-162.12 -26.88  TD 0.0022  Tc -0.0406  Tw (The econometric justification for such a state-based sample is that a random sample would likely) Tj0 -26.88  TD 0.0026  Tc -0.041  Tw (generate a smaller number of manipulators, thus making the identification of an earnings) TjT* 0.0095  Tc -0.0479  Tw (manipulation classification model difficult.  However, since estimation of a dichotomous state) TjT* 0.0018  Tc -0.0402  Tw (model that ignores the state-based sample procedures yields asymptotically biased coefficient) TjT* 0.0039  Tc -0.0423  Tw (estimates, I use weighted exogenous sample maximum likelihood ) Tj309.24 0  TD 0.0075  Tc -0.0459  Tw (probit \(WESML\).) Tj84.6 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (5) Tj3.48 -5.4  TD /F1 11.52  Tf-0.0173  Tc -0.0211  Tw (   The) Tj-397.32 -26.88  TD 0.0079  Tc -0.0463  Tw (estimation sample spans the period 1982-1988 and consists of 50 manipulators and 1708 controls.) Tj36 -26.88  TD 0.0083  Tc -0.0467  Tw (Using WESML requires an estimate of the proportion of firms in the population th) Tj388.44 0  TD 0.0043  Tc 0  Tw (at) Tj-424.44 -26.88  TD 0.0046  Tc -0.043  Tw (manipulate earnings.  Assuming that the population from which the firms are sampled is the) Tj0 -26.88  TD 0.0086  Tc -0.047  Tw (population of COMPUSTAT firms, one estimate of the proportion of manipulators in the) TjT* 0.0096  Tc -0.048  Tw (population equals .0069 \(50/7231\).  Because I have no way of assessing the validity of this) TjT* 0.0094  Tc -0.0478  Tw (assumption, I also evaluate the sensitivity of the model to the different specifications of the prior) TjT* 0.014  Tc -0.0524  Tw (probability of manipulation. Having discussed estimation issues, I now turn to the composition of) TjT* 0.0045  Tc -0.0429  Tw (the X matrix.) TjT* /F0 11.52  Tf0.0032  Tc -0.0416  Tw (Can ) Tj23.76 0  TD 0.0012  Tc -0.0396  Tw (accounting data be used to detect earnings manipulation? ) Tj12.24 -26.88  TD /F1 11.52  Tf0.008  Tc -0.0464  Tw (If financial statement manipulations encompass not only earnings but also other signals that) Tj-36 -37.32  TD /F1 12  Tf0  Tc -0.06  Tw (                              ) Tj104.4 0  TD (            ) TjET72 188.64 144 0.6 re fBT72 173.76  TD/F1 9.96  Tf-0.0582  Tw (     ) Tj14.4 4.68  TD /F1 6  Tf0.012  Tc 0  Tw (5) Tj3 -4.68  TD /F1 9.96  Tf-0.0048  Tc -0.0534  Tw (  WESML accounts for state-based sampling by weighing the likelihood function according to the proportion) Tj-17.4 -11.88  TD -0.0034  Tc -0.0548  Tw (of earnings manipulators in the sample and in the population.  For a discussion of the implications of using state-) Tj0 -11.88  TD 0.0043  Tc -0.0625  Tw (based samples see Hsieh, et al. \(1985\).  Prior research has employed weighted ) Tj322.08 0  TD -0.002  Tc -0.0562  Tw (probit to predict audit) Tj-322.08 -11.88  TD 0.0096  Tc -0.0678  Tw (qualifications, \() Tj63.6 0  TD -0  Tc -0.058  Tw (Dopuch et al. \(1987\)\) ) Tj90.48 0  TD -0.007  Tc -0.0512  Tw (and  bankruptcy  \() Tj74.04 0  TD 0.0073  Tc -0.0655  Tw (Zmijewski \(1984\)\).) TjETendstream
+endobj
+39 0 obj
+3958
+endobj
+37 0 obj
+<<
+/Type /Page
+/Parent 30 0 R
+/Resources <<
+/Font <<
+/F0 6 0 R 
+/F1 8 0 R 
+/F3 33 0 R 
+/F4 34 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 38 0 R
+>>
+endobj
+41 0 obj
+<<
+/Length 42 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (9) TjETQ BT72 709.32  TD0 0 0 rg /F1 11.52  Tf0.0066  Tc -0.045  Tw (investors and analysts rely on, then the discriminatory power of accounting data is diminished. ) Tj0 -26.88  TD 0.0076  Tc -0.046  Tw (This would bias the results against rejection of a null hypothesis on the variables' coefficients, and) TjT* 0.0113  Tc -0.0497  Tw (limit the usefulness of using accounting information for detecting earnings manipulation.  In the) TjT* -0  Tc -0.0378  Tw (absence of an economic theory of manipulation, I rely on three sources to choose explanatory) TjT* 0.0033  Tc -0.0417  Tw (variables based on financial statement data.  First, I consider signals about future prospects that) TjT* -0.0041  Tc -0.0343  Tw (appear in the academic and practitioner literature.) Tj233.52 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (6) Tj3.48 -5.4  TD /F1 11.52  Tf0.0084  Tc -0.0468  Tw (  The presumption is that earnings manipulation) Tj-237 -26.88  TD -0.0045  Tc -0.0339  Tw (is more likely when firms' future prospects are poor.  Second, I consider variables based on cash) Tj0 -26.88  TD 0.0021  Tc -0.0405  Tw (flows and accruals \(Healy \(1985\), Jones \(1991\)\).  Third, I consider variables drawn from positive) TjT* -0.004  Tc -0.0344  Tw (theory research that hypothesizes contract-based incentives for earnings management \(Watts and) TjT* -0.0017  Tc -0.0367  Tw (Zimmerman \(1986\)\).) Tj36 -26.88  TD 0.0035  Tc -0.0419  Tw (The model includes eight variables.) Tj167.04 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (7) Tj3.48 -5.4  TD /F1 11.52  Tf-0.0087  Tc -0.0297  Tw (  The variables are measured using data from the fiscal) Tj-206.52 -26.88  TD 0.0057  Tc -0.0441  Tw (year of the first reporting violation, e.g., the first year for which the firm is subsequently required) Tj0 -26.88  TD -0.0016  Tc -0.0368  Tw (to restate.  I designate seven of the eight variables as indices because they are intended to capture) TjT* 0.0051  Tc -0.0435  Tw (distortions that could arise from manipulation by comparing financial statement measures in the) TjT* 0.0009  Tc -0.0393  Tw (year of the first reporting violation to the year prior.  The variables are thus not measured) TjT* 0.0108  Tc -0.0492  Tw (contemporaneously with manipulation discovery since, in line with ) Tj317.52 0  TD -0.0095  Tc -0.0289  Tw (Feroz, Park, and ) Tj82.8 0  TD -0.0114  Tc 0  Tw (Pastena) Tj-400.32 -27.24  TD /F1 12  Tf0  Tc -0.06  Tw (                              ) Tj104.4 0  TD (            ) TjET72 281.4 144 0.6 re fBT72 266.52  TD/F1 9.96  Tf-0.0582  Tw (     ) Tj14.4 4.68  TD /F1 6  Tf0.012  Tc 0  Tw (6) Tj3 -4.68  TD /F1 9.96  Tf0.0073  Tc -0.0655  Tw ( Specifically, I use constructs that analysts consider as indicators of future performance.  See for example,) Tj-17.4 -11.88  TD -0.0029  Tc -0.0553  Tw (O\222Glove \(1987\), Kellogg and Kellogg \(1991\), ) Tj189.24 0  TD 0.0044  Tc -0.0626  Tw (Siegel, \(1991\), ) Tj63.48 0  TD -0.0099  Tc -0.0483  Tw (Fridson \(1993\) ) Tj63.12 0  TD -0.0142  Tc -0.044  Tw (and  ) Tj20.04 0  TD -0.0083  Tc -0.0499  Tw (Lev and  ) Tj38.52 0  TD 0.0051  Tc -0.0633  Tw (Thiagarajan \(1993\).) Tj-374.4 -23.88  TD 0  Tc -0.0582  Tw (     ) Tj14.4 4.68  TD /F1 6  Tf0.012  Tc 0  Tw (7) Tj3 -4.68  TD /F1 9.96  Tf0  Tc -0.0582  Tw ( ) Tj2.88 0  TD -0.0013  Tc -0.0569  Tw (I also considered but did not include in the model five other types of variables to examine whether the model) Tj-20.28 -11.88  TD -0.0037  Tc -0.0545  Tw (could be improved: \() Tj84.96 0  TD 0.011  Tc 0  Tw (i) Tj2.76 0  TD 0.0046  Tc -0.0628  Tw (\) variables isolating the income effect of non-recurring items \(the ratio unusual items to) Tj-87.72 -11.88  TD -0.0008  Tc -0.0574  Tw (pretax income \(COMPUSTAT #17/#170\), and the ratio of net non-operating income to income before) Tj0 -11.88  TD 0.0041  Tc -0.0623  Tw (extraordinary items \(COMPUSTAT #61/#18\), \(ii\) variables capturing the rate and changes in the rate of intangible) TjT* 0.0029  Tc -0.0611  Tw (amortization as well as variables identifying the funding status of pension funds, \(iii\) cash flow based variables \(the) TjT* 0.0046  Tc -0.0628  Tw (cash flow adequacy ratio and the cash flow coverage of debt service\), and \(iv\) signals of earnings quality) TjT* -0.0155  Tc -0.0427  Tw (documented by ) Tj63.96 0  TD -0.0024  Tc 0  Tw (Lev) Tj15.6 0  TD -0.0142  Tc -0.044  Tw ( and ) Tj20.04 0  TD 0.0084  Tc 0  Tw (Thiagarajan) Tj48 0  TD 0.0016  Tc -0.0598  Tw ( \(1993\): changes in the receivable provision, changes in capital expenditures.) Tj-147.6 -11.88  TD 0.0043  Tc -0.0625  Tw (changes in the effective tax rate, changes in employee productivity, and a variable indicating whether the firm used) Tj0 -11.88  TD 0.001  Tc -0.0592  Tw (LIFO to value its inventory, and \(v\) a day sales in inventory index similar to the day sales in receivables index. ) TjT* 0.0034  Tc -0.0616  Tw (None of these variables improved the model performance, and are not reported.) TjETendstream
+endobj
+42 0 obj
+5120
+endobj
+40 0 obj
+<<
+/Type /Page
+/Parent 30 0 R
+/Resources <<
+/Font <<
+/F1 8 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 41 0 R
+>>
+endobj
+44 0 obj
+<<
+/Length 45 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (10) TjETQ BT72 709.32  TD0 0 0 rg /F1 11.52  Tf0.0032  Tc -0.0416  Tw (\(1991\), manipulation becomes public on average 19 months after the end of the fiscal year of the) Tj0 -26.88  TD 0.0045  Tc -0.0429  Tw (first reporting violation. I discuss below the measurement of each variable, and how I expect it to) TjT* 0.016  Tc -0.0544  Tw (affect the likelihood of manipulation.) Tj36 -26.88  TD 0  Tc -0.0386  Tw (1. Days Sales in Receivables Index \(DSRI\):) Tj0 -26.88  TD 0.0109  Tc -0.0493  Tw (DSRI is the ratio of ) Tj95.76 0  TD 0.0032  Tc -0.0416  Tw (days sales in receivable in the first year in which earnings manipulation) Tj-95.76 -13.44  TD -0.0028  Tc -0.0356  Tw (is uncovered \(year t\) to the corresponding measure in year t-1. This variable gauges) Tj0 -13.44  TD -0.0052  Tc -0.0332  Tw (whether receivables and revenues are in or out-of-balance in two consecutive years.  A) TjT* -0.012  Tc -0.0264  Tw (large increase in ) Tj80.16 0  TD 0.0019  Tc -0.0403  Tw (days sales in receivables could be the result of a change in credit policy to) Tj-80.16 -13.44  TD -0  Tc -0.0378  Tw (spur sales in the face of increased competition, but disproportionate increases in receivables) Tj0 -13.44  TD -0.001  Tc -0.0374  Tw (relative to sales may also be suggestive of revenue inflation. I thus expect a large increase) TjT* 0.0418  Tc -0.0802  Tw (in ) Tj12.36 0  TD 0.0021  Tc -0.0405  Tw (days sales in receivables to be associated with a higher likelihood that revenues and) Tj-12.36 -13.44  TD -0.0099  Tc -0.0285  Tw (earnings are overstated.) Tj0 -26.88  TD 0.0059  Tc -0.0443  Tw (2. Gross Margin Index \(GMI\):) TjT* 0.0045  Tc -0.0429  Tw (GMI is ratio of the gross margin in year t-1 to the gross margin in year t.  When GMI is) Tj0 -13.44  TD -0  Tc -0.0383  Tw (greater than 1, it indicates that gross margins have deteriorated.  ) Tj306.36 0  TD -0.0096  Tc -0.0288  Tw (Lev and ) Tj41.28 0  TD -0.0083  Tc 0  Tw (Thiagarajan) Tj-347.64 -13.44  TD 0.005  Tc -0.0434  Tw (\(1993\) suggest that gross margin deterioration is a negative signal about firms' prospects. ) Tj0 -13.44  TD 0.0018  Tc -0.0402  Tw (If firms with poorer prospects are more likely to engage in earnings manipulation, I expect) TjT* 0.0106  Tc -0.049  Tw (a positive relation between GMI and the probability of earnings manipulation.) Tj366.36 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (8) Tj3.48 -5.4  TD /F1 11.52  Tf0  Tc -0.0384  Tw ( ) Tj-369.84 -26.88  TD 0.0108  Tc -0.0492  Tw (3. Asset Quality Index \(AQI\):) Tj0 -26.88  TD 0.0045  Tc -0.0429  Tw (Asset quality in a given year is the ratio of non-current assets other than property plant and) Tj0 -13.44  TD 0.0041  Tc -0.0425  Tw (equipment \(PPE\) to total assets and measures the proportion of total assets for which future) TjT* 0.0065  Tc -0.0449  Tw (benefits are potentially less certain.  AQI is the ratio of asset quality in year t, relative to) TjT* -0.0014  Tc -0.037  Tw (asset quality in year t-1.  AQI is an aggregate measure of the change in the asset realization) TjT* 0.0043  Tc -0.0427  Tw (risk analysis suggested by ) Tj124.8 0  TD 0.0076  Tc -0.046  Tw (Siegel \(1991\).  If AQI is greater than 1 it indicates that the firm) Tj-124.8 -13.44  TD 0.0055  Tc -0.0439  Tw (has potentially increased its involvement in cost deferral.) Tj267.72 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (9) Tj3.48 -5.4  TD /F1 11.52  Tf0.0092  Tc -0.0476  Tw (  I thus expect a positive relation) Tj-307.2 -21.72  TD /F1 12  Tf0  Tc -0.06  Tw (                              ) Tj104.4 0  TD (            ) TjET72 260.04 144 0.6 re fBT72 245.16  TD/F1 9.96  Tf-0.0582  Tw (     ) Tj14.4 4.68  TD /F1 6  Tf0.012  Tc 0  Tw (8) Tj3 -4.68  TD /F1 9.96  Tf-0.0032  Tc -0.055  Tw (  It is possible that manipulation of inventories and other production costs can lead to increasing gross) Tj-17.4 -11.88  TD 0.0013  Tc -0.0595  Tw (margins. This would suggest that either increased or decreased gross margins ) Tj317.04 0  TD 0.0035  Tc -0.0617  Tw (can increase the likelihood of) Tj-317.04 -11.88  TD -0  Tc -0.0581  Tw (manipulation. While Kellogg and Kellogg \(1991, p. 10-16\) state: "Barring unusual circumstances, the percentage) Tj0 -11.88  TD 0.0036  Tc -0.0618  Tw (of gross profit to sales should remain the same from year to year." it is difficult to determine what "the same") TjT* 0.0054  Tc -0.0636  Tw (means.  I considered ) Tj86.88 0  TD -0.0025  Tc -0.0557  Tw (a variable relating gross margin changes to inventory changes but it did not enhance the) Tj-86.88 -11.88  TD 0.0053  Tc -0.0635  Tw (specification of the model.) Tj0 -23.88  TD 0  Tc -0.0582  Tw (     ) Tj14.4 4.68  TD /F1 6  Tf0.012  Tc 0  Tw (9) Tj3 -4.68  TD /F1 9.96  Tf0.0022  Tc -0.0604  Tw ( It is possible that part ) Tj93.12 0  TD 0.0014  Tc -0.0596  Tw (of  the increase is attributable to acquisitions involving Goodwill.  However, sample) Tj-110.52 -11.88  TD 0.0009  Tc -0.0591  Tw (manipulators undertake few acquisitions and those are primarily stock-for-stock exchanges accounted for using) Tj0 -11.88  TD 0.0042  Tc -0.0624  Tw (pooling of interests.  Nevertheless, I also calculate this variable using the ratio of non-current assets other than) TjT* -0  Tc -0.0577  Tw (PPE and Goodwill to total assets and find similar results.  ) TjETendstream
+endobj
+45 0 obj
+5441
+endobj
+43 0 obj
+<<
+/Type /Page
+/Parent 30 0 R
+/Resources <<
+/Font <<
+/F1 8 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 44 0 R
+>>
+endobj
+47 0 obj
+<<
+/Length 48 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (11) TjETQ BT108 709.32  TD0 0 0 rg /F1 11.52  Tf0.0042  Tc -0.0426  Tw (between AQI and the probability of earnings manipulation.  An increase in asset realization) Tj0 -13.44  TD 0.0008  Tc -0.0392  Tw (risk indicates an increased propensity to capitalize and thus defer costs.) Tj0 -26.88  TD -0  Tc -0.0377  Tw (4. Sales Growth Index \(SG) Tj126.84 0  TD 0.0154  Tc 0  Tw (I\):) Tj-126.84 -27.24  TD /F1 12  Tf0.0155  Tc -0.0755  Tw (SGI is the ratio of sales in year t to sales in year t-1.  Growth does not imply) Tj0 -13.92  TD 0.0139  Tc -0.0739  Tw (manipulation, but growth firms are viewed by professionals as more likely to commit) TjT* 0.0129  Tc -0.0729  Tw (financial statement fraud because their financial position and capital needs put pressure) TjT* 0.0125  Tc -0.0725  Tw (on managers to achieve earnings targets \(National Commission on Fraudulent Financial) TjT* 0.0097  Tc -0.0697  Tw (Reporting \(1987\),) Tj87.72 0  TD /F1 11.52  Tf0.0058  Tc -0.0442  Tw ( National Association of Certified Fraud Examiners \(1993\)\)) Tj280.32 0  TD /F1 12  Tf-0.008  Tc -0.052  Tw (.  In) Tj-368.04 -13.92  TD 0.0193  Tc -0.0793  Tw (addition, concerns about controls and reporting tend to lag behind operations in periods) Tj0 -13.92  TD 0.0148  Tc -0.0748  Tw (of high growth \(National Commission on Fraudulent Financial Reporting \(1987\),) TjT* 0.004  Tc -0.064  Tw (Loebeckke ) Tj56.16 0  TD 0.0048  Tc -0.0648  Tw (et al. \(1989\)\).  If growth firms face large stock ) Tj233.4 0  TD 0.0191  Tc -0.0791  Tw (prices losses at the first) Tj-289.56 -13.92  TD 0.013  Tc -0.073  Tw (indication of a slowdown, they may have greater incentives to manipulate earnings.  To) Tj0 -13.92  TD 0.0055  Tc -0.0655  Tw (this effect, ) Tj55.44 0  TD 0.015  Tc -0.075  Tw (Fridson \(1993, pp. 7-8\) states: "Almost invariably, companies try to dispel) Tj-55.44 -13.92  TD 0.0163  Tc -0.0763  Tw (the impression that their growth is decelerating, since that perception can be so costly) Tj0 -13.92  TD 0.0135  Tc -0.0735  Tw (to them." I thus expect a positive relation between SGI and the probability of earnings) TjT* 0.0148  Tc -0.0748  Tw (manipulation.  ) Tj0 -39  TD /F1 11.52  Tf0.0057  Tc -0.0441  Tw (5. Depreciation Index \(DEPI\):) Tj0 -26.88  TD 0.0047  Tc -0.0431  Tw (DEPI is the ratio of the rate of depreciation in year t-1 ) Tj259.44 0  TD -0.0011  Tc -0.0373  Tw (vs the corresponding rate in year t. ) Tj-259.44 -13.44  TD 0  Tc -0.0385  Tw (The depreciation rate in a given year equals is equal to depreciation/\() Tj324.84 0  TD 0.0032  Tc 0  Tw (depreciation+net) Tj-324.84 -13.44  TD -0.0028  Tc -0.0356  Tw (PPE\).  A DEPI greater than 1 it indicates that the rate at which assets are depreciated has) Tj0 -13.44  TD 0.0071  Tc -0.0455  Tw (slowed down--raising the possibility that the firm has revised upwards the estimates of) TjT* 0.0015  Tc -0.0399  Tw (assets useful lives or adopted a new method that is income increasing.) Tj328.32 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (10) Tj6.96 -5.4  TD /F1 11.52  Tf0  Tc -0.0386  Tw (  I thus expect a) Tj-335.28 -13.44  TD 0.0131  Tc -0.0515  Tw (positive relation between DEPI and the probability of manipulation. ) Tj0 -26.88  TD -0.0017  Tc -0.0367  Tw (6.Sales General and Administrative Expenses Index \(SGAI\):) TjT* -0.0014  Tc -0.037  Tw (SGAI is calculated ) Tj90.72 0  TD 0.0022  Tc -0.0406  Tw (as the ratio of SGA to sales in year t relative to the corresponding) Tj-90.72 -13.44  TD 0.001  Tc -0.0394  Tw (measure in year t-1. The variable is used following ) Tj243.24 0  TD -0.0096  Tc -0.0288  Tw (Lev and ) Tj41.28 0  TD 0.0015  Tc -0.0399  Tw (Thiagarajan\221s \(1993\)) Tj-284.52 -13.44  TD 0.0034  Tc -0.0418  Tw (suggestion that analysts would interpret a disproportionate increase in sales as a negative) Tj0 -13.44  TD 0.0159  Tc -0.0543  Tw (signal about ) Tj59.76 0  TD 0.0008  Tc -0.0392  Tw (firms future prospects.  I expect a positive relation between SGAI and the) Tj-59.76 -13.44  TD 0.0202  Tc -0.0586  Tw (probability of manipulation.   ) Tj0 -26.88  TD -0.006  Tc -0.0324  Tw (7. Leverage Index \(LVGI\):) Tj-36 -33  TD /F1 12  Tf0  Tc -0.06  Tw (                              ) Tj104.4 0  TD (            ) TjET72 176.76 144 0.6 re fBT72 161.88  TD/F1 9.96  Tf-0.0582  Tw (     ) Tj14.4 4.68  TD /F1 6  Tf0.012  Tc 0  Tw (10) Tj6 -4.68  TD /F1 9.96  Tf0.0008  Tc -0.059  Tw (  To allow for the possibility that firms manipulate earnings by using lower depreciation rates than) Tj-20.4 -11.88  TD 0.0017  Tc -0.0599  Tw (comparable firms in the industry, I estimated the model using the depreciation rate instead changes in the) Tj0 -11.88  TD 0.0017  Tc -0.0599  Tw (depreciation rate.  This variable did not enhance the specification of the model and did not alter the magnitude or) TjT* 0.0079  Tc -0.0661  Tw (the significance of the coefficients on the other variables.) TjETendstream
+endobj
+48 0 obj
+5047
+endobj
+46 0 obj
+<<
+/Type /Page
+/Parent 30 0 R
+/Resources <<
+/Font <<
+/F1 8 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 47 0 R
+>>
+endobj
+50 0 obj
+<<
+/Length 51 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (12) TjETQ BT108 709.32  TD0 0 0 rg /F1 11.52  Tf0.0094  Tc -0.0478  Tw (LVGI is the ratio of total debt to total assets in year t relative to the corresponding ratio in) Tj0 -13.44  TD -0.0038  Tc -0.0346  Tw (year t-1.  A LVGI greater than 1 indicates an increase in leverage.  The variable is included) TjT* 0.0035  Tc -0.0419  Tw (to capture debt covenants incentives for earnings manipulation.  Assuming that leverage) TjT* 0.0038  Tc -0.0422  Tw (follows a random walk, LVGI implicitly measures the ) Tj257.4 0  TD -0.0153  Tc -0.0231  Tw (leverage forecast error.  I use the) Tj-257.4 -13.44  TD -0.0021  Tc -0.0363  Tw (change in leverage in the firms' capital structure given evidence in Beneish and Press) Tj0 -13.44  TD 0  Tc -0.0388  Tw (\(1993\) that such changes are associated with the stock market effect of default.) Tj0 -26.88  TD 0.0018  Tc -0.0402  Tw (8. Total Accruals to Total Assets \(TATA\):) TjT* -0.004  Tc -0.0344  Tw (Total accruals are calculated as the change in working capital accounts other than cash less) Tj0 -13.44  TD 0.0019  Tc -0.0403  Tw (depreciation.  Either total accruals or a partition thereof has been used in prior work to) TjT* -0.0033  Tc -0.0351  Tw (assess the extent to which managers make discretionary accounting choices to alter earnings) TjT* 0.0029  Tc -0.0413  Tw (\(see for example Healy \(1985\), Jones \(1991\).  I use total accruals to total assets to proxy) TjT* -0  Tc -0.0383  Tw (for the extent to which cash underlies reported earnings, and expect higher positive accruals) TjT* 0.0078  Tc -0.0462  Tw (\(less cash\) to be associated with a higher likelihood of earnings manipulation.) Tj-18 -26.88  TD -0.0029  Tc -0.0355  Tw (The explanatory variables in the model are primarily based on year-to-year changes and this) Tj-18 -26.88  TD 0.0078  Tc -0.0462  Tw (introduces a potential problem when the denominator is small. To deal with this problem, I) Tj0 -26.88  TD -0  Tc -0.038  Tw (winsorized the data at the 1% and 99 % percentiles for each variable.  In addition, there were) TjT* -0.0029  Tc -0.0355  Tw (instances where the denominator ) Tj156.24 0  TD -0.001  Tc -0.0374  Tw (of  the Asset Quality Index variable was zero as assets in the) Tj-156.24 -26.88  TD -0.0054  Tc -0.033  Tw (reference year \(period t-1\) consisted exclusively of current assets and PPE.  Since in such cases the) Tj0 -26.88  TD 0.0093  Tc -0.0477  Tw (Asset Quality Index was not defined, I set its value to one \(its neutral value\) instead of treating the) TjT* 0.0059  Tc -0.0443  Tw (observation as missing.  Similarly, I set ) Tj189.96 0  TD 0.003  Tc -0.0414  Tw (the  Depreciation and SGA indices to values of one,  when) Tj-189.96 -26.88  TD 0.0079  Tc -0.0463  Tw (elements of the computation \(Amortization of Intangibles \(#65\), and SG&A \(#189\)\)  were not) Tj0 -26.88  TD 0.0062  Tc -0.0446  Tw (available on the COMPUSTAT tapes.  I found that estimating the model after excluding those) TjT* 0.0052  Tc -0.0436  Tw (observations yielded similar results.) Tj36 -26.88  TD 0.0056  Tc -0.044  Tw (In table 2, I compare the distribution of these variables for manipulators and non-) Tj-36 -26.88  TD 0.0027  Tc -0.0411  Tw (manipulators in the estimation sample.  The results indicate that on average, manipulators have) Tj0 -26.88  TD 0.0013  Tc -0.0397  Tw (significantly larger increases in ) Tj149.76 0  TD -0.0054  Tc -0.033  Tw (days sales in receivables, greater deterioration of gross margins and) Tj-149.76 -26.88  TD -0.0012  Tc -0.0372  Tw (asset quality, higher growth, and larger accruals. ) TjETendstream
+endobj
+51 0 obj
+3705
+endobj
+49 0 obj
+<<
+/Type /Page
+/Parent 30 0 R
+/Resources <<
+/Font <<
+/F1 8 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 50 0 R
+>>
+endobj
+54 0 obj
+<<
+/Length 55 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (13) TjETQ BT72 682.44  TD0 0 0 rg /F0 11.52  Tf0.0075  Tc -0.0459  Tw (Estimation Results and Holdout Sample Tests) Tj36 -26.88  TD /F1 11.52  Tf-0.0034  Tc -0.035  Tw (Table 3) Tj35.4 0  TD -0.0011  Tc -0.0373  Tw (, Panel A reports the results of the WESML ) Tj210.48 0  TD 0.0148  Tc -0.0532  Tw (probit and ) Tj51.24 0  TD 0.013  Tc -0.0514  Tw (unweighted ) Tj57 0  TD 0.0232  Tc 0  Tw (probit) Tj-390.12 -26.88  TD 0.0109  Tc -0.0493  Tw (estimations of the model.  The likelihood ratio test indicates that for both estimations the model has) Tj0 -27.12  TD 0.0144  Tc -0.0528  Tw (significant power, with ) Tj112.08 -0.48  TD /F5 11.52  Tf0.0355  Tc 0  Tw (c) Tj6.36 5.88  TD /F1 6.96  Tf0.0139  Tc (2) Tj3.48 -5.4  TD /F1 11.52  Tf0.0097  Tc -0.0481  Tw ( statistics \(p-values\) of 34.5 \(.00\) and 129.2 \(.00\). The model has) Tj-121.92 -26.88  TD 0.0159  Tc -0.0543  Tw (descriptive validity with pseudo-R) Tj160.68 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (2) Tj3.48 -5.4  TD /F1 11.52  Tf0.0035  Tc -0.0419  Tw (s of 30.6% and 37.1% for WESML and ) Tj192.24 0  TD 0.013  Tc -0.0514  Tw (unweighted ) Tj57 0  TD 0.0232  Tc 0  Tw (probit) Tj-413.4 -26.88  TD -0.0023  Tc -0.0361  Tw (respectively.  Since coefficient estimates have similar magnitudes and significance across) Tj0 -26.88  TD 0.0071  Tc -0.0455  Tw (estimations, I discuss the results of the ) Tj184.68 0  TD 0.013  Tc -0.0514  Tw (unweighted ) Tj57 0  TD 0.0167  Tc -0.0551  Tw (probit estimation.) Tj-205.68 -26.88  TD 0.0012  Tc -0.0396  Tw (The variable days sales in receivables index has a positive coefficient, .920, and is) Tj-36 -26.88  TD 0.016  Tc -0.0544  Tw (significant at the 5% level with an asymptotic t-statistic of 6.02.  This is consistent with) Tj0 -26.88  TD 0.0029  Tc -0.0413  Tw (disproportionate increases in receivables raising the likelihood that a firm has inflated revenues. ) TjT* 0.0037  Tc -0.0421  Tw (The variable gross margin index has a positive coefficient of .528 that is over two standard) TjT* 0.0032  Tc -0.0416  Tw (deviations from zero.  This is consistent with firms facing poor prospects having greater incentives) TjT* 0.0089  Tc -0.0473  Tw (for earnings manipulation.  The asset quality index also has a significant positive coefficient \(.404,) TjT* 0.0211  Tc -0.0595  Tw (t-statistic 3.20\)) Tj70.56 0  TD 0.0108  Tc -0.0492  Tw (, consistent with the likelihood of earnings manipulation increasing when firms') Tj-70.56 -26.88  TD 0.0042  Tc -0.0426  Tw (change their involvement in cost deferral.  The sales growth index has a positive coefficient that is) Tj0 -26.88  TD 0.0032  Tc -0.0416  Tw (over five standard deviations from zero, consistent with growth firms facing growth deceleration) TjT* -0.0009  Tc -0.0375  Tw (having more incentives to manipulate earnings.  The accruals to total assets variable has a) TjT* 0.0094  Tc -0.0478  Tw (significant positive coefficient consistent with less cash being behind accounting income for) TjT* 0.0061  Tc -0.0445  Tw (manipulators. ) Tj36 -26.88  TD -0.0015  Tc -0.0369  Tw (The coefficients on the leverage, depreciation and ) Tj237.24 0  TD 0.0054  Tc -0.0438  Tw (SGA variables are not significant.  It is) Tj-273.24 -26.88  TD 0.0023  Tc -0.0407  Tw (possible that these variables are associated with earnings management, not manipulation.  For) TjETendstream
+endobj
+55 0 obj
+3473
+endobj
+52 0 obj
+<<
+/Type /Page
+/Parent 53 0 R
+/Resources <<
+/Font <<
+/F0 6 0 R 
+/F1 8 0 R 
+/F5 35 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 54 0 R
+>>
+endobj
+57 0 obj
+<<
+/Length 58 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (14) TjETQ BT72 709.32  TD0 0 0 rg /F1 11.52  Tf-0  Tc -0.0383  Tw (example, a change from accelerated depreciation to straight line or a revision that lengthens useful) Tj0 -26.88  TD 0.0076  Tc -0.046  Tw (lives, would result in higher values of the depreciation index.  However, this is an instance of) TjT* 0.0042  Tc -0.0426  Tw (earnings management and the firm would not be included in the sample.  Similarly, for the) TjT* 0.0046  Tc -0.043  Tw (leverage variable, incentives to comply with debt covenants may be insufficient to induce earnings) TjT* -0.0009  Tc -0.0375  Tw (manipulation because the costs of non-compliance are small \(Beneish and Press \(1993\) estimate) TjT* 0.0012  Tc -0.0396  Tw (these costs to range between 1 and 2% of market value of equity\).) Tj310.68 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (11) Tj-274.68 -32.28  TD /F1 11.52  Tf0.0074  Tc -0.0458  Tw (In table 3, Panel B I report the estimated probabilities of earnings manipulation ) Tj375.6 0  TD 0.0149  Tc -0.0533  Tw (for both the) Tj-411.6 -26.88  TD 0.0061  Tc -0.0445  Tw (estimation and holdout samples.  For the estimation sample, the model estimated using WESML) Tj0 -26.88  TD 0.006  Tc -0.0444  Tw (predicts higher average \(median\) probability of earnings manipulation .107 \(.024\) for manipulators) TjT* 0.01  Tc -0.0484  Tw (than for non-manipulators .006 \(.003\).  Similarly, the model estimated using ) Tj364.2 0  TD 0.013  Tc -0.0514  Tw (unweighted ) Tj57 0  TD 0.0232  Tc 0  Tw (probit) Tj-421.2 -26.88  TD 0  Tc -0.0387  Tw (predicts higher average \(median\) probabilities for ) Tj235.68 0  TD 0.0118  Tc -0.0502  Tw (manipulators .237 \(.099\) than for non-) Tj-235.68 -26.88  TD 0.0121  Tc -0.0505  Tw (manipulators .022 \(.011\).  ) Tj127.56 0  TD 0.0082  Tc -0.0466  Tw (Wilcoxon and median tests reject the null hypothesis that estimated) Tj-127.56 -26.88  TD 0.0055  Tc -0.0439  Tw (probabilities for manipulators and non-manipulators are drawn from the same distribution.  Results) Tj0 -26.88  TD 0.0063  Tc -0.0447  Tw (for the holdout sample of 24 manipulators and 624 controls are similar to the estimation sample) TjT* 0.0042  Tc -0.0426  Tw (findings.  The model predicts that manipulators are, on average, about 10 times more likely to) TjT* 0.0086  Tc -0.047  Tw (manipulate earnings.  The distributions of estimated probabilities for manipulators and non-) TjT* 0.0018  Tc -0.0402  Tw (manipulators based on ) Tj108 0  TD 0.013  Tc -0.0514  Tw (unweighted ) Tj57 0  TD 0.0039  Tc -0.0423  Tw (probit illustrate these differences.  For example, in the) Tj-165 -26.88  TD 0.0068  Tc -0.0452  Tw (estimation sample, nearly all the non-manipulators \(93.4%\) have an estimated probability less than) Tj0 -26.88  TD 0.0107  Tc -0.0491  Tw (.05 compared to 38.0% of the manipulators.  Similarly, in the holdout sample, 56.1% of the non-) TjT* 0.0058  Tc -0.0442  Tw (manipulators have an estimated probability less than .01, compared to 20.8% of the manipulators.) Tj0 -27.24  TD /F1 12  Tf0  Tc -0.06  Tw (                              ) Tj104.4 0  TD (            ) TjET72 173.88 144 0.6 re fBT72 159  TD/F1 9.96  Tf-0.0582  Tw (     ) Tj14.4 4.68  TD /F1 6  Tf0.012  Tc 0  Tw (11) Tj6 -4.68  TD /F1 9.96  Tf0.005  Tc -0.0632  Tw (  I also consider three alternative definitions of leverage: total debt to market value of equity, total debt to) Tj-20.4 -11.88  TD 0.0017  Tc -0.0599  Tw (book value of equity, and long-term debt to total assets as well as using leverage level variables instead of changes.) Tj0 -11.88  TD 0.0098  Tc -0.068  Tw ( None of the alternative leverage measures attains significance.  .) TjETendstream
+endobj
+58 0 obj
+3785
+endobj
+56 0 obj
+<<
+/Type /Page
+/Parent 53 0 R
+/Resources <<
+/Font <<
+/F1 8 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 57 0 R
+>>
+endobj
+60 0 obj
+<<
+/Length 61 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (15) TjETQ BT72 709.32  TD0 0 0 rg /F0 11.52  Tf-0.0155  Tc -0.0229  Tw (Robustness Checks) Tj36 -26.88  TD /F1 11.52  Tf-0.0164  Tc -0.022  Tw (I assess the r) Tj60 0  TD 0.0067  Tc -0.0451  Tw (obustness of the results in three ways.  First, even though ) Tj274.68 0  TD 0.0185  Tc -0.0569  Tw (collinearity is not) Tj-370.68 -26.88  TD 0.003  Tc -0.0414  Tw (likely to be a problem \(none of the 36 Pearson correlation coefficients is greater than .25\)) Tj421.56 0  TD 0.0082  Tc -0.0466  Tw (,  I drop) Tj-421.56 -26.88  TD 0.0064  Tc -0.0448  Tw (up to four variables from the model to assess the stability of the coefficient estimates.  Dropping) Tj0 -26.88  TD -0  Tc -0.038  Tw (the depreciation, leverage, SGA, and accrual variables one at a time and in combination yields) TjT* 0.0011  Tc -0.0395  Tw (similar results for the remaining variables.   Second, I assess the sensitivity of the WESML) TjT* 0.0148  Tc -0.0532  Tw (estimation results to the specification of the prior probability of manipulation.  In addition the) TjT* 0.0145  Tc -0.0529  Tw (estimations based on prior probabilities of .0069 and .02844 \(implicit in ) Tj342.36 0  TD 0.013  Tc -0.0514  Tw (unweighted ) Tj57 0  TD 0.0206  Tc -0.059  Tw (probit\), I) Tj-399.36 -26.88  TD 0.0076  Tc -0.046  Tw (estimate the model with four alternative prior probabilities of earnings manipulation, namely) Tj0 -27.12  TD 0.012  Tc -0.0504  Tw (.0059, .0079, .0089, .0099.  The four new estimations yield similar results with ) Tj381.72 -0.48  TD /F5 11.52  Tf0.0355  Tc 0  Tw (c) Tj6.36 5.88  TD /F1 6.96  Tf0.0139  Tc (2) Tj3.48 -5.4  TD /F1 11.52  Tf0.0144  Tc -0.0528  Tw ( statistics) Tj-391.56 -26.88  TD 0.0071  Tc -0.0455  Tw (ranging between 29.61 and 48.65 and pseudo-R) Tj224.76 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (2) Tj3.48 -5.4  TD /F1 11.52  Tf0.0036  Tc -0.042  Tw (s ranging from 29.81% and 32.65%.  Moreover,) Tj-228.24 -26.88  TD 0.0106  Tc -0.049  Tw (the ) Tj17.4 0  TD -0.0015  Tc -0.0369  Tw (coefficients estimates are similar in size and significance across the four new specifications of) Tj-17.4 -26.88  TD 0.0165  Tc -0.0549  Tw (the prior probability of manipulation. ) Tj36 -26.88  TD 0.0073  Tc -0.0457  Tw (Third, while the holdout sample is chosen to be independent from the estimation sample, I) Tj-36 -26.88  TD 0.0084  Tc -0.0468  Tw (assess the sensitivity of the results to the choice of estimation and holdout samples.  To do so, I) Tj0 -26.88  TD 0.0076  Tc -0.046  Tw (generate 100 random samples of 50 manipulators and 1500 controls with the RANUNI function in) TjT* 0.0069  Tc -0.0453  Tw (SAS and use these to estimate the model 100 times. Similarly, I obtain 100 random holdout) TjT* 0.0038  Tc -0.0422  Tw (samples by treating the complement of 24 manipulators and 832 controls to each random estimation) TjT* -0.0008  Tc -0.0376  Tw (sample as a holdout sample and reproduce the tests on estimated probabilities.  The results are) TjT* 0.0054  Tc -0.0438  Tw (reported in Table 4 and the evidence suggests that the findings are not sensitive to the choice of) TjT* 0.0117  Tc -0.0501  Tw (estimation/holdout samples.) TjT* 0  Tc -0.0384  Tw (  ) Tj36 0  TD 0  Tc 0  Tw (Overall,) Tj38.64 0  TD 0.0023  Tc -0.0407  Tw ( the estimation results provide evidence of a systematic relation between the) TjETendstream
+endobj
+61 0 obj
+3459
+endobj
+59 0 obj
+<<
+/Type /Page
+/Parent 53 0 R
+/Resources <<
+/Font <<
+/F0 6 0 R 
+/F1 8 0 R 
+/F5 35 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 60 0 R
+>>
+endobj
+63 0 obj
+<<
+/Length 64 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (16) TjETQ BT72 709.32  TD0 0 0 rg /F1 11.52  Tf0.0114  Tc -0.0498  Tw (likelihood of manipulation and financial statement data.  Since the model distinguishes) Tj0 -26.88  TD 0.004  Tc -0.0424  Tw (manipulators from non-manipulators, I assess its usefulness as a classification tool.  Below, I) TjT* 0.0067  Tc -0.0451  Tw (present evidence on the probability cut-) Tj185.4 0  TD 0.0076  Tc -0.046  Tw (offs associated with differing costs of making classification) Tj-185.4 -26.88  TD -0.0263  Tc 0  Tw (errors.) Tj0 -26.88  TD /F0 11.52  Tf0.0133  Tc -0.0517  Tw (The Model as a Classification Tool) Tj36 -26.88  TD /F1 11.52  Tf-0.0034  Tc -0.035  Tw (The model can makes two types of errors: it can classify a firm as a non-manipulator when) Tj-36 -26.88  TD -0  Tc -0.0383  Tw (it manipulates \(thereafter Type I error\) and it can classify a firm as a manipulator when it does not) Tj0 -26.88  TD 0  Tc -0.0389  Tw (manipulate \(thereafter Type II error\).  The probability cut-) Tj275.76 0  TD 0.0042  Tc -0.0426  Tw (offs that minimize the expected costs of) Tj-275.76 -26.88  TD 0.0026  Tc -0.041  Tw (misclassification depend on costs associated with the relative cost of making an error of either type.) Tj0 -26.88  TD 0.0127  Tc -0.0511  Tw ( While ) Tj34.8 0  TD 0.0018  Tc -0.0402  Tw (decision makers objective functions are not observable, classification error costs likely) Tj-34.8 -26.88  TD -0.0015  Tc -0.0369  Tw (differ decision makers.  For example, investors are likely to have high Type I error costs since the) Tj0 -26.88  TD 0.0019  Tc -0.0403  Tw (stock price loss associated with the discovery of the manipulation is dramatic whereas their Type II) TjT* 0.0084  Tc -0.0468  Tw (error cost would be low given the availability of substitutes.  On the other hand, a regulator's) TjT* 0.0105  Tc -0.0489  Tw (objective function requires balancing the protection of the investing public against the costs of) TjT* 0.0031  Tc -0.0415  Tw (falsely accusing a firm.  Their relative costs cannot be measured but it is likely that their Type II) TjT* -0.003  Tc -0.0354  Tw (error costs are higher than those of investors.) Tj36 -26.88  TD -0.0038  Tc -0.0346  Tw (The cost of Type I and Type II errors is not amenable to objective measurement and I) Tj-36 -26.88  TD 0.0019  Tc -0.0403  Tw (consider relative costs ranging from 1:1 to 100:1.  For investors, however, the relevant range is) Tj0 -26.88  TD 0.0122  Tc -0.0506  Tw (likely between 20:1 and 30:1.  To explain, following Beneish \(1999\), the typical manipulator loses) TjT* 0.006  Tc -0.0444  Tw (approximately 40% of its market value on a risk-adjusted basis in the quarter containing the) TjT* 0.0088  Tc -0.0472  Tw (discovery of the manipulation.  Assuming that, on a similar basis, a typical firm's equity) TjT* 0.0033  Tc -0.0417  Tw (appreciates between 1 and 2% per quarter, it takes 20 to 40 non-manipulators in the investor's) TjETendstream
+endobj
+64 0 obj
+3048
+endobj
+62 0 obj
+<<
+/Type /Page
+/Parent 53 0 R
+/Resources <<
+/Font <<
+/F0 6 0 R 
+/F1 8 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 63 0 R
+>>
+endobj
+66 0 obj
+<<
+/Length 67 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (17) TjETQ BT72 709.32  TD0 0 0 rg /F1 11.52  Tf0.0129  Tc -0.0513  Tw (portfolio to offset a single manipulator in that quarter.  As such, one possibility is that investors) Tj0 -26.88  TD -0.0037  Tc -0.0347  Tw (view a type I error as 20 to 40 times as costly as a type II error. ) Tj36 -26.88  TD 0.013  Tc -0.0514  Tw (I compute the probability cut-) Tj139.68 0  TD 0.0053  Tc -0.0437  Tw (offs that minimize the expected costs of misclassification) Tj-175.68 -26.88  TD -0.0015  Tc -0.0369  Tw (\(ECM\) and present the evidence in Table 5.) Tj206.28 5.4  TD /F1 6.96  Tf0.0139  Tc 0  Tw (12) Tj6.96 -5.4  TD /F1 11.52  Tf-0.0045  Tc -0.0339  Tw (  The results are similar across estimation methods) Tj-213.24 -26.88  TD 0.008  Tc -0.0464  Tw (and I focus the discussion on the ) Tj156.24 0  TD 0.013  Tc -0.0514  Tw (unweighted ) Tj57 0  TD 0.0134  Tc -0.0518  Tw (probit estimation in Panel B.  In the estimation) Tj-213.24 -26.88  TD -0.001  Tc -0.0374  Tw (sample, at relative error costs of 10:1, the model classifies firms as manipulators when the) Tj0 -26.88  TD 0.0018  Tc -0.0402  Tw (estimated probabilities exceed .0685 \(a score greater than -1.49\); it ) Tj318.84 0  TD 0.0054  Tc -0.0438  Tw (misclassifies 42% of the) Tj-318.84 -26.88  TD 0.0056  Tc -0.044  Tw (manipulators and 7.6% of the non-manipulators.  Similarly, at relative error costs of 20:1 or 30:1,) Tj0 -26.88  TD 0  Tc -0.0384  Tw (the model classifies firms as manipulators when the estimated probabilities exceed .0376 \(a score) TjT* 0.0066  Tc -0.045  Tw (greater than -1.78\); it ) Tj104.88 0  TD 0.0079  Tc -0.0463  Tw (misclassifies 26% of the manipulators and 13.8% of the non-manipulators. ) Tj-104.88 -26.88  TD 0.0026  Tc -0.041  Tw (In the holdout sample, at relative error costs of 20:1 or 30:1, the model classifies firms as) Tj0 -26.88  TD 0.0025  Tc -0.0409  Tw (manipulators when the estimated probabilities exceed .0376 \(a score greater than -1.78\); it) TjT* 0.0076  Tc -0.046  Tw (misclassifies 50% of the manipulators and 7.2% of the non-manipulators. ) Tj36 -26.88  TD -0.0059  Tc -0.0325  Tw (I also report the performance of the ) Tj170.28 0  TD 0.013  Tc -0.0514  Tw (unweighted ) Tj57 0  TD 0.0094  Tc -0.0478  Tw (probit model in Figures 1 and 2. The) Tj-263.28 -26.88  TD 0.0162  Tc -0.0546  Tw (figures contain the following information \(1\) the probability cut-) Tj303 0  TD -0.0012  Tc -0.0372  Tw (offs associated with each relative) Tj-303 -26.88  TD -0  Tc -0.0381  Tw (error cost assumption, \(2\) the percentage of correctly classified manipulators, and \(3\) the) Tj0 -26.88  TD 0.0037  Tc -0.0421  Tw (percentage of incorrectly classified non-manipulators.  For the estimation sample in figure 1, the) TjT* -0.0017  Tc -0.0367  Tw (percentage of correctly classified manipulators ranges from 58 to 76%, while the percentage of) TjT* 0.0068  Tc -0.0452  Tw (incorrectly classified non-manipulators ranges from 7.6% to 17.5%. For the holdout sample in) Tj0 -27.48  TD /F1 12  Tf0  Tc -0.06  Tw (                              ) Tj104.4 0  TD (            ) TjET72 200.52 144 0.6 re fBT72 185.64  TD/F1 9.96  Tf-0.0582  Tw (     ) Tj14.4 4.68  TD /F1 6  Tf0.012  Tc 0  Tw (12) Tj6 -4.68  TD /F1 9.96  Tf0.0042  Tc -0.0624  Tw ( Expected costs of misclassification are computed as follows:) Tj15.6 -11.88  TD -0.0009  Tc -0.0573  Tw (ECM = P\(M\) P) Tj66.48 0.72  TD /F1 6  Tf0.048  Tc 0  Tw (I) Tj2.04 -0.72  TD /F1 9.96  Tf0.0473  Tc -0.1055  Tw ( C) Tj9.72 0.72  TD /F1 6  Tf0.048  Tc 0  Tw (I) Tj2.04 -0.72  TD /F1 9.96  Tf0.0064  Tc -0.0646  Tw ( + \(1-P\(M\)\) P) Tj59.4 0.72  TD /F1 6  Tf0.048  Tc 0  Tw (II) Tj4.08 -0.72  TD /F1 9.96  Tf0.0473  Tc -0.1055  Tw ( C) Tj9.72 0.72  TD /F1 6  Tf0.048  Tc 0  Tw (II) Tj266.88 -0.72  TD /F1 9.96  Tf0.0222  Tc (\(2\)) Tj-456.36 -23.76  TD -0.0018  Tc -0.0564  Tw (where P\(M\) is the prior probability of encountering earnings manipulators \(.0069 for WESML and .02844 for) Tj0 -11.88  TD -0.0064  Tc -0.0518  Tw (unweighted ) Tj49.08 0  TD -0  Tc -0.0578  Tw (probit\), P) Tj39.24 0.72  TD /F1 6  Tf0.048  Tc 0  Tw (I) Tj2.04 -0.72  TD /F1 9.96  Tf-0.0249  Tc -0.0333  Tw ( and P) Tj25.68 0.72  TD /F1 6  Tf0.048  Tc 0  Tw (II) Tj4.08 -0.72  TD /F1 9.96  Tf0.0043  Tc -0.0625  Tw ( are the conditional probabilities of a Type I and Type II errors and C) Tj283.08 0.72  TD /F1 6  Tf0.048  Tc 0  Tw (I) Tj2.04 -0.72  TD /F1 9.96  Tf0.0012  Tc -0.0594  Tw ( and C) Tj26.88 0.72  TD /F1 6  Tf0.048  Tc 0  Tw (II) Tj4.08 -0.72  TD /F1 9.96  Tf0.0215  Tc -0.0797  Tw ( are the) Tj-436.2 -11.88  TD 0.0066  Tc -0.0648  Tw (costs of Type I and Type II errors.) TjETendstream
+endobj
+67 0 obj
+4807
+endobj
+65 0 obj
+<<
+/Type /Page
+/Parent 53 0 R
+/Resources <<
+/Font <<
+/F1 8 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 66 0 R
+>>
+endobj
+69 0 obj
+<<
+/Length 70 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (18) TjETQ BT72 709.32  TD0 0 0 rg /F1 11.52  Tf0.0016  Tc -0.04  Tw (figure 2, the percentage of correctly classified manipulators ranges from 37.5 to 56%, while the) Tj0 -26.88  TD 0.0012  Tc -0.0396  Tw (percentage of incorrectly classified non-manipulators ranges from 3.5% to 9.1%.) Tj36 -26.88  TD 0.0116  Tc -0.05  Tw (While these results suggest that the model identifies potential manipulators, it does so with) Tj-36 -26.88  TD -0.0051  Tc -0.0333  Tw (large error rates in the range of error costs that are likely to be of relevance to investors.  Since) Tj0 -26.88  TD 0  Tc -0.039  Tw (instances of discovered manipulations are rare, this raises the question of whether the model is) TjT* 0.0026  Tc -0.041  Tw (useful relative to a na\357ve strategy that classifies all firms as non-manipulators.  ) Tj36 -26.88  TD 0.0008  Tc -0.0392  Tw (I thus compare \(in Tabl) Tj110.28 0  TD 0.004  Tc -0.0424  Tw (e 5\) the model's expected costs of misclassification to those of a) Tj-146.28 -26.88  TD 0.0019  Tc -0.0403  Tw (naive strategy of classifying all firms as non-manipulators.  The naive strategy makes no Type II) Tj0 -26.88  TD -0.0217  Tc -0.0167  Tw (errors \(P) Tj41.64 0.84  TD /F1 6.96  Tf-0.0307  Tc 0  Tw (II) Tj4.56 -0.84  TD /F1 11.52  Tf0.0086  Tc -0.047  Tw (=0\) and the conditional probability of a Type I error \(P) Tj262.92 0.84  TD /F1 6.96  Tf-0.0307  Tc 0  Tw (I) Tj2.28 -0.84  TD /F1 11.52  Tf0.0073  Tc -0.0457  Tw (\) is one.  Thus,) Tj-311.4 -26.88  TD 0.0011  Tc -0.0395  Tw (ECM\(naive\)=P\(M\) C) Tj104.04 0.84  TD /F1 6.96  Tf-0.0307  Tc 0  Tw (I) Tj2.28 -0.84  TD /F1 11.52  Tf0.0029  Tc -0.0413  Tw ( or .0069 C) Tj54.72 0.84  TD /F1 6.96  Tf-0.0307  Tc 0  Tw (I) Tj2.28 -0.84  TD /F1 11.52  Tf-0.0016  Tc -0.0368  Tw ( for the WESML comparison and .02844 C) Tj204 0.84  TD /F1 6.96  Tf-0.0307  Tc 0  Tw (I) Tj2.28 -0.84  TD /F1 11.52  Tf0.0032  Tc -0.0416  Tw ( for the ) Tj37.92 0  TD 0.013  Tc 0  Tw (unweighted) Tj-407.52 -26.88  TD 0.0105  Tc -0.0489  Tw (probit comparison.  For both the estimation and the holdout samples, I find that the model has) Tj0 -26.88  TD -0  Tc -0.0381  Tw (lower expected misclassification costs than a naive strategy when the cost of a type I error is) TjT* 0.002  Tc -0.0404  Tw (greater than that of a type II error.  For example in the estimation sample in Panel B, the ratio of) TjT* 0  Tc -0.0385  Tw (the cost of the model's errors to the cost of errors from a naive strategy is .496 and .417 at relative) TjT* 0.0069  Tc -0.0453  Tw (errors costs of 20:1 and 30:1.  Similarly, for the holdout sample, the ratio of the cost of the) TjT* -0.0015  Tc -0.0369  Tw (model's errors to the cost of errors from a naive strategy is .623 and .582 at relative ) Tj399.72 0  TD -0.0128  Tc -0.0256  Tw (errors costs of) Tj-399.72 -26.88  TD 0.0037  Tc -0.0421  Tw (20:1 and 30:1. The preceding evidence thus suggests that the model is cost effective relative to a) Tj0 -26.88  TD 0.0034  Tc -0.0418  Tw (naive strategy that treats all firms as non-manipulators. ) TjT* /F0 11.52  Tf0.0062  Tc 0  Tw (Conclusion) Tj36 -26.88  TD /F1 11.52  Tf0  Tc -0.0391  Tw (The evidence in this paper is based on a sample of firms whose manipulation of earnings) Tj-36 -26.88  TD 0.0078  Tc -0.0462  Tw (was publicly discovered.  Such firms likely represent the upper tail of the distribution of firms that) Tj0 -26.88  TD 0.0056  Tc -0.044  Tw (seek to influence their reported earnings and the evidence should be interpreted in this light.) TjETendstream
+endobj
+70 0 obj
+3654
+endobj
+68 0 obj
+<<
+/Type /Page
+/Parent 53 0 R
+/Resources <<
+/Font <<
+/F0 6 0 R 
+/F1 8 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 69 0 R
+>>
+endobj
+73 0 obj
+<<
+/Length 74 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (19) TjETQ BT108 709.32  TD0 0 0 rg /F1 11.52  Tf0.0048  Tc -0.0432  Tw (Given this caution, the evidence of a systematic association between earnings manipulation) Tj-36 -26.88  TD -0.0015  Tc -0.0369  Tw (and financial statement data is of interest to both accounting researchers and professionals because) Tj0 -26.88  TD 0.0136  Tc -0.052  Tw (it suggests that accounting data not only meet the test of providing useful information but also) TjT* 0.0032  Tc -0.0416  Tw (enable an assessment of reliability. The explicit classification model only requires two years of data) TjT* 0.0096  Tc -0.048  Tw (\(one annual report\) to evaluate the likelihood of manipulation and can be inexpensively applied by) TjT* 0.0022  Tc -0.0406  Tw (the SEC, auditors, and investors to screen a large number of firms and identify potential) TjT* 0.0092  Tc -0.0476  Tw (manipulators for further investigation. ) Tj36 -26.88  TD 0.0047  Tc -0.0431  Tw (While the model is cost-effective relative to a strategy of treating all firms as non-) Tj-36 -26.88  TD 0.0018  Tc -0.0402  Tw (manipulators, its large rate of classification errors makes further investigation of the results an) Tj0 -26.88  TD 0.0073  Tc -0.0457  Tw (important element to the model\222s implementation.  That is, since the model\222s variables exploit) TjT* 0.0087  Tc -0.0471  Tw (distortions in financial statement data that could result from manipulation, one must recognize that) TjT* 0.0032  Tc -0.0416  Tw (such distortions can have an alternative origin.  For example, they could be the result of a material) TjT* 0.006  Tc -0.0444  Tw (acquisition during the period examined, a material shift in the firm\222s value maximizing strategy, or) TjT* 0.0034  Tc -0.0418  Tw (a significant change in the firm\222s economic environment.) Tj36 -26.88  TD 0.0157  Tc -0.0541  Tw ( One limitation of the model is that it is estimated using financial information for publicly) Tj-36 -26.88  TD 0.0008  Tc -0.0392  Tw (traded companies.  Therefore, it cannot be reliably used to study ) Tj307.08 0  TD 0.0065  Tc -0.0449  Tw (privately-held firms. Another) Tj-307.08 -26.88  TD 0.0073  Tc -0.0457  Tw (limitation is that the earnings manipulation in the sample involves earnings overstatement rather) Tj0 -26.88  TD 0.0036  Tc -0.042  Tw (than understatement and therefore, the model cannot be reliably used to study firms operating in) TjT* -0.007  Tc -0.0314  Tw (circumstances that are conducive to decreasing earnings.) TjETendstream
+endobj
+74 0 obj
+2598
+endobj
+71 0 obj
+<<
+/Type /Page
+/Parent 72 0 R
+/Resources <<
+/Font <<
+/F1 8 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 73 0 R
+>>
+endobj
+76 0 obj
+<<
+/Length 77 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (20) TjETQ BT72 708.96  TD0 0 0 rg /F0 12  Tf-0.0144  Tc 0  Tw (References) Tj0 -27.48  TD /F1 11.52  Tf0.0046  Tc -0.043  Tw (Beneish, M.D. and E. Press. 1993."Costs of Technical Violation of Accounting-Based Debt ) Tj72 -13.92  TD -0.0038  Tc -0.0346  Tw (Covenants." ) Tj61.08 0  TD /F2 11.52  Tf-0.0031  Tc -0.0353  Tw (The Accounting Review) Tj109.2 0  TD /F1 11.52  Tf0.0216  Tc -0.06  Tw ( vol. 68, no. 2 \(April\)) Tj104.28 0  TD 0.0205  Tc 0  Tw (:233-257.) Tj-346.56 -27.36  TD 0.0098  Tc -0.0482  Tw (Beneish, M.D. 1997. "Detecting GAAP Violation: Implications for Assessing ) Tj370.2 0  TD -0.0018  Tc -0.0366  Tw (Earnings   ) Tj-334.2 -13.44  TD -0.0044  Tc -0.034  Tw (Management Among Firms with Extreme Financial Performance" ) Tj313.32 0  TD /F2 11.52  Tf0.0134  Tc -0.0518  Tw (Journal of Accounting) Tj-313.32 -13.44  TD 0.0091  Tc -0.0475  Tw (and Public Policy) Tj83.28 0  TD /F1 11.52  Tf0.0226  Tc -0.061  Tw (, vol. 16, no. 3 \(Fall\):271-309.) Tj-119.28 -27.84  TD 0.0036  Tc -0.042  Tw (Beneish, M.D. 1999. "Incentives and Penalties Related to Earnings Overstatements That Violate) Tj36 -13.92  TD 0.0122  Tc -0.0506  Tw (GAAP.\224  ) Tj48 0  TD 0.013  Tc -0.0514  Tw (Forthcoming, ) Tj67.44 0  TD /F2 11.52  Tf-0.0022  Tc -0.0362  Tw (The Accounting Review,) Tj113.04 0  TD /F1 11.52  Tf0.0125  Tc -0.0509  Tw ( vol. 74, no. 4 \(October\).) Tj-264.48 -27.84  TD 0.002  Tc -0.0404  Tw (Healy, P.M.  1985. "The Effect of Bonus Schemes on Accounting Decisions." ) Tj373.44 0  TD /F2 11.52  Tf0.0185  Tc -0.0569  Tw (Journal of) Tj-337.44 -13.92  TD 0.0058  Tc -0.0442  Tw (Accounting and Economics,) Tj130.44 0  TD /F1 11.52  Tf0.0213  Tc -0.0597  Tw ( vol. 7, no. 1-3 \(April\)) Tj108.12 0  TD 0.0202  Tc 0  Tw (:85-107.) Tj-274.56 -27.36  TD 0.0098  Tc (Dopuch) Tj36.6 0  TD 0.0121  Tc -0.0505  Tw (, N., R.W. ) Tj56.28 0  TD 0.0109  Tc 0  Tw (Holthausen) Tj52.56 0  TD 0.0053  Tc -0.0437  Tw (, and R.W. ) Tj56.64 0  TD 0.0037  Tc 0  Tw (Leftwich) Tj41.64 0  TD 0.0179  Tc -0.0563  Tw (. 1987. "Predicting Audit Qualifications with) Tj-207.72 -13.44  TD -0.0008  Tc -0.0376  Tw (Financial and Market Variables." ) Tj160.32 0  TD /F2 11.52  Tf-0.0031  Tc -0.0353  Tw (The Accounting Review) Tj109.2 0  TD /F1 11.52  Tf0.0223  Tc -0.0607  Tw (, vol. 62, no. 3 \(July\)) Tj102.6 0  TD 0.0205  Tc 0  Tw (:431-454.) Tj-408.12 -26.88  TD -0.0177  Tc (Feroz) Tj26.88 0  TD -0.0019  Tc -0.0365  Tw (, E.H., K. Park; and V.S. ) Tj127.2 0  TD -0.0114  Tc 0  Tw (Pastena) Tj35.16 0  TD 0  Tc -0.0385  Tw (. 1991. "The Financial and Market Effects of the SEC's) Tj-153.24 -13.44  TD 0.0025  Tc -0.0409  Tw (Accounting and Auditing Enforcement Releases." ) Tj236.88 0  TD /F2 11.52  Tf0.0028  Tc -0.0412  Tw (Journal of Accounting Research, ) Tj156.84 0  TD /F1 11.52  Tf0.028  Tc -0.0664  Tw (vol. 29) Tj-393.72 -13.44  TD 0.005  Tc 0  Tw (\(Supplement\)) Tj62.28 0  TD 0.0205  Tc (:107-148.) Tj-98.28 -26.88  TD 0  Tc -0.0384  Tw ( ) Tj3.36 0  TD 0.0128  Tc -0.0512  Tw (Flynn, J. and W. ) Tj84.12 0  TD -0.0018  Tc 0  Tw (Zellner) Tj33.96 0  TD 0.0027  Tc -0.0411  Tw (. 1992. "Buying Trash in Big Holes--On the Balance Sheet." ) Tj288.36 0  TD /F2 11.52  Tf-0.0055  Tc 0  Tw (Business) Tj-373.8 -13.44  TD -0.0293  Tc (Week) Tj24.72 0  TD /F1 11.52  Tf0.0122  Tc -0.0506  Tw ( \(May 11\)) Tj47.16 0  TD 0.0197  Tc 0  Tw (:88-89.) Tj-107.88 -26.88  TD 0.0148  Tc (Fridson) Tj36 0  TD 0.0148  Tc -0.0532  Tw (, M. S. 1993. ) Tj68.4 0  TD /F2 11.52  Tf0.0119  Tc -0.0503  Tw (Financial Statement Analysis: A Practitioner's Guide.) Tj252.6 0  TD /F1 11.52  Tf0.0018  Tc -0.0402  Tw ( New York: John) Tj-321 -13.44  TD 0.0131  Tc -0.0515  Tw (Wiley. ) Tj-36 -26.88  TD 0.0035  Tc -0.0419  Tw (Hector, G. 1989. "Cute Tricks on the Bottom Line." ) Tj251.88 0  TD /F2 11.52  Tf0.01  Tc 0  Tw (Fortune) Tj36.6 0  TD /F1 11.52  Tf0.0186  Tc -0.057  Tw ( \(April 24\)) Tj50.64 0  TD 0.0205  Tc 0  Tw (:193-200.) Tj-339.12 -26.88  TD 0.0078  Tc -0.0462  Tw (Hsieh, ) Tj34.2 0  TD 0.0115  Tc 0  Tw (D.A.) Tj24.48 0  TD 0.0065  Tc -0.0449  Tw (, C. F. ) Tj36.24 0  TD 0.0061  Tc 0  Tw (Mansky) Tj37.2 0  TD 0.0072  Tc -0.0456  Tw (, and D. ) Tj42.84 0  TD -0  Tc 0  Tw (McFadden) Tj49.68 0  TD 0.0093  Tc -0.0477  Tw (. 1985. "Estimation of Response Probabilities from) Tj-188.64 -13.44  TD 0.0016  Tc -0.04  Tw (Augmented Retrospective Observation) Tj180.24 0  TD -0.0112  Tc -0.0272  Tw (s." ) Tj16.92 0  TD /F2 11.52  Tf0.0152  Tc -0.0536  Tw (Journal of the American Statistical Association) Tj219.96 0  TD /F1 11.52  Tf0.0154  Tc 0  Tw (,) Tj-417.12 -13.44  TD 0.0078  Tc -0.0462  Tw (vol. 80 \(September\): 651-662.) Tj-36 -26.88  TD -0.0014  Tc -0.037  Tw (Jones, J.J. 1991. "Earnings Management ) Tj196.2 0  TD 0.0121  Tc -0.0505  Tw (During Import Relief Investigations." ) Tj180.12 0  TD /F2 11.52  Tf0.0185  Tc -0.0569  Tw (Journal of) Tj-340.32 -13.44  TD -0.0057  Tc -0.0327  Tw (Accounting Research) Tj98.16 0  TD /F1 11.52  Tf0.0202  Tc -0.0586  Tw (, vol. 29, no. 2 \(Autumn\)) Tj121.08 0  TD 0.0205  Tc 0  Tw (:193-228.) Tj-255.24 -26.88  TD 0.011  Tc -0.0494  Tw (Kellogg, I. and ) Tj75 0  TD -0.0038  Tc 0  Tw (L.B.) Tj22.08 0  TD 0.0174  Tc -0.0558  Tw ( Kellogg.  1991. ) Tj81 0  TD /F2 11.52  Tf0.0153  Tc -0.0537  Tw (Fraud, Window Dressing, and Negligence in Financial ) Tj-142.08 -13.44  TD 0.0128  Tc 0  Tw (Statements.) Tj53.64 0  TD /F1 11.52  Tf0.0039  Tc -0.0423  Tw ( New York: McGraw-Hill.) Tj-89.64 -26.88  TD -0.0067  Tc 0  Tw (Khalaf) Tj30.96 0  TD 0.0092  Tc -0.0476  Tw (, R. 1992. "Fuzzy Accounting." ) Tj155.52 0  TD /F2 11.52  Tf-0.0053  Tc 0  Tw (Forbes) Tj32.04 0  TD /F1 11.52  Tf0.0066  Tc -0.045  Tw ( \(June 22\)) Tj46.92 0  TD 0.0192  Tc 0  Tw (:96.) Tj-265.44 -26.88  TD -0.0173  Tc (Lev) Tj18 0  TD 0.002  Tc -0.0404  Tw (, B. and S. R. ) Tj69.72 0  TD -0.0083  Tc 0  Tw (Thiagarajan) Tj55.32 0  TD 0.0082  Tc -0.0466  Tw (. 1993. "Fundamental Information Analysis." ) Tj217.8 0  TD /F2 11.52  Tf0.0134  Tc -0.0518  Tw (Journal of Accounting) Tj-324.84 -13.44  TD -0.0238  Tc 0  Tw (Research) Tj42.48 0  TD /F1 11.52  Tf0.0202  Tc -0.0586  Tw (, vol. 31, no. 2 \(Autumn\)) Tj121.08 0  TD 0.0205  Tc 0  Tw (:190-215.) TjETendstream
+endobj
+77 0 obj
+6396
+endobj
+75 0 obj
+<<
+/Type /Page
+/Parent 72 0 R
+/Resources <<
+/Font <<
+/F0 6 0 R 
+/F1 8 0 R 
+/F2 24 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 76 0 R
+>>
+endobj
+79 0 obj
+<<
+/Length 80 0 R
+>>
+stream
+q 72 62.28 468.24 11.52 re W n BT72 63.24  TD0 0 0 rg /F1 11.52  Tf0.023  Tc 0  Tw (21) TjETQ BT72 695.88  TD0 0 0 rg /F1 11.52  Tf0.0216  Tc 0  Tw (Levitt) Tj27.72 0  TD -0.0046  Tc -0.0338  Tw (, A. 1998. \223The "Numbers Game."\224  Securities and Exchange Commission, Remarks by) Tj8.28 -13.44  TD -0.0099  Tc -0.0285  Tw (Chairman Arthur ) Tj83.88 0  TD 0.0272  Tc -0.0656  Tw (Leviitt ) Tj34.32 0  TD -0.0047  Tc -0.0337  Tw (\( September 28\)  www.sec.gov.) Tj-154.2 -26.88  TD -0.0154  Tc 0  Tw (Loebbecke) Tj50.4 0  TD 0.0113  Tc -0.0497  Tw (, J.K., M.M. ) Tj66.48 0  TD 0.0278  Tc 0  Tw (Eining) Tj30.96 0  TD 0.0064  Tc -0.0448  Tw (, and J.J. Willingham. 1989. Auditor's experience with material ) Tj-111.84 -13.44  TD -0.0016  Tc -0.0368  Tw (irregularities: Frequency, nature, and ) Tj179.64 0  TD 0.0171  Tc -0.0555  Tw (detectability. ) Tj64.08 0  TD /F2 11.52  Tf0.0125  Tc -0.0509  Tw (Auditing: A Journal of Theory and ) Tj-243.72 -13.44  TD -0.0065  Tc -0.0319  Tw (Practice, ) Tj45.96 0  TD /F1 11.52  Tf0.0242  Tc -0.0626  Tw (vol. 9, no. 1 \(Fall\)) Tj88.8 0  TD 0.0192  Tc 0  Tw (:1-28.) Tj-170.76 -26.88  TD -0.0016  Tc (Maddala) Tj40.32 0  TD 0.0108  Tc -0.0492  Tw (, G. S. 1983.  ) Tj69.6 0  TD /F2 11.52  Tf0.0107  Tc -0.0491  Tw (Limited-Dependent and Qualitative Variables in Econometrics.) Tj295.08 0  TD /F1 11.52  Tf-0.0103  Tc -0.0281  Tw ( Cambridge:) Tj-369 -13.44  TD -0.0033  Tc -0.0351  Tw (Cambridge University Press.) Tj-36 -26.88  TD 0.0056  Tc -0.044  Tw (National Association of Certified Fraud Examiners. 1993. ) Tj276.48 0  TD /F2 11.52  Tf0.0015  Tc -0.0399  Tw (Cooking the Books: What Every ) Tj-240.48 -13.44  TD 0.0194  Tc -0.0578  Tw (Accountant Should Know about Fraud.) Tj183.12 0  TD /F1 11.52  Tf-0.0048  Tc -0.0336  Tw ( New York: NASBA.) Tj-219.12 -26.88  TD 0.0128  Tc -0.0512  Tw (National Commission on Fraudulent Financial Reporting. 1987. ) Tj304.08 0  TD /F2 11.52  Tf0.0215  Tc -0.0599  Tw (Report of National Commission ) Tj-268.08 -13.44  TD 0.0154  Tc -0.0538  Tw (on Fraud) Tj43.2 0  TD 0.0192  Tc -0.0576  Tw (ulent Financial Reporting.) Tj123.96 0  TD /F1 11.52  Tf-0.0036  Tc -0.0348  Tw ( New York: AICPA.) Tj-203.16 -26.88  TD 0.0092  Tc 0  Tw (O'Glove) Tj40.2 0  TD 0.0108  Tc -0.0492  Tw (, T. L. 1987. ) Tj66.24 0  TD /F2 11.52  Tf0.0191  Tc -0.0575  Tw (Quality of Earnings.) Tj96.24 0  TD /F1 11.52  Tf-0.0145  Tc -0.0239  Tw ( New York: The Free Press.) Tj-202.68 -26.88  TD -0  Tc 0  Tw (Siegel) Tj28.44 0  TD 0.0132  Tc -0.0516  Tw (,J. G. 1991. ) Tj61.2 0  TD /F2 11.52  Tf0.0118  Tc -0.0502  Tw (How to Analyze Businesses, Financial Statements, and the Quality of Earnings.) Tj-53.64 -13.44  TD /F1 11.52  Tf0.0051  Tc -0.0435  Tw (2nd Edition, New Jersey: Prentice Hall.) Tj-36 -27.24  TD /F1 12  Tf0.0019  Tc -0.0619  Tw (Watts, R. L. and J. L. Zimmerman. 1986. ) Tj212.4 0  TD /F2 12  Tf0.0139  Tc -0.0739  Tw (Positive Accounting Theory.) Tj138 0  TD /F1 12  Tf0.0142  Tc -0.0742  Tw ( Englewood Cliffs: ) Tj-314.4 -13.92  TD 0.0083  Tc -0.0683  Tw (Prentice Hall.) Tj-36 -27  TD /F1 11.52  Tf0.0103  Tc 0  Tw (Zmijewski) Tj49.56 0  TD 0.0122  Tc -0.0506  Tw (, M.E. 1984. "Methodological Issues Related to the Estimation of Financial ) Tj360.24 0  TD -0.0023  Tc -0.0361  Tw (Distress ) Tj-373.8 -13.44  TD 0.0092  Tc -0.0476  Tw (Prediction Models." ) Tj98.4 0  TD /F2 11.52  Tf0.0028  Tc -0.0412  Tw (Journal of Accounting Research, ) Tj156.84 0  TD /F1 11.52  Tf0.0147  Tc -0.0531  Tw (vol. 22 \(Supplement\): 59-82.) TjETendstream
+endobj
+80 0 obj
+3595
+endobj
+78 0 obj
+<<
+/Type /Page
+/Parent 72 0 R
+/Resources <<
+/Font <<
+/F1 8 0 R 
+/F2 24 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 79 0 R
+>>
+endobj
+82 0 obj
+<<
+/Length 83 0 R
+>>
+stream
+BT290.64 710.52  TD0 0 0 rg /F1 9.96  Tf0  Tc -0.0584  Tw (Table 1) Tj-112.44 -23.76  TD 0  Tc -0.0587  Tw (Comparing Characteristics of 74 Sample Firms vs. 2332 Firms) Tj26.04 -11.88  TD 0.0016  Tc -0.0598  Tw (Matched by 2-digit SIC Industry in the Year Prior) Tj-51.12 -11.88  TD 0.0014  Tc -0.0596  Tw (the Fiscal Year Containing the Public Disclosure of Earnings) Tj247.8 4.68  TD /F1 6  Tf0  Tc 0.03  Tw ( ) Tj1.8 -4.68  TD /F1 9.96  Tf-0.0062  Tc 0  Tw (Manipulation) Tj53.52 4.68  TD /F1 6  Tf-0.012  Tc (a) TjET88.56 660.12 434.88 0.48 re fBT211.2 602.16  TD/F1 9.96  Tf0.0087  Tc -0.0669  Tw (Treatment Firms) Tj106.68 0  TD 0.0008  Tc -0.059  Tw (Control Firms) Tj94.92 0  TD -0.004  Tc -0.0542  Tw (Wilconxon -Z) Tj80.4 -0.24  TD 0.0021  Tc -0.0603  Tw (Median ) Tj33.36 -0.36  TD /F5 9.96  Tf0.1507  Tc 0  Tw (P) Tj7.8 5.04  TD /F1 6  Tf0.012  Tc (2) Tj-444.36 -16.56  TD /F1 9.96  Tf0.0225  Tc (Characteristic) TjET90 587.64 56.16 0.48 re fBT209.04 590.04  TD0.0104  Tc (Mean) TjET209.04 587.64 22.68 0.48 re fBT252.48 590.04  TD0.0021  Tc (Median) TjET252.48 587.64 30.36 0.48 re fBT310.44 590.04  TD0.0104  Tc (Mean) TjET310.44 587.64 22.68 0.48 re fBT360.6 590.04  TD0.0021  Tc (Median) TjET360.6 587.64 30.36 0.48 re fBT423.24 590.04  TD-0.0019  Tc (P-) Tj9 0  TD 0.017  Tc (Value) Tj23.76 4.68  TD /F1 6  Tf0.012  Tc (b) TjET423.24 587.64 35.64 0.48 re fBT500.04 590.04  TD/F1 9.96  Tf0  Tc (P-value) TjET500.04 587.64 30.36 0.48 re fBT90 566.28  TD0.0094  Tc (Size) TjET90 563.88 16.8 0.48 re fBT90 542.52  TD0.0052  Tc -0.0634  Tw (Total assets) Tj113.4 0  TD -0.0245  Tc 0  Tw (467.33) Tj52.8 0  TD -0.0214  Tc (43.20) Tj49.2 0  TD -0.0267  Tc (1140.37) Tj57.48 0  TD -0.0214  Tc -0.0368  Tw ( 95.84) Tj69.12 0  TD -0.0167  Tc 0  Tw (.003) Tj74.28 0  TD (.004) Tj-416.28 -11.88  TD 0.0047  Tc (Sales) Tj113.4 0  TD -0.0245  Tc (469.87) Tj52.8 0  TD -0.0214  Tc (53.56) Tj49.2 0  TD -0.0267  Tc (1295.22) Tj56.52 0  TD -0.0245  Tc (122.54) Tj70.08 0  TD -0.0167  Tc (.001) Tj74.28 0  TD (.007) Tj-416.28 -11.88  TD 0.0166  Tc -0.0748  Tw (Market Value) Tj113.4 0  TD -0.0245  Tc 0  Tw (323.72) Tj52.8 0  TD -0.0214  Tc (74.90) Tj50.16 0  TD -0.0245  Tc -0.0337  Tw ( 813.35) Tj56.52 0  TD -0.0214  Tc -0.0368  Tw ( 64.59) Tj69.12 0  TD -0.0167  Tc 0  Tw (.884) Tj74.28 0  TD (.701) Tj-416.28 -23.76  TD 0.0024  Tc (Liquidity/Leverage) TjET90 492.6 77.76 0.48 re fBT90 471.24  TD0  Tc -0.0582  Tw (Working capital to total) Tj0 -11.88  TD 0.0071  Tc 0  Tw (assets) Tj122.4 0  TD -0.009  Tc -0.0492  Tw ( .26) Tj45.84 0  TD (  .28) Tj54.12 0  TD (  .30) Tj55.44 0  TD ( .31) Tj64.2 0  TD -0.0167  Tc 0  Tw (.472) Tj74.28 0  TD (.345) Tj-416.28 -11.88  TD 0.0141  Tc -0.0724  Tw (Current ratio) Tj121.44 0  TD -0.0167  Tc 0  Tw (2.54) Tj45.84 0  TD -0.0415  Tw ( 1.83) Tj40.68 0  TD (      2.54) Tj58.44 0  TD (   2.11) Tj75.6 0  TD 0  Tw (.103) Tj74.28 0  TD (.473) Tj-416.28 -11.88  TD 0.0013  Tc -0.0595  Tw (Total debt to total assets) Tj122.4 0  TD -0.009  Tc -0.0492  Tw ( .58) Tj45.84 0  TD (  .58) Tj54.12 0  TD (  .51) Tj56.88 0  TD 0  Tw (.52) Tj62.76 0  TD -0.0167  Tc (.027) Tj74.28 0  TD (.098) Tj-416.28 -35.64  TD 0.0066  Tc (Profitability/Growth) TjET90 397.56 82.44 0.48 re fBT90 369.72  TD-0.0027  Tc -0.0555  Tw (Return on assets) Tj122.16 0  TD 0.0066  Tc 0  Tw (-.01) Tj47.52 0  TD -0.009  Tc -0.0492  Tw ( .03) Tj52.68 0  TD (  .03) Tj56.88 0  TD 0  Tw (.05) Tj62.76 0  TD -0.0167  Tc (.063) Tj74.28 0  TD (.078) Tj-416.28 -11.88  TD 0.0069  Tc -0.0651  Tw (Sales Growth) Tj122.4 0  TD -0.009  Tc -0.0492  Tw ( .58) Tj47.28 0  TD ( .34) Tj52.68 0  TD (  .13) Tj56.88 0  TD 0  Tw (.09) Tj62.76 0  TD -0.0167  Tc (.000) Tj74.28 0  TD (.001) Tj-416.28 -35.04  TD /F1 6  Tf-0.012  Tc 0.042  Tw (a  ) Tj6.24 -4.68  TD /F1 9.96  Tf0.0071  Tc -0.0653  Tw (The COMPUSTAT firms in the same 2-digit SIC code for which financial statement data are available) Tj-6.24 -11.88  TD -0  Tc -0.0582  Tw (comprise the comparison sample.) Tj0 -19.08  TD /F1 6  Tf0.012  Tc 0.018  Tw (b ) Tj4.8 0  TD 0  Tc 0.03  Tw ( ) Tj1.8 -4.68  TD /F1 9.96  Tf-0.0024  Tc -0.0558  Tw (The ) Tj18.48 0  TD -0.0019  Tc -0.0563  Tw (Wilcoxon Rank-Sum and the Median tests are used to evaluate the null hypothesis that the size,) Tj-25.08 -11.88  TD 0.0028  Tc -0.061  Tw (liquidity, profitability, and growth characteristics of manipulators and non-manipulators are drawn from) Tj0 -11.88  TD -0.0042  Tc -0.054  Tw (the same population.) TjET0.72 w 1 J 1 j 0 0 0 RG 79.2 334.8 m 554.4 334.8 l S endstream
+endobj
+83 0 obj
+4661
+endobj
+81 0 obj
+<<
+/Type /Page
+/Parent 72 0 R
+/Resources <<
+/Font <<
+/F1 8 0 R 
+/F5 35 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 82 0 R
+>>
+endobj
+85 0 obj
+<<
+/Length 86 0 R
+>>
+stream
+BT290.64 710.52  TD0 0 0 rg /F1 9.96  Tf0  Tc -0.0584  Tw (Table 2) Tj-150.12 -23.76  TD 0.005  Tc -0.0632  Tw (Potential Predictive Variables: Descriptive Statistics for the Estimation Sample of) Tj6.6 -11.88  TD -0.0051  Tc -0.0531  Tw (50 pre-1989 Manipulators and their 1708 Industry-Matched Non-Manipulators) Tj55.68 -23.76  TD 0.0031  Tc -0.0614  Tw (Treatment Firms \(N=50\)) Tj117.6 0  TD -0.01  Tc -0.0482  Tw (Controls \(N=1708\)) Tj94.44 0  TD -0  Tc 0  Tw (Wilcoxon-Z) Tj62.04 0  TD 0.0042  Tc -0.0624  Tw (Median Test) Tj-393.12 -15.96  TD 0.0225  Tc 0  Tw (Characteristic) Tj56.28 4.68  TD /F1 6  Tf-0.012  Tc (a) Tj76.2 -4.68  TD /F1 9.96  Tf0.0104  Tc (Mean) Tj54.72 0  TD 0.0021  Tc (Median) Tj53.28 0  TD 0.0104  Tc (Mean) Tj43.44 0  TD 0.0021  Tc (Median) Tj53.64 0  TD -0.0019  Tc (P-) Tj9 0  TD 0.017  Tc (Value) Tj23.76 4.68  TD /F1 6  Tf0.012  Tc (b) Tj30.24 -4.68  TD /F1 9.96  Tf-0.0019  Tc (P-) Tj9 0  TD 0.017  Tc (Value) Tj23.76 4.68  TD /F1 6  Tf0.012  Tc (b) Tj-433.32 -17.28  TD /F1 9.96  Tf0.0015  Tc -0.0597  Tw (Days in Receivables) TjETq 78 616.56 117.84 3.96 re W n BT83.76 610.68  TD-0.0059  Tc 0  Tw (Index) TjETQ BT216.12 622.56  TD-0.0214  Tc 0  Tw (1.465) Tj58.56 0  TD (1.281) Tj49.44 0  TD (1.031) Tj49.8 0  TD -0.0167  Tc (.996) Tj56.28 0  TD (.000) Tj63 0  TD (.000) TjET78 632.04 117.84 0.48 re f195.84 632.04 0.48 0.48 re f196.32 632.04 62.52 0.48 re f258.84 632.04 0.48 0.48 re f259.32 632.04 53.52 0.48 re f312.84 632.04 0.48 0.48 re f313.32 632.04 44.52 0.48 re f357.84 632.04 0.48 0.48 re f358.32 632.04 49.08 0.48 re f407.4 632.04 0.48 0.48 re f407.88 632.04 62.52 0.48 re f470.4 632.04 0.48 0.48 re f470.88 632.04 62.52 0.48 re fBT83.76 607.08  TD0  Tc -0.0585  Tw (Gross Margin Index) Tj132.36 0  TD -0.0214  Tc 0  Tw (1.193) Tj58.56 0  TD (1.036) Tj49.44 0  TD (1.014) Tj47.28 0  TD (1.001) Tj58.8 0  TD -0.0167  Tc (.006) Tj63 0  TD (.007) Tj-409.44 -15.96  TD 0.0034  Tc -0.0616  Tw (Asset Quality Index) Tj132.36 0  TD -0.0214  Tc 0  Tw (1.254) Tj58.56 0  TD (1.000) Tj49.44 0  TD (1.039) Tj47.28 0  TD (1.000) Tj58.8 0  TD -0.0167  Tc (.096) Tj63 0  TD (.246) Tj-409.44 -15.96  TD 0.0029  Tc -0.0611  Tw (Sales Growth Index) Tj132.36 0  TD -0.0214  Tc 0  Tw (1.607) Tj58.56 0  TD (1.411) Tj49.44 0  TD (1.134) Tj47.28 0  TD (1.106) Tj58.8 0  TD -0.0167  Tc (.000) Tj63 0  TD (.000) Tj-409.44 -15.96  TD 0.0029  Tc -0.0611  Tw (Depreciation Index) Tj132.36 0  TD -0.0214  Tc 0  Tw (1.077) Tj58.08 0  TD -0.0167  Tc -0.0415  Tw (  .966) Tj49.92 0  TD -0.0214  Tc 0  Tw (1.001) Tj46.92 0  TD -0.0167  Tc -0.0415  Tw (  .974) Tj59.16 0  TD 0  Tw (.307) Tj63 0  TD (.774) Tj-409.44 -15.96  TD -0  Tc -0.0582  Tw (SGA Index) Tj132.36 0  TD -0.0214  Tc 0  Tw (1.041) Tj58.08 0  TD -0.0167  Tc -0.0415  Tw (  .960) Tj49.92 0  TD -0.0214  Tc 0  Tw (1.054) Tj47.28 0  TD (1.010) Tj58.8 0  TD -0.0167  Tc (.271) Tj63 0  TD (.389) Tj-409.44 -15.96  TD 0.0062  Tc -0.0644  Tw (Leverage Index) Tj132.36 0  TD -0.0214  Tc 0  Tw (1.111) Tj58.56 0  TD (1.030) Tj49.44 0  TD (1.037) Tj45.84 0  TD -0.0368  Tw ( 1.000) Tj60.24 0  TD -0.0167  Tc 0  Tw (.394) Tj63 0  TD (.077) Tj-409.44 -15.96  TD 0.0094  Tc -0.0676  Tw (Accruals to total assets) Tj132 0  TD -0.0167  Tc -0.0415  Tw (  .031) Tj58.44 0  TD (  .034) Tj49.56 0  TD (  .018) Tj45.84 0  TD (   .013) Tj60.6 0  TD 0  Tw (.000) Tj63 0  TD (.002) TjET78 504.36 117.84 0.48 re f195.84 504.36 0.48 0.48 re f196.32 504.36 62.52 0.48 re f258.84 504.36 0.48 0.48 re f259.32 504.36 53.52 0.48 re f312.84 504.36 0.48 0.48 re f313.32 504.36 44.52 0.48 re f357.84 504.36 0.48 0.48 re f358.32 504.36 49.08 0.48 re f407.4 504.36 0.48 0.48 re f407.88 504.36 62.52 0.48 re f470.4 504.36 0.48 0.48 re f470.88 504.36 62.52 0.48 re fBT36 483  TD0.0077  Tc -0.0659  Tw (For each variable, I provide a definition and the COMPUSTAT data item number.  Year t refers the first year in which earnings) Tj0 -11.88  TD -0.0016  Tc -0.0566  Tw (manipulation occurs:) Tj0 -23.76  TD 0  Tc -0.0582  Tw ( ) Tj36 0  TD 0  Tc -0.0588  Tw (Days Sales in Receivables Index = \() Tj148.92 0  TD 0.0093  Tc 0  Tw (Receivables) Tj48 0.72  TD /F1 6  Tf0.024  Tc (t) Tj1.68 -0.72  TD /F1 9.96  Tf0.0299  Tc ([2]/) Tj15 0  TD 0.0047  Tc (Sales) Tj20.76 0.72  TD /F1 6  Tf0.024  Tc (t) Tj1.68 -0.72  TD /F1 9.96  Tf0.0138  Tc ([12]/\(Receivables) Tj71.28 0.72  TD /F1 6  Tf0.028  Tc (t-1) Tj6.72 -0.72  TD /F1 9.96  Tf0.0128  Tc (/Sales) Tj24.12 0.72  TD /F1 6  Tf0.028  Tc (t-1) Tj6.72 -0.72  TD /F1 9.96  Tf0.0533  Tc (\)) Tj-344.88 -41.4  TD 0.0031  Tc -0.0613  Tw (Gross Margin ) Tj59.04 0  TD -0.014  Tc -0.0442  Tw (Index= ) TjET0.48 w 1 J 1 j 0 0 0 RG 172.92 409.92 m 360.72 409.92 l S BT173.04 414.36  TD/F4 12  Tf-0.0264  Tc 0  Tw (Sales) Tj33.24 0  TD 0.042  Tc ([12]) Tj21 0  TD -0.036  Tc (-) Tj6.12 0  TD -0.012  Tc 0.012  Tw (Costs of G) Tj51.24 0  TD 0.0105  Tc -0.0105  Tw (oods Sold) Tj56.28 0  TD 0.042  Tc 0  Tw ([41]) Tj-100.56 -16.8  TD -0.0264  Tc (Sales) Tj33.24 0  TD 0.042  Tc ([12]) Tj-74.88 13.8  TD /F4 6.96  Tf-0.0149  Tc (t) Tj2.16 0  TD -0.0377  Tc (-) Tj1.92 0  TD 0  Tc (1) Tj130.56 0  TD -0.0149  Tc (t) Tj2.16 0  TD -0.0377  Tc (-) Tj1.8 0  TD 0  Tc (1) Tj-71.28 -16.8  TD -0.0149  Tc (t) Tj2.16 0  TD -0.0377  Tc (-) Tj1.8 0  TD 0  Tc (1) TjETBT0.8621 0 0 1 166.8 415.08  Tm/F5 12  Tf0.6817  Tc (\346) Tj0 -18  TD (\350) Tj0 8.64  TD (\347) Tj225.2293 9.36  TD (\366) Tj0 -18  TD (\370) Tj0 8.64  TD (\367) TjETBT369.24 405.96  TD/F1 9.96  Tf0.0533  Tc -0.1115  Tw (/ ) TjET383.16 409.92 m 561.36 409.92 l S BT383.28 414.36  TD/F4 12  Tf-0.0264  Tc 0  Tw (Sales) Tj28.56 0  TD 0.042  Tc ([12]) Tj20.88 0  TD -0.036  Tc (-) Tj6.12 0  TD -0.012  Tc 0.012  Tw (Costs of G) Tj51.24 0  TD -0.0045  Tc 0.0045  Tw (oods Sold) Tj51.48 0  TD 0.042  Tc 0  Tw ([41]) Tj-93.36 -16.8  TD -0.0264  Tc (Sales) Tj28.56 0  TD 0.042  Tc ([12]) Tj-67.8 13.8  TD /F4 6.96  Tf-0.0149  Tc (t) Tj129.72 0  TD (t) Tj-64.8 -16.8  TD (t) TjETBT0.8621 0 0 1 377.04 415.08  Tm/F5 12  Tf0.6817  Tc (\346) Tj0 -18  TD (\350) Tj0 8.64  TD (\347) Tj214.0931 9.36  TD (\366) Tj0 -18  TD (\370) Tj0 8.64  TD (\367) TjETBT72 367.92  TD/F1 9.96  Tf0.0073  Tc -0.0655  Tw (Asset Quality ) Tj57.6 0  TD -0.0059  Tc 0  Tw (Index) Tj22.56 0  TD -0.0546  Tc (=) Tj8.76 0  TD 0  Tc -0.0582  Tw (  ) TjET189.24 371.88 m 328.68 371.88 l S BT172.92 367.92  TD/F4 12  Tf0  Tw (1) TjETBT0.8621 0 0 1 180 367.92  Tm/F5 12  Tf1.0681  Tc (-) Tj-13.6418 9.12  TD 0.6817  Tc (\346) Tj0 -18  TD (\350) Tj0 8.64  TD (\347) Tj186.3918 9.36  TD (\366) Tj0 -18  TD (\370) Tj0 8.64  TD (\367) TjETBT189.96 376.32  TD/F4 12  Tf-0.0213  Tc 0.0213  Tw (Current As) Tj52.8 0  TD -0.03  Tc 0  Tw (sets) Tj23.04 0  TD 0.056  Tc ([4]) Tj15.24 0  TD -0.048  Tc (+) Tj9.72 0  TD 0.028  Tc (PPE) Tj24.12 0  TD 0.056  Tc ([8]) Tj-94.68 -16.8  TD -0.02  Tc 0.02  Tw (Total Asse) Tj51.48 0  TD 0.018  Tc 0  Tw (ts) Tj12.96 0  TD 0.056  Tc ([6]) Tj-23.52 13.8  TD /F4 6.96  Tf-0.0149  Tc 0.0749  Tw ( t) Tj50.88 0  TD 0  Tw (t) Tj-32.4 -13.8  TD 0  Tc 0.06  Tw ( ) Tj2.76 -3  TD /F4 5.04  Tf-0.0811  Tc 0  Tw (t) Tj54.36 11.4  TD /F1 9.96  Tf0.0533  Tc -0.1115  Tw ( / ) TjET368.4 371.88 m 495.12 371.88 l S BT352.08 367.92  TD/F4 12  Tf0  Tc 0  Tw (1) TjETBT0.8621 0 0 1 359.16 367.92  Tm/F5 12  Tf1.0681  Tc (-) Tj-13.6418 9.12  TD 0.6817  Tc (\346) Tj0 -18  TD (\350) Tj0 8.64  TD (\347) Tj171.7756 9.36  TD (\366) Tj0 -18  TD (\370) Tj0 8.64  TD (\367) TjETBT369.12 376.32  TD/F4 12  Tf-0.0213  Tc 0.0213  Tw (Current As) Tj52.8 0  TD -0.03  Tc 0.03  Tw (sets ) Tj31.92 0  TD -0.048  Tc 0  Tw (+) Tj9.6 0  TD 0.028  Tc (PPE) Tj-65.52 -16.8  TD -0.0333  Tc 0.0333  Tw (Total Asse) Tj51.36 0  TD 0.018  Tc 0  Tw (ts) Tj-5.64 13.8  TD /F4 6.96  Tf-0.0149  Tc (t) Tj2.28 0  TD -0.0377  Tc (-) Tj1.8 0  TD 0  Tc (1) Tj37.08 0  TD -0.0149  Tc 0.0749  Tw ( t) Tj3.96 0  TD -0.0377  Tc 0  Tw (-) Tj1.8 0  TD 0  Tc (1) Tj-30.6 -16.8  TD -0.0377  Tc (-) Tj1.8 0  TD 0  Tc (1) Tj-4.2 0  TD /F6 6.96  Tf-0.0149  Tc (t) Tj-385.56 -13.8  TD /F1 9.96  Tf0.0069  Tc -0.0651  Tw (Sales Growth ) Tj57.24 0  TD -0.0059  Tc 0  Tw (Index) Tj22.56 0  TD -0.0546  Tc (=) Tj8.76 0  TD 0  Tc -0.0582  Tw (   ) Tj8.64 0  TD 0.0047  Tc 0  Tw (Sales) Tj20.76 0.72  TD /F1 6  Tf0.024  Tc (t) Tj1.68 -0.72  TD /F1 9.96  Tf0.0103  Tc ([12]/Sales) Tj40.68 0.72  TD /F1 6  Tf0.028  Tc (t-1) Tj-160.32 -25.44  TD /F1 9.96  Tf0.0065  Tc -0.0647  Tw (Depreciation ) Tj54.72 0  TD -0.0059  Tc 0  Tw (Index) Tj22.56 0  TD -0.0546  Tc (=) Tj8.76 0  TD 0  Tc -0.0582  Tw (  ) TjET171.48 321.96 m 301.32 321.96 l S BT172.44 326.4  TD/F4 12  Tf-0.042  Tc 0  Tw (Depreciati) Tj49.68 0  TD 0  Tc (on ) Tj23.52 0  TD -0.0045  Tc 0.0045  Tw ([14 less 6) Tj45.96 0  TD 0.042  Tc 0  Tw (5]) Tj-117.12 -16.8  TD -0.042  Tc (Depreciati) Tj49.56 0  TD 0  Tc (on ) Tj33 0  TD 0.028  Tc (PPE) Tj28.68 0  TD 0.056  Tc ([8]) Tj-47.64 13.8  TD /F4 6.96  Tf-0.0149  Tc (t) Tj2.16 0  TD -0.0377  Tc (-) Tj1.8 0  TD 0  Tc (1) Tj-2.04 -16.8  TD -0.0149  Tc (t) Tj2.16 0  TD -0.0377  Tc (-) Tj1.8 0  TD 0  Tc (1) Tj6.24 3  TD 0.0346  Tc (+) Tj28.08 -3  TD /F4 5.04  Tf0.0389  Tc -0.0989  Tw ( t) Tj3 0  TD 0.0017  Tc 0  Tw (-) Tj1.56 0  TD 0  Tc (1) TjETBT0.8621 0 0 1 165.36 327.12  Tm/F5 12  Tf0.6817  Tc (\346) Tj0 -18  TD (\350) Tj0 8.64  TD (\347) Tj158.1338 9.36  TD (\366) Tj0 -18  TD (\370) Tj0 8.64  TD (\367) TjETBT309.84 318  TD/F1 9.96  Tf0.0533  Tc (/) TjET320.88 321.96 m 426.48 321.96 l S BT339.48 326.4  TD/F4 12  Tf-0.042  Tc (Depreciati) Tj49.56 0  TD 0  Tc (on ) Tj-67.2 -16.8  TD -0.042  Tc (Depreciati) Tj49.56 0  TD 0  Tc (on ) Tj28.32 0  TD 0.028  Tc (PPE) Tj5.28 13.8  TD /F4 6.96  Tf-0.0149  Tc (t) Tj-17.64 -16.8  TD (t) Tj5.52 3  TD 0.0346  Tc (+) Tj28.08 -3  TD -0.0149  Tc 0.0749  Tw ( t) TjETBT0.8621 0 0 1 314.76 327.12  Tm/F5 12  Tf0.6817  Tc 0  Tw (\346) Tj0 -18  TD (\350) Tj0 8.64  TD (\347) Tj130.0149 9.36  TD (\366) Tj0 -18  TD (\370) Tj0 8.64  TD (\367) TjETBT72 279.96  TD/F1 9.96  Tf0.0096  Tc -0.0678  Tw (SGA ) Tj22.56 0  TD -0.014  Tc 0  Tw (Index=) TjET133.56 283.92 m 230.4 283.92 l S BT133.68 288.36  TD/F4 12  Tf-0.0053  Tc 0.0053  Tw (SGA Expens) Tj62.28 0  TD -0.048  Tc 0  Tw (e) Tj8.64 0  TD 0.0336  Tc ([189]) Tj-46.68 -16.8  TD -0.0264  Tc (Sales) Tj28.56 0  TD 0.042  Tc ([12]) Tj15.24 13.8  TD /F4 6.96  Tf-0.0149  Tc (t) Tj-18.12 -16.8  TD (t) TjETBT0.8621 0 0 1 127.44 289.08  Tm/F5 12  Tf0.6817  Tc (\346) Tj0 -18  TD (\350) Tj0 8.64  TD (\347) Tj119.714 9.36  TD (\366) Tj0 -18  TD (\370) Tj0 8.64  TD (\367) TjETBT238.92 279.96  TD/F1 9.96  Tf0.0533  Tc -0.1115  Tw (/ ) TjET252.84 283.92 m 333 283.92 l S BT252.96 288.36  TD/F4 12  Tf-0.0053  Tc 0.0053  Tw (SGA Expens) Tj62.28 0  TD -0.048  Tc 0.048  Tw (e ) Tj-40.32 -16.8  TD -0.0264  Tc 0  Tw (Sales) Tj49.44 13.8  TD /F4 6.96  Tf-0.0149  Tc (t) Tj2.28 0  TD -0.0377  Tc (-) Tj1.8 0  TD 0  Tc (1) Tj-27.84 -16.8  TD -0.0149  Tc 0.0749  Tw ( t) Tj3.96 0  TD -0.0377  Tc 0  Tw (-) Tj1.8 0  TD 0  Tc (1) TjETBT0.8621 0 0 1 246.72 289.08  Tm/F5 12  Tf0.6817  Tc (\346) Tj0 -18  TD (\350) Tj0 8.64  TD (\347) Tj100.504 9.36  TD (\366) Tj0 -18  TD (\370) Tj0 8.64  TD (\367) TjETBT72 241.92  TD/F1 9.96  Tf0.0138  Tc -0.072  Tw (Leverage ) Tj40.44 0  TD -0.014  Tc -0.0442  Tw (Index= ) TjET154.32 245.88 m 311.52 245.88 l S BT155.28 250.32  TD/F4 12  Tf-0.096  Tc 0  Tw (LTD) Tj26.64 0  TD 0.056  Tc ([9]) Tj15.24 0  TD -0.048  Tc (+) Tj9.48 0  TD -0.0453  Tc 0.0453  Tw (Current Li) Tj49.92 0  TD -0.0093  Tc 0  Tw (abilities) Tj41.16 0  TD 0.056  Tc ([5]) Tj-102.72 -16.8  TD -0.02  Tc 0.02  Tw (Total Asse) Tj51.48 0  TD 0.018  Tc 0  Tw (ts) Tj11.28 0  TD 0.056  Tc ([6]) Tj-78.72 13.8  TD /F4 6.96  Tf-0.0149  Tc (t) Tj115.8 0  TD (t) Tj-39.96 -16.8  TD (t) TjETBT0.8621 0 0 1 148.2 251.04  Tm/F5 12  Tf0.6817  Tc (\346) Tj0 -18  TD (\350) Tj0 8.64  TD (\347) Tj189.7327 9.36  TD (\366) Tj0 -18  TD (\370) Tj0 8.64  TD (\367) TjETBT319.68 241.92  TD/F1 9.96  Tf0.0533  Tc -0.1115  Tw (/ ) TjET333.6 245.88 m 474.6 245.88 l S BT334.56 250.32  TD/F4 12  Tf-0.096  Tc 0  Tw (LTD) Tj33.84 0  TD -0.048  Tc (+) Tj9.36 0  TD -0.0453  Tc 0.0453  Tw (Current Li) Tj49.92 0  TD -0.0093  Tc 0  Tw (abilities) Tj-57.48 -16.8  TD -0.02  Tc 0.02  Tw (Total Asse) Tj51.48 0  TD 0.018  Tc 0  Tw (ts) Tj-63.36 13.8  TD /F4 6.96  Tf-0.0149  Tc (t) Tj2.16 0  TD -0.0377  Tc (-) Tj1.92 0  TD 0  Tc (1) Tj103.68 0  TD -0.0149  Tc (t) Tj2.16 0  TD -0.0377  Tc (-) Tj1.8 0  TD 0  Tc (1) Tj-39.96 -16.8  TD -0.0149  Tc (t) Tj2.16 0  TD -0.0377  Tc (-) Tj1.92 0  TD 0  Tc (1) TjETBT0.8621 0 0 1 327.48 251.04  Tm/F5 12  Tf0.6817  Tc (\346) Tj0 -18  TD (\350) Tj0 8.64  TD (\347) Tj171.0796 9.36  TD (\366) Tj0 -18  TD (\370) Tj0 8.64  TD (\367) TjETBT72 205.32  TD/F1 9.96  Tf0.0092  Tc -0.0674  Tw (Accruals to Total ) Tj73.2 0  TD 0.0053  Tc -0.0635  Tw (Assets=   [) Tj46.68 -0.36  TD /F5 9.96  Tf0.0433  Tc 0  Tw (\)) Tj3.36 0.36  TD /F1 9.96  Tf0.0115  Tc -0.0697  Tw (Current Assets ) Tj63 0.72  TD /F1 6  Tf0.024  Tc 0  Tw (t) Tj1.68 -0.72  TD /F1 9.96  Tf0.0299  Tc ([4]-) Tj15 -0.36  TD /F5 9.96  Tf0.0433  Tc (\)) Tj3.36 0.36  TD /F1 9.96  Tf0.0076  Tc (Cash) Tj20.04 0.72  TD /F1 6  Tf0.024  Tc (t) Tj1.68 -0.72  TD /F1 9.96  Tf0.0377  Tc ([1]\)-\() Tj21.72 -0.36  TD /F5 9.96  Tf0.0433  Tc (\)) Tj3.36 0.36  TD /F1 9.96  Tf0.0151  Tc -0.0733  Tw (Current ) Tj34.2 0  TD 0.0075  Tc 0  Tw (Liabilities) Tj40.44 0.72  TD /F1 6  Tf0.024  Tc (t) Tj1.68 -0.72  TD /F1 9.96  Tf0.0222  Tc ([5]) Tj-365.4 -12.12  TD 0.0533  Tc -0.1115  Tw (                                                             - ) Tj181.92 -0.36  TD /F5 9.96  Tf0.0433  Tc 0  Tw (\)) Tj3.36 0.36  TD /F1 9.96  Tf0.0151  Tc -0.0733  Tw (Current ) Tj34.2 0  TD 0.0107  Tc -0.069  Tw (Maturities of ) Tj55.44 0  TD -0.0134  Tc 0  Tw (LTD) Tj19.8 0.72  TD /F1 6  Tf0.024  Tc (t) Tj1.68 -0.72  TD /F1 9.96  Tf0.0159  Tc ([44]-) Tj19.92 -0.36  TD /F5 9.96  Tf0.0433  Tc (\)) Tj3.36 0.36  TD /F1 9.96  Tf0.0013  Tc -0.0595  Tw (Income Tax ) Tj51.12 0  TD -0.0019  Tc 0  Tw (Payable) Tj31.56 0.72  TD /F1 6  Tf0.024  Tc (t) Tj1.68 -0.72  TD /F1 9.96  Tf0.008  Tc -0.0662  Tw ([71]\)-Depreciation and) Tj-404.04 -11.88  TD 0.0045  Tc 0  Tw (Amortization) Tj53.28 0.72  TD /F1 6  Tf0.024  Tc (t) Tj1.68 -0.72  TD /F1 9.96  Tf0.0222  Tc -0.0804  Tw ( [14]]/ ) Tj29.04 0  TD 0.0169  Tc 0  Tw (TA) Tj13.44 0.72  TD /F1 6  Tf0.024  Tc (t) Tj1.68 -0.72  TD /F1 9.96  Tf0.0222  Tc ([6]) Tj-99.12 -19.08  TD /F1 6  Tf0.012  Tc (b) Tj3 0  TD 0  Tc 0.03  Tw ( ) Tj1.8 -4.68  TD /F1 9.96  Tf-0.0024  Tc -0.0558  Tw (The ) Tj18.48 0  TD 0  Tc -0.0583  Tw (Wilcoxon Rank-Sum and the Median tests compare the distribution of sample firms' characteristics to the corresponding) Tj-23.28 -11.88  TD 0  Tc -0.0582  Tw (distribution for non-manipulators.  The reported p-values indicate the smallest probability of incorrectly rejecting the null hypothesis) Tj0 -11.88  TD 0.0146  Tc -0.0728  Tw (of no difference.) TjETendstream
+endobj
+86 0 obj
+15433
+endobj
+84 0 obj
+<<
+/Type /Page
+/Parent 72 0 R
+/Resources <<
+/Font <<
+/F1 8 0 R 
+/F4 34 0 R 
+/F5 35 0 R 
+/F6 87 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 85 0 R
+>>
+endobj
+90 0 obj
+<<
+/Length 91 0 R
+>>
+stream
+q 18 18 756 575.88 re W n 0.72 w 1 J 1 j 0 0 0 RG 7.2 525.6 m 777.6 525.6 l S Q q 18 18 756 575.88 re W n BT380.76 588.12  TD0 0 0 rg /F4 9.96  Tf0.0502  Tc -0.0202  Tw (Table 3) TjETQ BT222 564.36  TD0 0 0 rg /F4 9.96  Tf0.0065  Tc 0.0235  Tw (WESML and ) Tj55.44 0  TD -0.0324  Tc 0.0624  Tw (Unweighted ) Tj50.88 0  TD -0.0076  Tc 0.0376  Tw (Probit Estimation Results Based on an Estimation Sample of) Tj-98.52 -11.88  TD 0.0057  Tc 0.0243  Tw (50 Manipulators and 1708 Non-manipulators \(Panel A\).  Estimated Probabilities of) Tj-29.76 -11.88  TD 0  Tc 0.0298  Tw (Manipulation for the Estimation Sample and for a Holdout Sample of 24 Manipulators and on 624) Tj138 -12.36  TD -0.0022  Tc 0.0322  Tw (Non-manipulators \(Panel B) Tj109.56 0  TD 0.0433  Tc 0  Tw (\)) Tj3.36 5.04  TD /F4 6.48  Tf0.0029  Tc (a) Tj-429.36 -16.44  TD /F4 9.96  Tf-0.007  Tc 0.037  Tw (Panel A) Tj31.8 0  TD -0.0215  Tc 0.0515  Tw (:  Estimation Results) Tj55.8 -35.64  TD -0.0172  Tc 0  Tw (Constant) Tj51.36 11.88  TD -0.0155  Tc 0.0455  Tw (Days in Receivables) Tj27.6 -11.88  TD 0  Tc 0  Tw (Index) Tj22.68 5.04  TD /F4 6.48  Tf0  Tc (b) Tj55.56 18.72  TD /F4 9.96  Tf0.0087  Tc (Gross) Tj-3 -11.88  TD -0.007  Tc (Margin) Tj3.24 -11.88  TD 0  Tc (Index) Tj50.64 11.88  TD -0.0343  Tc 0.0643  Tw (Asset Quality) Tj15.72 -11.88  TD 0  Tc 0  Tw (Index) Tj69.6 23.76  TD -0.0051  Tc (Sales) Tj-4.68 -11.88  TD -0.0313  Tc (Growth) Tj3.84 -11.88  TD 0  Tc (Index) Tj59.16 23.76  TD 0.0118  Tc (Depre-) Tj0.24 -11.88  TD 0.0013  Tc (ciation) Tj2.28 -11.88  TD 0  Tc (Index) Tj53.52 11.88  TD -0.04  Tc (SGA) Tj-1.44 -11.88  TD 0  Tc (Index) Tj39.72 23.76  TD -0.0147  Tc (Accruals) Tj3.6 -11.88  TD 0.0146  Tc 0.0154  Tw (to total) Tj1.08 -11.88  TD -0.0343  Tc 0  Tw (Assets) Tj53.76 11.88  TD -0.0114  Tc (Leverage) Tj7.08 -11.88  TD 0  Tc (Index) Tj52.32 0  TD 0.0146  Tc 0.0154  Tw (Pseudo R) Tj38.04 5.04  TD /F4 6.48  Tf0.0014  Tc 0  Tw (2c) Tj32.64 17.64  TD /F5 9.96  Tf-0.068  Tc (c) Tj5.4 5.88  TD /F4 6.48  Tf0  Tc (2) Tj3.24 -5.04  TD /F4 9.96  Tf-0.0767  Tc (-) Tj-23.28 -11.88  TD -0.0086  Tc 0.0386  Tw (statistic p-) Tj8.4 -11.88  TD -0.0187  Tc 0  Tw (value) Tj21.48 5.04  TD /F4 6.48  Tf0.0029  Tc (c) Tj-714 -16.92  TD /F4 9.96  Tf0.0335  Tc (Predicted) Tj0 -11.88  TD -0.0367  Tc (Sign) Tj149.88 11.88  TD 0.0364  Tc (\(+\)) Tj76.92 0  TD (\(+\)) Tj66.36 0  TD (\(+\)) Tj68.76 0  TD (\(+\)) Tj61.68 0  TD (\(+\)) Tj52.08 0  TD (\(+\)) Tj45.96 0  TD (\(+\)) Tj59.28 0  TD (\(+\)) Tj-580.92 -35.64  TD 0.0069  Tc (WESML) Tj36 5.04  TD /F4 6.48  Tf0  Tc (d) Tj32.88 -5.04  TD /F4 9.96  Tf0.0322  Tc (-4.954) Tj78.36 0  TD 0.0525  Tc (.789) Tj76.92 0  TD (.459) Tj66.36 0  TD (.306) Tj68.76 0  TD (.701) Tj61.68 0  TD (.033) Tj50.4 0  TD 0.0267  Tc (-.006) Tj45.12 0  TD 0.054  Tc (3.937) Tj60.24 0  TD 0.0267  Tc (-.264) Tj64.56 0  TD 0.0525  Tc (.306) Tj52.08 0  TD 0.054  Tc (34.50) Tj-627.84 -11.88  TD 0.035  Tc (\(-11.80\)) Tj78.36 0  TD 0.0494  Tc (\(6.40\)) Tj76.92 0  TD (\(3.02\)) Tj66.36 0  TD (\(2.82\)) Tj68.76 0  TD (\(3.43\)) Tj64.2 0  TD 0.0473  Tc (\(.15\)) Tj50.4 0  TD 0.0267  Tc (\(-.04\)) Tj45.12 0  TD 0.0494  Tc (\(3.07\)) Tj60.24 0  TD 0.0267  Tc (-\(.83\)) Tj119.16 0  TD 0.0473  Tc (\(.00\)) Tj-695.04 -23.76  TD -0.0324  Tc (Unweighted) Tj68.88 0  TD 0.0322  Tc (-4.840) Tj78.36 0  TD 0.0525  Tc (.920) Tj76.92 0  TD (.528) Tj66.36 0  TD (.404) Tj68.76 0  TD (.892) Tj61.68 0  TD (.115) Tj50.4 0  TD 0.0267  Tc (-.172) Tj45.12 0  TD 0.054  Tc (4.679) Tj60.24 0  TD 0.0267  Tc (-.327) Tj64.56 0  TD 0.0525  Tc (.371) Tj49.56 0  TD 0.055  Tc (129.20) Tj-690.84 -11.88  TD 0.0413  Tc (Probit) Tj24.6 5.04  TD /F4 6.48  Tf0  Tc (d) Tj40.92 -5.04  TD /F4 9.96  Tf0.035  Tc (\(-11.01\)) Tj78.36 0  TD 0.0494  Tc (\(6.02\)) Tj76.92 0  TD (\(2.20\)) Tj66.36 0  TD (\(3.20\)) Tj68.76 0  TD (\(5.39\)) Tj64.2 0  TD 0.0473  Tc (\(.70\)) Tj50.4 0  TD 0.0267  Tc (\(-.71\)) Tj45.12 0  TD 0.0494  Tc (\(3.73\)) Tj57.72 0  TD 0.0314  Tc (\(-1.22\)) Tj121.68 0  TD 0.0473  Tc (\(.00\)) Tj-718.44 -23.76  TD 0.0058  Tc 0.0242  Tw (Panel B: Estimated Probabilities of Manipulation) Tj234 -11.88  TD 0.0069  Tc 0  Tw (WESML) TjET255.6 348.72 35.88 0.48 re fBT578.76 350.28  TD-0.0133  Tc 0.0433  Tw (Unweighted Profit) TjET578.76 348.72 73.56 0.48 re fBT159.48 338.4  TD-0.0204  Tc 0.0504  Tw (Estimation Sample) Tj178.32 0  TD -0  Tc 0.0307  Tw (Holdout Sample) Tj165.96 0  TD -0.0204  Tc 0.0504  Tw (Estimation Sample) Tj164.76 0  TD -0  Tc 0.0307  Tw (Holdout Sample) Tj-549.72 -11.88  TD 0.0036  Tc 0  Tw (Manipulators) TjET118.8 324.96 53.04 0.48 re fBT194.16 326.52  TD-0.0015  Tc (Non-Manipulators) TjET194.16 324.96 73.44 0.48 re fBT298.8 326.52  TD0.0036  Tc (Manipulators) TjET298.8 324.96 53.04 0.48 re fBT376.32 326.52  TD-0.0015  Tc (Non-Manipulators) TjET376.32 324.96 73.44 0.48 re fBT472.08 326.52  TD0.0036  Tc (Manipulators) TjET472.08 324.96 53.04 0.48 re fBT545.16 326.52  TD-0.0015  Tc (Non-Manipulators) TjET545.16 324.96 73.44 0.48 re fBT631.8 326.52  TD0.0036  Tc (Manipulators) TjET631.8 324.96 53.04 0.48 re fBT698.16 326.52  TD-0.0015  Tc (Non-Manipulators) TjET698.16 324.96 73.44 0.48 re fBT45 302.76  TD0  Tc (Mean) Tj91.56 0  TD 0.0525  Tc (.107) Tj85.56 0  TD (.006) Tj94.44 0  TD (.097) Tj87.72 0  TD (.007) Tj85.56 0  TD (.237) Tj83.28 0  TD (.022) Tj76.44 0  TD (.181) Tj76.56 0  TD (.019) Tj-681.12 -11.88  TD 0.0011  Tc 0.0289  Tw (St. ) Tj13.32 0  TD -0.0008  Tc 0  Tw (Dev.) Tj78.24 0  TD 0.0525  Tc (.175) Tj85.56 0  TD (.021) Tj94.44 0  TD (.223) Tj87.72 0  TD (.044) Tj85.56 0  TD (.275) Tj83.28 0  TD (.051) Tj76.44 0  TD (.288) Tj76.56 0  TD (.063) Tj-681.12 -11.88  TD -0.0525  Tc (MaximLxn) Tj91.56 0  TD 0.0525  Tc (.851) Tj85.56 0  TD (.615) Tj94.44 0  TD (.999) Tj87.72 0  TD (.999) Tj85.56 0  TD (.980) Tj83.28 0  TD (.960) Tj76.44 0  TD (.999) Tj76.56 0  TD (.999) Tj-681.12 -11.88  TD 0.0087  Tc (Median) Tj91.56 0  TD 0.0525  Tc (.024) Tj85.56 0  TD (.003) Tj94.44 0  TD (.009) Tj87.72 0  TD (.002) Tj85.56 0  TD (.099) Tj83.28 0  TD (.011) Tj76.44 0  TD (.037) Tj76.56 0  TD (.009) Tj-681.12 -11.88  TD -0.07  Tc (Minimum) Tj91.56 0  TD 0.0525  Tc (.001) Tj85.56 0  TD (.001) Tj94.44 0  TD (.001) Tj87.72 0  TD (.001) Tj85.56 0  TD (.001) Tj83.28 0  TD (.001) Tj76.44 0  TD (.004) Tj76.56 0  TD (.001) Tj-681.12 -23.76  TD -0.0084  Tc (Witcoxon-Z) Tj48.6 5.04  TD /F4 6.48  Tf0  Tc (1) Tj40.44 -5.04  TD /F4 9.96  Tf0.054  Tc (8.049) Tj180 0  TD (4.721) Tj173.28 0  TD (8.314) Tj159.72 0  TD (4.630) Tj-602.04 -11.88  TD -0.0026  Tc (\(p-value\)) Tj88.2 0  TD 0.0494  Tc (\(.000\)) Tj180 0  TD (\(.000\)) Tj173.28 0  TD (\(.000\)) Tj159.72 0  TD (\(.000\)) Tj-601.2 -23.76  TD -0.0042  Tc 0.0342  Tw (Median test-X) Tj57.24 5.04  TD /F4 6.48  Tf0  Tc 0  Tw (1) Tj29.28 -5.04  TD /F4 9.96  Tf0.055  Tc (23.785) Tj180 0  TD (13.995) Tj173.28 0  TD (26.667) Tj159.72 0  TD (11.056) Tj-599.52 -11.88  TD 0.0433  Tc (\() Tj3.36 0  TD 0.005  Tc (p.value\)) Tj84.84 0  TD 0.0494  Tc (\(.000\)) Tj180 0  TD (\(.003\)) Tj173.28 0  TD (\(.000\)) Tj159.72 0  TD (\(.001\)) Tj-624.6 -11.88  TD 0.06  Tc (____________________________________________________________________________________________________________________________________________________) Tj0 -6.84  TD /F4 6.48  Tf0.0029  Tc 0.0571  Tw (a  ) Tj6.24 -5.04  TD /F4 9.96  Tf-0.002  Tc 0.032  Tw (The estimation sample consists of the pre-1989 manipulators and their controls and the holdout sample of the post-1988 manipulators and their controls.) Tj-6.24 -6.84  TD /F4 6.48  Tf0  Tc 0.06  Tw (b ) Tj4.92 -5.04  TD /F4 9.96  Tf0.0102  Tc 0.0198  Tw ( See Table 2 for variable definitions.) Tj-4.92 -12.36  TD /F4 6.48  Tf-0.0022  Tc 0  Tw (C) Tj4.32 -5.04  TD /F4 9.96  Tf0.0087  Tc 0.0213  Tw (  The pseudo-R) Tj61.32 5.04  TD /F4 6.48  Tf0  Tc 0  Tw (2) Tj3.24 -5.04  TD /F4 9.96  Tf0.0038  Tc 0.0262  Tw ( is equal to ) TjETq 136.56 126.24 28.92 19.56 re W n BT0.6522 0 0 1 137.88 130.44  Tm/F5 19.08  Tf-0.0975  Tc 0  Tw (\() TjETQ q 175.44 126.24 41.4 19.56 re W n BT0.6522 0 0 1 189.24 130.44  Tm/F5 19.08  Tf-0.0975  Tc 0  Tw (\)) TjETQ q 186.72 126.24 41.4 19.56 re W n BT0.6522 0 0 1 200.52 130.44  Tm/F5 19.08  Tf-0.0975  Tc 0  Tw (\() TjETQ q 224.16 126.24 19.44 19.56 re W n BT0.6522 0 0 1 237.96 130.44  Tm/F5 19.08  Tf-0.0975  Tc 0  Tw (\)) TjETQ BT1.025 0 0 1 142.44 130.92  Tm/F4 12  Tf-0.1905  Tc 0  Tw (L) Tj28.2148 0  TD (L) Tj47.415 0  TD (L) TjETBT1.0435 0 0 1 148.68 136.32  Tm/F4 6.96  Tf-0.145  Tc (2) Tj3.795 0  TD -0.0949  Tc (/) Tj2.645 0  TD -0.145  Tc (n) Tj21.1602 0  TD (2) Tj3.91 0  TD -0.0949  Tc (/) Tj2.53 0  TD -0.145  Tc (n) Tj40.2504 0  TD (2) Tj3.795 0  TD -0.0949  Tc (/) Tj2.645 0  TD -0.145  Tc (n) TjETBT0.9412 0 0 1 150.12 127.92  Tm/F5 6.96  Tf0.3923  Tc (W) TjETBT0.8103 0 0 1 162.24 130.92  Tm/F5 12  Tf1.5568  Tc (-) Tj60.1231 0  TD (-) TjETBT0.9412 0 0 1 178.68 127.92  Tm/F3 6.96  Tf0.3255  Tc (w) Tj51.6382 0  TD (w) TjETBT1.025 0 0 1 195.12 130.92  Tm/F4 12  Tf-0.0579  Tc (/) Tj8.6635 0  TD -0.1463  Tc (1) TjETBT243.6 135.96  TD/F4 6.48  Tf0  Tc 0.06  Tw (  ) Tj3.36 -5.04  TD /F4 9.96  Tf-0.0496  Tc 0.0796  Tw (where L) Tj32.64 -1.8  TD /F5 6.48  Tf0.1238  Tc 0  Tw (S) Tj3.96 1.8  TD /F4 9.96  Tf-0.0018  Tc 0.0318  Tw ( is the log likelihood for the WESML ) Tj151.8 0  TD 0.0036  Tc 0.0264  Tw (probit model \(unconstrained\), L) Tj127.44 -0.84  TD /F5 9.96  Tf-0.2056  Tc 0  Tw (T) Tj5.88 0.84  TD /F4 9.96  Tf-0.0201  Tc 0.0501  Tw ( is the log likelihood with only the constant term) Tj-547.08 -16.44  TD -0.0043  Tc 0.0343  Tw (in the model \(constrained\) and n the number of observations \(See ) Tj263.16 0  TD 0.0054  Tc 0.0246  Tw (Maddala \(1983, p. 40\)\).  The log likelihood ratio test statistic is equal to -2 times the difference in the log likelihood of) Tj-263.16 -12.12  TD -0.0087  Tc 0.0387  Tw (the unconstrained and constrained models is asymptotically distributed ) Tj284.64 -0.84  TD /F5 9.96  Tf0.1507  Tc 0  Tw (P) Tj7.8 5.88  TD /F4 6.48  Tf0  Tc (2) Tj3.24 -5.04  TD /F4 9.96  Tf-0.0129  Tc 0.0429  Tw ( with degrees of freedom equal to the difference in the number of parameters of the two models.) Tj-295.68 -6.84  TD /F4 6.48  Tf0  Tc 0  Tw (d) Tj3.24 -5.04  TD /F4 9.96  Tf-0.0211  Tc 0.0511  Tw ( Weighted exogenous maximum likelihood ) Tj174 0  TD -0.0082  Tc 0.0382  Tw (probit is estimated assuming that prior probability of manipulation is .0069.  Sensitivity analysis on the prior probability of manipulation yields) Tj-177.24 -12.12  TD -0.0046  Tc 0.0346  Tw (coefficients estimates of similar magnitude are significance.  When the prior probability of manipulation is specified as .0059, .0079 and .0089 the estimation yields ) Tj656.52 -0.84  TD /F5 9.96  Tf-0.068  Tc 0  Tw (c) Tj5.4 5.88  TD /F4 6.48  Tf0  Tc 0.06  Tw (2  ) Tj6.6 -5.04  TD /F4 9.96  Tf0.0095  Tc 0.0205  Tw (statistics of 29.60,) Tj-668.52 -11.88  TD 0.0112  Tc 0.0188  Tw (39.22, 43.95 and 48.65, significant at the 1% level or lower.  ) Tj244.92 0  TD -0.0324  Tc 0.0624  Tw (Unweighted ) Tj50.88 0  TD 0.0026  Tc 0.0274  Tw (probit implicitly assumes that the prior probability of manipulation is .02844 \(50/1758\).) Tj-295.8 -6.84  TD /F4 6.48  Tf0.0029  Tc 0  Tw (e) Tj2.88 -5.04  TD /F4 9.96  Tf-0.0079  Tc 0.0379  Tw ( Tests that the estimated probabilities for manipulators and non-manipulators are drawn from the same distribution.) TjET0.72 w 1 J 1 j 0 0 0 RG 108 480.36 m 770.4 480.36 l S endstream
+endobj
+91 0 obj
+11789
+endobj
+89 0 obj
+<<
+/MediaBox [ 0 0 792 612 ]
+/Type /Page
+/Parent 72 0 R
+/Resources <<
+/Font <<
+/F3 33 0 R 
+/F4 34 0 R 
+/F5 35 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 90 0 R
+>>
+endobj
+94 0 obj
+<<
+/Length 95 0 R
+>>
+stream
+q 18 18 756 575.88 re W n BT380.76 588.12  TD0 0 0 rg /F4 9.96  Tf0.0502  Tc -0.0202  Tw (Table 4) TjETQ BT230.52 564.36  TD0 0 0 rg /F4 9.96  Tf-0.0131  Tc 0.0431  Tw (Sensitivity Analysis to the choice of Estimation and Holdout Samples.  Descriptive) Tj-98.88 -11.88  TD 0.0023  Tc 0.0277  Tw (Statistics for Estimation Based on 100 Random Samples of 50 Manipulators and 1500 Non-Manipulators [Panel A], and Descriptive) Tj18.6 -12.36  TD 0.0064  Tc 0.0236  Tw (Statistics on the Estimated Probabilities of 100 Holdout Samples of 24 Manipulators and 832 Non-Manipulators [Panel B) Tj485.28 0  TD 0.0433  Tc 0  Tw (]) Tj3.36 5.04  TD /F4 6.48  Tf0.0029  Tc (a) Tj-359.88 -16.44  TD /F4 9.96  Tf-0.006  Tc 0.036  Tw ( Panel A: Descriptive statistics on 100 Estimation Samples) Tj-124.56 -35.64  TD 0  Tc 0  Tw (Mean) Tj63.12 11.88  TD 0.014  Tc (Standard) Tj-1.8 -11.88  TD -0.0047  Tc (Deviation) Tj69 0  TD -0.0056  Tc (Max) Tj43.32 0  TD 0.0087  Tc (Median) Tj63.24 0  TD -0.0144  Tc (Min) Tj58.56 11.88  TD 0.0186  Tc (Percent) Tj-1.08 -11.88  TD 0.0074  Tc (Positive) Tj68.4 23.76  TD 0.0105  Tc (Percentage) Tj-4.68 -11.88  TD -0.0204  Tc 0.0504  Tw (Significant at) Tj15.72 -11.88  TD 0.0344  Tc 0  Tw (10%) Tj18.36 5.04  TD /F4 6.48  Tf0  Tc (b) Tj49.32 18.72  TD /F4 9.96  Tf0.0105  Tc (Percentage) Tj-4.68 -11.88  TD -0.0204  Tc 0.0504  Tw (Significant at) Tj18.36 -11.88  TD 0.0217  Tc 0  Tw (5%) Tj13.32 5.04  TD /F4 6.48  Tf0  Tc (b) Tj56.28 18.72  TD /F4 9.96  Tf0.0105  Tc (Percentage) Tj-4.68 -12.36  TD -0.0204  Tc 0.0504  Tw (Significant at) Tj14.52 -11.4  TD 0.0333  Tc 0  Tw (2.5%) Tj20.88 5.04  TD /F4 6.48  Tf0  Tc (b) Tj-688.32 -23.16  TD /F4 9.96  Tf-0.0172  Tc (Constant) Tj131.16 0  TD 0.0322  Tc (-4.223) Tj73.8 0  TD 0.0525  Tc (.549) Tj48 0  TD 0.0322  Tc -0.0022  Tw ( -3.404) Tj49.44 0  TD (  -4.040) Tj62.64 0  TD 0  Tw (-5.853) Tj69.48 0  TD 0.05  Tc -0.02  Tw (  0.0) Tj71.64 0  TD 0.054  Tc 0  Tw (100.0) Tj78.72 0  TD (100.0) Tj83.28 0  TD (100.0) Tj-668.16 -21.48  TD -0.0428  Tc 0.0728  Tw (Days in ) Tj33 0  TD -0  Tc 0  Tw (Receivables) Tj48.12 5.04  TD /F4 6.48  Tf0  Tc (b) TjETq 18 442.44 111.6 9 re W n BT21.6 442.08  TD/F4 9.96  Tf0  Tc (Index) TjETQ BT153.12 453.96  TD/F4 9.96  Tf0.0525  Tc -0.0225  Tw (   .857) Tj73.44 0  TD 0  Tw (.097) Tj48 0  TD 0.054  Tc -0.024  Tw (  1.065) Tj49.44 0  TD 0.0525  Tc -0.0225  Tw (     .864) Tj64.32 0  TD (  .588) Tj48.24 0  TD 0.054  Tc -0.024  Tw (      100.0) Tj91.2 0  TD 0  Tw (100.0) Tj78.72 0  TD (100.0) Tj83.28 0  TD (100.0) Tj-668.16 -21  TD 0  Tc 0.0299  Tw (Gross Margin Index) Tj132.84 0  TD 0.0525  Tc -0.0225  Tw (  .488) Tj72.12 0  TD 0  Tw (.115) Tj48 0  TD -0.0225  Tw (    .871) Tj49.44 0  TD (     .487) Tj64.32 0  TD (  .222) Tj48.24 0  TD 0.054  Tc -0.024  Tw (      100.0) Tj92.4 0  TD 0.0525  Tc -0.0225  Tw ( 95.0) Tj78.84 0  TD ( 84.0) Tj81.96 0  TD (  66.0) Tj-668.16 -21  TD -0.0241  Tc 0.0541  Tw (Asset Quality Index) Tj132.84 0  TD 0.0525  Tc -0.0225  Tw (  .453) Tj72.12 0  TD 0  Tw (.113) Tj48 0  TD -0.0225  Tw (    .789) Tj49.44 0  TD (     .438) Tj64.32 0  TD (  .223) Tj48.24 0  TD 0.054  Tc -0.024  Tw (      100.0) Tj92.4 0  TD 0.0525  Tc -0.0225  Tw ( 95.0) Tj78.84 0  TD ( 84.0) Tj81.96 0  TD (  96.0) Tj-668.16 -21  TD -0.0133  Tc 0.0433  Tw (Sales Growth Index) Tj132.84 0  TD 0.0525  Tc -0.0225  Tw (  .374) Tj72.12 0  TD 0  Tw (.365) Tj48 0  TD 0.054  Tc -0.024  Tw (  1.232) Tj49.44 0  TD 0.0525  Tc -0.0225  Tw (     .152) Tj64.32 0  TD (  .103) Tj48.24 0  TD 0.054  Tc -0.024  Tw (      100.0) Tj91.2 0  TD 0  Tw (100.0) Tj78.72 0  TD (100.0) Tj83.28 0  TD (100.0) Tj-668.16 -21  TD 0.0093  Tc 0.0207  Tw (Depreciation Index) Tj132.84 0  TD 0.0525  Tc -0.0225  Tw (  .059) Tj72.12 0  TD 0  Tw (.183) Tj48 0  TD -0.0225  Tw (    .437) Tj49.44 0  TD (     .097) Tj63.96 0  TD 0.0267  Tc 0.0033  Tw ( -.782) Tj48.6 0  TD 0.0525  Tc -0.0225  Tw (        81.0) Tj91.2 0  TD (  37.0) Tj80.04 0  TD ( 18.0) Tj81.96 0  TD (  10.0) Tj-668.16 -21  TD -0.0149  Tc 0.0449  Tw (SGA Index) Tj133.68 0  TD 0.0267  Tc 0  Tw (-.144) Tj71.28 0  TD 0.0525  Tc (.180) Tj48 0  TD -0.0225  Tw (    .333) Tj49.44 0  TD 0.0267  Tc 0.0033  Tw (    -.156) Tj63.96 0  TD ( -.559) Tj48.6 0  TD 0.0525  Tc -0.0225  Tw (        25.0) Tj91.2 0  TD (  30.0) Tj80.04 0  TD ( 12.0) Tj83.28 0  TD 0.05  Tc -0.02  Tw (   4.0) Tj-669.48 -21  TD -0.0028  Tc 0.0328  Tw (Accruals to Total Assets) Tj132.84 0  TD 0.054  Tc 0  Tw (4.370) Tj72.12 0  TD 0.0525  Tc (.965) Tj48 0  TD 0.054  Tc -0.024  Tw (  7.219) Tj49.44 0  TD (   4.464) Tj63 0  TD ( 2.090) Tj49.56 0  TD (      100.0) Tj91.2 0  TD 0.0525  Tc -0.0225  Tw (  99.0) Tj80.04 0  TD ( 95.0) Tj81.96 0  TD (  93.0) Tj-668.16 -21  TD -0.0069  Tc 0.0369  Tw (Leverage Index) Tj133.68 0  TD 0.0267  Tc 0  Tw (-.110) Tj71.28 0  TD 0.0525  Tc (.165) Tj48 0  TD -0.0225  Tw (    .278) Tj49.44 0  TD 0.0267  Tc 0.0033  Tw (   -.114) Tj63.96 0  TD ( -.544) Tj48.6 0  TD 0.0525  Tc -0.0225  Tw (        25.0) Tj91.2 0  TD 0.05  Tc -0.02  Tw (    8.0) Tj80.04 0  TD (   2.0) Tj81.96 0  TD (    1.0) Tj-668.16 -21  TD 0.0032  Tc 0  Tw (Pseudo-R) Tj38.76 5.04  TD /F4 6.48  Tf0  Tc (2) Tj95.28 -5.04  TD /F4 9.96  Tf0.0525  Tc -0.0225  Tw ( .242) Tj70.92 0  TD 0  Tw (.068) Tj48 0  TD -0.0225  Tw (    .444) Tj49.44 0  TD (     .220) Tj64.32 0  TD (  .124) Tj75 0  TD -0.0767  Tc 0  Tw (-) Tj74.16 0  TD (-) Tj78.72 0  TD (-) Tj-594.6 -22.08  TD /F5 9.96  Tf-0.068  Tc (c) Tj5.4 5.88  TD /F4 6.48  Tf0.0011  Tc (2-) Tj5.4 -5.04  TD /F4 9.96  Tf-0.0086  Tc (statistic) Tj102.96 0.24  TD 0.054  Tc -0.024  Tw (       89.79) Tj71.64 0  TD (      19.59) Tj67.56 0  TD 0.055  Tc -0.025  Tw ( 142.69) Tj57.48 0  TD 0.054  Tc 0  Tw (84.49) Tj41.52 0  TD -0.024  Tw (      51.90) Tj89.76 0  TD -0.0767  Tc 0  Tw (-) Tj64.44 0  TD 0.054  Tc (100.0) Tj78.72 0  TD (100.0) Tj-584.88 -32.88  TD 0.0054  Tc 0.0246  Tw (Panel B: Descriptive Statistics on Estimated Probabilities on 100 Holdout Samples) Tj116.76 -35.64  TD 0  Tc 0  Tw (Mean) Tj65.76 11.88  TD 0.014  Tc (Standard) Tj-1.92 -11.88  TD -0.0047  Tc (Deviation) Tj78.12 0  TD -0.0056  Tc (Max) Tj50.04 0  TD 0.0087  Tc (Median) Tj63.24 0  TD -0.0144  Tc (Min) Tj67.2 11.88  TD -0.0084  Tc (Wilcoxon-Z) Tj9.12 -11.88  TD -0.0097  Tc (P-value) Tj106.92 11.16  TD 0.0087  Tc 0.0213  Tw (Median ) Tj33 -0.84  TD /F5 9.96  Tf-0.068  Tc 0  Tw (c) Tj5.4 5.88  TD /F4 6.48  Tf0  Tc (2) Tj-32.76 -16.44  TD /F4 9.96  Tf-0.0097  Tc (P-value) Tj-550.92 -19.8  TD 0.0036  Tc (Manipulators) Tj109.32 0  TD 0.0525  Tc (.178) Tj72.12 0  TD (.049) Tj67.56 0  TD (.316) Tj56.16 0  TD (.164) Tj56.28 0  TD (.091) Tj78.24 0  TD 0.055  Tc (12.212) Tj112.56 0  TD (199.09) Tj-552.24 -11.88  TD -0.0015  Tc (Non-Manipulators) Tj109.32 0  TD 0.0525  Tc (.028) Tj72.12 0  TD (.002) Tj67.56 0  TD (.033) Tj56.16 0  TD (.028) Tj56.28 0  TD (.024) Tj79.92 0  TD 0.0494  Tc (\(.000\)) Tj112.56 0  TD (\(.000\)) Tj-563.88 -22.08  TD 0.06  Tc (___________________________________________________________________________________________________________________________________________________) Tj0 -6.84  TD /F4 6.48  Tf0.0029  Tc (a) Tj2.88 -5.04  TD /F4 9.96  Tf-0.0049  Tc 0.0349  Tw (  Random samples are generated using the RANUNI function in SAS.  RAPUNI is used 100 times to generate 100 samples of 50 manipulators out of 74 and 1500 controls) Tj-2.88 -11.88  TD -0.0067  Tc 0.0367  Tw (Each time, the complement of 24 manipulators and 832 non-manipulators is considered as a holdout sample.) Tj0 -6.84  TD /F4 6.48  Tf0  Tc 0  Tw (b) Tj3.24 -5.04  TD /F4 9.96  Tf-0.003  Tc 0.033  Tw ( Significance based on one-tailed test.) Tj-3.24 -6.84  TD /F4 6.48  Tf0.0029  Tc 0  Tw (c) Tj2.88 -5.04  TD /F4 9.96  Tf0.009  Tc 0.021  Tw ( Variables and statistics are defined in Tables 2 and 3.) Tj-2.88 -6.84  TD /F4 6.48  Tf0  Tc 0  Tw (d) Tj3.24 0  TD 0.06  Tw ( ) Tj1.68 -5.04  TD /F4 9.96  Tf-0.0079  Tc 0.0379  Tw (Tests that the estimated probabilities for manipulators and non-manipulators are drawn from the same distribution.) TjET0.72 w 1 J 1 j 0 0 0 RG 28.8 192.72 m 655.2 191.52 l S q 18 18 756 575.88 re W n 748.8 487.92 l S Q endstream
+endobj
+95 0 obj
+8339
+endobj
+92 0 obj
+<<
+/MediaBox [ 0 0 792 612 ]
+/Type /Page
+/Parent 93 0 R
+/Resources <<
+/Font <<
+/F4 34 0 R 
+/F5 35 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 94 0 R
+>>
+endobj
+97 0 obj
+<<
+/Length 98 0 R
+>>
+stream
+BT380.76 580.92  TD0 0 0 rg /F4 9.96  Tf0.0502  Tc -0.0202  Tw (Table 5) Tj-118.32 -23.76  TD -0.0011  Tc 0.0311  Tw (Cut-off probabilities, Costs of Misclassification, and Probability of) Tj-4.56 -11.88  TD 0.0012  Tc 0.0288  Tw (Type I and Type II Errors for Various Levels of Relative Costs in the) Tj-6.12 -11.88  TD -0.0071  Tc 0.0371  Tw (Estimation Sample \(50 manipulators, 1708 non-manipulators\) and in the) Tj27.12 -12.36  TD -0.0024  Tc 0.0324  Tw (Holdout Sample \(24 manipulators, 624 non-manipulators) Tj228 0  TD 0.0433  Tc 0  Tw (\)) Tj3.36 5.04  TD /F4 6.48  Tf0.0029  Tc (a) Tj-488.64 -28.32  TD /F4 9.96  Tf-0.007  Tc 0.037  Tw (Panel A) Tj31.8 0  TD 0.0043  Tc 0.0257  Tw (:  WESML) Tj178.08 -23.76  TD -0.0204  Tc 0.0504  Tw (Estimation Sample) Tj274.92 0  TD -0  Tc 0.0307  Tw (             Holdout Sample) Tj-484.8 -23.76  TD -0.0062  Tc 0.0362  Tw (Relative costs of) Tj127.32 0  TD -0.0403  Tc 0  Tw (Cut-off) Tj92.52 11.88  TD 0.0085  Tc 0.0215  Tw (Probability of) Tj-12.6 -11.88  TD -0  Tc 0.0303  Tw (Classification errors) Tj132.84 11.88  TD 0.0101  Tc 0.0199  Tw (Cost of Model) Tj-1.44 -11.88  TD 0.0081  Tc 0.0219  Tw (Errors Relative) Tj126.24 11.88  TD 0.0085  Tc 0.0215  Tw (Probability of) Tj-13.44 -11.88  TD 0  Tc 0.0295  Tw (Classification Errors) Tj131.88 11.88  TD 0.0101  Tc 0.0199  Tw (Cost of Model) Tj-1.44 -11.88  TD 0.0081  Tc 0.0219  Tw (Errors Relative) Tj-581.88 -11.88  TD 0.0213  Tc 0.0087  Tw (Type I and Type II errors) Tj117.96 0  TD 0.0116  Tc 0  Tw (Probability) Tj44.4 5.04  TD /F4 6.48  Tf0  Tc (b) Tj30.72 -5.04  TD /F4 9.96  Tf0.0191  Tc 0.0109  Tw (Type I) Tj74.88 0  TD 0.0231  Tc 0.0069  Tw (Type II) Tj63 0  TD 0.0271  Tc 0.0029  Tw (To Na\357ve ) Tj40.08 0  TD -0.0246  Tc 0  Tw (Strategy) Tj33 5.04  TD /F4 6.48  Tf0.0029  Tc (c) Tj34.08 -5.04  TD /F4 9.96  Tf0.0191  Tc 0.0109  Tw (Type I) Tj76.92 0  TD 0.0231  Tc 0.0069  Tw (Type II) Tj62.4 0  TD -0.0113  Tc 0.0413  Tw (to Na\357ve Strategy) Tj-530.28 -23.76  TD 0.037  Tc 0  Tw (1:1) Tj80.76 0  TD 0.055  Tc (1.0000) Tj64.56 0  TD (1.0000) Tj78.96 0  TD 0.054  Tc (.0000) Tj57.96 0  TD -0.024  Tw (           1.000) Tj108.12 0  TD 0.055  Tc 0  Tw (1.0000) Tj81 0  TD 0.054  Tc (.0000) Tj57.96 0  TD -0.024  Tw (          1.000) Tj-576.48 -11.88  TD 0.0428  Tc -0.0128  Tw (                 10:1) Tj117.96 0  TD 0.054  Tc -0.024  Tw (      .2905) Tj58.44 0  TD (        .9000) Tj95.04 0  TD 0  Tw (.0004) Tj87.48 0  TD 0.0525  Tc -0.0225  Tw ( .991) Tj79.8 0  TD 0.054  Tc -0.024  Tw ( .9166) Tj79.8 0  TD 0  Tw (.0048) Tj83.64 0  TD 0.0525  Tc -0.0225  Tw ( .986) Tj-602.16 -11.88  TD 0.0428  Tc -0.0128  Tw (                 20:1) Tj117.96 0  TD 0.054  Tc -0.024  Tw (      .0512) Tj58.44 0  TD (        .5600) Tj95.04 0  TD 0  Tw (.0409) Tj87.48 0  TD 0.0525  Tc -0.0225  Tw ( .855) Tj79.8 0  TD 0.054  Tc -0.024  Tw ( .7500) Tj79.8 0  TD 0  Tw (.0112) Tj83.64 0  TD 0.0525  Tc -0.0225  Tw ( .830) Tj-602.16 -11.88  TD 0.0428  Tc -0.0128  Tw (                 30:1) Tj117.96 0  TD 0.054  Tc -0.024  Tw (      .0512) Tj58.44 0  TD (        .5600) Tj95.04 0  TD 0  Tw (.0409) Tj87.48 0  TD 0.0525  Tc -0.0225  Tw ( .757) Tj79.8 0  TD 0.054  Tc -0.024  Tw ( .7500) Tj79.8 0  TD 0  Tw (.0112) Tj83.64 0  TD 0.0525  Tc -0.0225  Tw ( .804) Tj-602.16 -11.88  TD 0.0428  Tc -0.0128  Tw (                 40:1) Tj117.96 0  TD 0.054  Tc -0.024  Tw (      .0223) Tj58.44 0  TD (        .4600) Tj95.04 0  TD 0  Tw (.0632) Tj87.48 0  TD 0.0525  Tc -0.0225  Tw ( .688) Tj79.8 0  TD 0.054  Tc -0.024  Tw ( .6667) Tj79.8 0  TD 0  Tw (.0240) Tj83.64 0  TD 0.0525  Tc -0.0225  Tw ( .753) Tj-602.16 -11.88  TD 0.0428  Tc -0.0128  Tw (                 60:1) Tj117.96 0  TD 0.054  Tc -0.024  Tw (      .0092) Tj58.44 0  TD (        .2800) Tj95.04 0  TD 0  Tw (.1329) Tj87.48 0  TD 0.0525  Tc -0.0225  Tw ( .597) Tj79.8 0  TD 0.054  Tc -0.024  Tw ( .5000) Tj79.8 0  TD 0  Tw (.0689) Tj83.64 0  TD 0.0525  Tc -0.0225  Tw ( .665) Tj-602.16 -11.88  TD 0.0462  Tc -0.0162  Tw (               100:1) Tj117.96 0  TD 0.054  Tc -0.024  Tw (      .0087) Tj58.44 0  TD (        .2600) Tj95.04 0  TD 0  Tw (.1417) Tj87.48 0  TD 0.0525  Tc -0.0225  Tw ( .464) Tj79.8 0  TD 0.054  Tc -0.024  Tw ( .5000) Tj79.8 0  TD 0  Tw (.0753) Tj83.64 0  TD 0.0525  Tc -0.0225  Tw ( .608) Tj-602.16 -23.76  TD 0.0243  Tc 0.0057  Tw (Panel B) Tj31.44 0  TD -0.0089  Tc 0.0389  Tw (:  ) Tj7.8 0  TD -0.0324  Tc 0.0624  Tw (Unweighted ) Tj50.88 0  TD 0.0413  Tc 0  Tw (Probit) Tj119.76 -11.88  TD -0.0204  Tc 0.0504  Tw (Estimation Sample) Tj274.92 0  TD -0  Tc 0.0307  Tw (             Holdout Sample) Tj-484.8 -23.76  TD -0.0062  Tc 0.0362  Tw (Relative costs of) Tj127.32 0  TD -0.0403  Tc 0  Tw (Cut-off) Tj92.52 11.88  TD 0.0085  Tc 0.0215  Tw (Probability of) Tj-12.6 -11.88  TD -0  Tc 0.0303  Tw (Classification errors) Tj132.84 11.88  TD 0.0101  Tc 0.0199  Tw (Cost of Model) Tj-1.44 -11.88  TD 0.0081  Tc 0.0219  Tw (Errors Relative) Tj126.24 11.88  TD 0.0085  Tc 0.0215  Tw (Probability of) Tj-13.44 -11.88  TD 0  Tc 0.0295  Tw (Classification Errors) Tj131.88 11.88  TD 0.0101  Tc 0.0199  Tw (Cost of Model) Tj-1.44 -11.88  TD 0.0081  Tc 0.0219  Tw (Errors Relative) Tj-581.88 -11.88  TD 0.0213  Tc 0.0087  Tw (Type I and Type II errors) Tj119.64 0  TD 0.0116  Tc 0  Tw (Probability) Tj73.44 0  TD 0.0191  Tc 0.0109  Tw (Type I) Tj74.88 0  TD 0.0231  Tc 0.0069  Tw (Type II) Tj64.44 0  TD -0  Tc 0.0304  Tw (To Na\357ve Strategy) Tj105.72 0  TD 0.0191  Tc 0.0109  Tw (Type I) Tj76.92 0  TD 0.0231  Tc 0.0069  Tw (Type II) Tj62.4 0  TD -0.0113  Tc 0.0413  Tw (to Na\357ve Strategy) Tj-530.28 -23.76  TD 0.037  Tc 0  Tw (1:1) Tj80.76 0  TD 0.055  Tc (1.0000) Tj63.24 0  TD -0.025  Tw ( 1.0000) Tj80.28 0  TD 0.054  Tc 0  Tw (.0000) Tj57.96 0  TD -0.024  Tw (           1.000) Tj108.12 0  TD 0.055  Tc 0  Tw (1.0000) Tj81 0  TD 0.054  Tc (.0000) Tj82.32 0  TD (1.000) Tj-600.84 -11.88  TD 0.0428  Tc -0.0128  Tw (                 10:1) Tj117.96 0  TD 0.054  Tc -0.024  Tw (      .0685) Tj58.44 0  TD (         .4200) Tj95.04 0  TD 0  Tw (.0761) Tj87.48 0  TD 0.0525  Tc -0.0225  Tw ( .680) Tj79.8 0  TD 0.054  Tc -0.024  Tw ( .6250) Tj79.8 0  TD 0  Tw (.0353) Tj83.64 0  TD 0.0525  Tc -0.0225  Tw ( .746) Tj-602.16 -11.88  TD 0.0428  Tc -0.0128  Tw (                 20:1) Tj117.96 0  TD 0.054  Tc -0.024  Tw (      .0376) Tj58.44 0  TD (         .2600) Tj95.04 0  TD 0  Tw (.1382) Tj87.48 0  TD 0.0525  Tc -0.0225  Tw ( .496) Tj79.8 0  TD 0.054  Tc -0.024  Tw ( .5000) Tj79.8 0  TD 0  Tw (.0721) Tj83.64 0  TD 0.0525  Tc -0.0225  Tw ( .623) Tj-602.16 -11.88  TD 0.0428  Tc -0.0128  Tw (                 30:1) Tj117.96 0  TD 0.054  Tc -0.024  Tw (      .0376) Tj58.44 0  TD (         .2600) Tj95.04 0  TD 0  Tw (.1382) Tj87.48 0  TD 0.0525  Tc -0.0225  Tw ( .417) Tj79.8 0  TD 0.054  Tc -0.024  Tw ( .5000) Tj79.8 0  TD 0  Tw (.0721) Tj83.64 0  TD 0.0525  Tc -0.0225  Tw ( .582) Tj-602.16 -11.88  TD 0.0428  Tc -0.0128  Tw (                 40:1) Tj117.96 0  TD 0.054  Tc -0.024  Tw (      .0294) Tj58.44 0  TD (         .2400) Tj95.04 0  TD 0  Tw (.1747) Tj84.6 0  TD 0.0525  Tc -0.0225  Tw (  .433) Tj22.68 5.04  TD /F4 6.48  Tf0  Tc 0  Tw (d) Tj60 -5.04  TD /F4 9.96  Tf0.054  Tc -0.024  Tw ( .4583) Tj79.8 0  TD 0  Tw (.0913) Tj80.76 0  TD 0.0525  Tc -0.0225  Tw (  .628) Tj22.68 5.04  TD /F4 6.48  Tf0  Tc 0  Tw (d) Tj-621.96 -16.92  TD /F4 9.96  Tf0.0428  Tc -0.0128  Tw (                 60:1) Tj117.96 0  TD 0.054  Tc -0.024  Tw (      .0294) Tj58.44 0  TD (         .2400) Tj95.04 0  TD 0  Tw (.1747) Tj84.6 0  TD 0.0525  Tc -0.0225  Tw (  .562) Tj22.68 5.04  TD /F4 6.48  Tf0  Tc 0  Tw (d) Tj60 -5.04  TD /F4 9.96  Tf0.054  Tc -0.024  Tw ( .4583) Tj79.8 0  TD 0  Tw (.0913) Tj80.76 0  TD 0.0525  Tc -0.0225  Tw (  .896) Tj22.68 5.04  TD /F4 6.48  Tf0  Tc 0  Tw (d) Tj-621.96 -16.92  TD /F4 9.96  Tf0.0462  Tc -0.0162  Tw (               100:1) Tj117.96 0  TD 0.054  Tc -0.024  Tw (      .0294) Tj58.44 0  TD (         .2400) Tj95.04 0  TD 0  Tw (.1747) Tj84.6 0  TD 0.0525  Tc -0.0225  Tw (  .819) Tj22.68 5.04  TD /F4 6.48  Tf0  Tc 0  Tw (d) Tj60 -5.04  TD /F4 9.96  Tf0.054  Tc -0.024  Tw ( .4583) Tj79.8 0  TD 0  Tw (.0913) Tj80.76 0  TD (1.535) Tj22.68 5.04  TD /F4 6.48  Tf0  Tc (d) Tj-621.96 -23.76  TD 0.0029  Tc (a) Tj2.88 0  TD 0  Tc 0.06  Tw ( ) Tj1.68 -5.04  TD /F4 9.96  Tf-0.0126  Tc 0.0426  Tw (A Type I error is defined as classifying an observation as a non-manipulator when it manipulates.  A type II error is defined as classifying and observation as a manipulator when it is a) Tj-4.56 -11.88  TD -0.0152  Tc 0  Tw (non-manipulator.) Tj0 -6.84  TD /F4 6.48  Tf0  Tc (b) Tj3.24 0  TD 0.06  Tw ( ) Tj1.68 -5.04  TD /F4 9.96  Tf-0.0049  Tc 0.0349  Tw (Cut-off probabilities are chosen for each level of relative costs to minimize the expected costs of misclassification as defined in equation \(2\).) Tj-4.92 -6.84  TD /F4 6.48  Tf0.0029  Tc 0  Tw (c) Tj2.88 0  TD 0  Tc 0.06  Tw ( ) Tj1.68 -5.04  TD /F4 9.96  Tf-0.014  Tc 0.044  Tw (A na\357ve strategy classifies all firms as non-manipulators.  As such, the na\357ve strategies expected cost of misclassification is .0069 C) Tj523.2 -1.08  TD /F4 6.48  Tf0  Tc 0.06  Tw (1 ) Tj4.92 1.08  TD /F4 9.96  Tf0.0098  Tc 0.0202  Tw (for the WESML model and .02844 C) Tj148.44 -1.08  TD /F4 6.48  Tf0  Tc 0.06  Tw (1 ) Tj4.92 1.08  TD /F4 9.96  Tf-0.0041  Tc 0.0341  Tw (for the) Tj-686.04 -11.88  TD -0.0393  Tc 0.0693  Tw (unweighted ) Tj48.6 0  TD 0.0337  Tc 0  Tw (probit.) Tj-48.6 -6.84  TD /F4 6.48  Tf0  Tc (d) Tj3.24 0  TD 0.06  Tw ( ) Tj1.68 -5.04  TD /F4 9.96  Tf-0.0138  Tc 0.0438  Tw (In these computations, the na\357ve strategy classifies all firms as manipulators.  The switch in na\357ve strategies minimizes the expected costs of misclassification because the ratio of relative) Tj-4.92 -11.88  TD 0.0015  Tc 0.0285  Tw (costs is greater than is the population proportion of manipulators.  The switch occurs at 40:1 for ) Tj384.6 0  TD -0.0393  Tc 0.0693  Tw (unweighted ) Tj48.6 0  TD 0.0306  Tc -0  Tw (probit \(>I/) Tj41.64 0  TD 0.0504  Tc 0  Tw (.02844\).) TjETq 18 18 756 575.88 re W n 0.72 w 1 J 1 j 0 0 0 RG -28.8 165.84 m 676.8 165.84 l S Q 0.72 w 1 J 1 j 0 0 0 RG 21.6 431.52 m 669.6 431.52 l S 21.6 263.52 m 669.6 263.52 l S 21.6 511.92 m 655.2 511.92 l S endstream
+endobj
+98 0 obj
+10491
+endobj
+96 0 obj
+<<
+/MediaBox [ 0 0 792 612 ]
+/Type /Page
+/Parent 93 0 R
+/Resources <<
+/Font <<
+/F4 34 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 97 0 R
+>>
+endobj
+100 0 obj
+<<
+/Length 101 0 R
+>>
+stream
+1 1 1 rg 72.24 387 508.2 262.32 re f0.12 w 1 J 1 j 1 1 1 RG 72.24 413.28 m 580.44 413.28 l S 72.24 439.44 m 580.44 439.44 l S 72.24 465.72 m 580.44 465.72 l S 72.24 492 m 580.44 492 l S 72.24 518.16 m 580.44 518.16 l S 72.24 544.32 m 580.44 544.32 l S 72.24 570.6 m 580.44 570.6 l S 72.24 596.88 m 580.44 596.88 l S 72.24 623.04 m 580.44 623.04 l S 72.24 649.32 m 580.44 649.32 l S 0.72 w 0.502 0.502 0.502 RG 72.24 649.32 m 580.44 649.32 l 580.44 387 l 72.24 387 l 72.24 649.32 l S 0 0 0 RG 1 0 0 rg 108.48 387 48.48 152.16 re b277.92 387 48.36 194.16 re b447.36 387 48.48 199.32 re b1 1 0 rg 156.96 387 48.36 19.92 re b326.28 387 48.48 36.24 re b495.84 387 48.24 45.96 re b0.12 w 72.24 649.32 m 72.24 387 l S 69.84 387 m 72.24 387 l S 69.84 413.28 m 72.24 413.28 l S 69.84 439.44 m 72.24 439.44 l S 69.84 465.72 m 72.24 465.72 l S 69.84 492 m 72.24 492 l S 69.84 518.16 m 72.24 518.16 l S 69.84 544.32 m 72.24 544.32 l S 69.84 570.6 m 72.24 570.6 l S 69.84 596.88 m 72.24 596.88 l S 69.84 623.04 m 72.24 623.04 l S 69.84 649.32 m 72.24 649.32 l S 72.24 387 m 580.44 387 l S 72.24 384.6 m 72.24 387 l S 241.68 384.6 m 241.68 387 l S 411.12 384.6 m 411.12 387 l S 580.44 384.6 m 580.44 387 l S q 110.52 678.6 404.4 11.28 re W n BT111.96 681  TD0 0 0 rg /F7 9.72  Tf0.0128  Tc -0.015  Tw (Figure 1:  The Classification Performance of the Model for Different Relative Error Cost ) TjETQ BT232.44 668.4  TD0 0 0 rg /F7 9.72  Tf0.0092  Tc 0.0187  Tw (Assumptions \(Estimation Sample\).  ) Tj-109.68 -123.6  TD /F8 8.04  Tf0.0088  Tc 0  Tw (0.580) Tj169.32 42  TD (0.740) Tj169.44 5.28  TD (0.760) Tj-290.52 -179.4  TD (0.076) Tj169.56 16.2  TD (0.138) Tj169.32 9.72  TD (0.175) Tj-463.8 -55.2  TD (0.000) Tj0 26.28  TD (0.100) Tj0 26.16  TD (0.200) Tj0 26.28  TD (0.300) TjT* (0.400) Tj0 26.16  TD (0.500) TjT* (0.600) Tj0 26.28  TD (0.700) TjT* (0.800) Tj0 26.16  TD (0.900) Tj0 26.28  TD (1.000) Tj84.96 -274.8  TD 0.0196  Tc -0.0547  Tw (10 to 1, 6.85%) Tj169.44 0  TD (20 to 1, 3.76%) Tj169.32 0  TD (40 to 1, 2.94%) Tj-212.16 -15.72  TD /F7 8.04  Tf0.0234  Tc -0.0385  Tw (Error Cost Ratio, Cut-off Probability) TjET1 1 1 rg 133.08 332.76 393.72 14.64 re b0.72 w 1 0 0 rg 157.56 338.4 3.84 3.84 re bBT162.84 336.84  TD0 0 0 rg /F8 6.48  Tf0.0131  Tc 0.0455  Tw (Percentage of Manipulators Correctly Identifed) TjET1 1 0 rg 345.36 338.4 3.96 3.84 re bBT350.76 336.84  TD0 0 0 rg 0.0113  Tc 0.0473  Tw (Percentage of Non-manipulators Incorrectly Identifed) TjETendstream
+endobj
+101 0 obj
+2621
+endobj
+99 0 obj
+<<
+/Type /Page
+/Parent 93 0 R
+/Resources <<
+/Font <<
+/F7 102 0 R 
+/F8 104 0 R 
+>>
+/ProcSet 2 0 R
+>>
+/Contents 100 0 R
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /TrueType
+/Name /F0
+/BaseFont /CGTimes-Bold
+/FirstChar 31
+/LastChar 255
+/Widths [ 327 295 332 461 498 498 885 830 332 332 332 498 885 332 332 332 
+332 498 498 498 498 498 498 498 498 498 498 332 332 996 885 996 
+498 885 719 664 719 719 664 608 774 774 387 479 774 664 940 719 
+774 608 774 719 553 664 719 719 996 719 719 664 332 332 332 498 
+498 498 498 553 442 553 442 351 498 553 276 332 553 276 830 553 
+498 553 553 442 387 332 553 498 719 498 498 442 498 498 498 996 
+327 327 327 332 498 572 885 498 498 498 1162 553 258 1125 327 327 
+327 327 332 332 572 572 498 498 885 498 608 387 258 738 327 327 
+719 295 332 498 498 498 498 498 498 498 498 498 424 885 332 498 
+498 498 885 351 351 498 553 498 332 498 351 498 424 885 885 885 
+498 719 719 719 719 719 719 1033 719 664 664 664 664 387 387 387 
+387 719 719 774 774 774 774 774 885 774 719 719 719 719 719 608 
+553 498 498 498 498 498 498 719 442 442 442 442 442 276 276 276 
+276 498 553 498 498 498 498 498 885 498 553 553 553 553 498 553 
+498 ]
+/Encoding /WinAnsiEncoding
+/FontDescriptor 7 0 R
+>>
+endobj
+7 0 obj
+<<
+/Type /FontDescriptor
+/FontName /CGTimes-Bold
+/Flags 16418
+/FontBBox [ -250 -239 1394 940 ]
+/MissingWidth 325
+/StemV 139
+/StemH 139
+/ItalicAngle 0
+/CapHeight 940
+/XHeight 658
+/Ascent 940
+/Descent 239
+/Leading 196
+/MaxWidth 1162
+/AvgWidth 436
+>>
+endobj
+8 0 obj
+<<
+/Type /Font
+/Subtype /TrueType
+/Name /F1
+/BaseFont /CGTimes
+/FirstChar 31
+/LastChar 255
+/Widths [ 327 295 332 461 498 498 885 774 332 332 332 498 885 332 332 332 
+332 498 498 498 498 498 498 498 498 498 498 332 332 996 885 996 
+442 885 719 627 682 738 627 590 719 738 332 387 701 627 903 738 
+719 572 719 664 535 627 738 719 940 719 719 646 332 332 332 498 
+498 498 442 498 442 498 442 332 498 498 276 276 498 276 774 498 
+498 498 498 369 387 276 498 498 719 498 498 442 442 498 442 996 
+327 327 327 332 498 516 885 498 498 498 1199 535 258 535 627 646 
+646 327 332 332 516 516 498 498 885 498 608 387 258 387 351 442 
+442 295 498 498 627 498 719 498 498 498 498 535 406 885 332 498 
+646 498 885 498 276 498 553 498 332 498 442 387 406 627 498 369 
+442 664 719 719 719 719 627 682 682 682 627 627 627 627 332 332 
+738 738 738 738 719 719 719 719 885 664 738 738 738 738 719 627 
+498 369 442 442 442 442 276 442 442 442 442 442 442 442 276 276 
+608 498 498 498 498 498 498 498 885 369 498 498 498 498 498 276 
+498 ]
+/Encoding /WinAnsiEncoding
+/FontDescriptor 9 0 R
+>>
+endobj
+9 0 obj
+<<
+/Type /FontDescriptor
+/FontName /CGTimes
+/Flags 34
+/FontBBox [ -250 -239 1436 940 ]
+/MissingWidth 325
+/StemV 75
+/StemH 75
+/ItalicAngle 0
+/CapHeight 940
+/XHeight 658
+/Ascent 940
+/Descent 239
+/Leading 196
+/MaxWidth 1197
+/AvgWidth 410
+>>
+endobj
+24 0 obj
+<<
+/Type /Font
+/Subtype /TrueType
+/Name /F2
+/BaseFont /CGTimes-Italic
+/FirstChar 31
+/LastChar 255
+/Widths [ 327 295 332 479 498 498 885 774 332 332 332 498 885 332 332 332 
+332 498 498 498 498 498 498 498 498 498 498 332 332 996 885 996 
+498 885 608 608 664 719 608 572 719 719 332 442 664 553 830 664 
+719 608 719 608 498 553 719 608 830 608 553 553 332 332 332 498 
+498 498 498 498 442 498 442 276 498 498 276 276 442 276 719 498 
+498 498 498 387 387 276 498 442 664 442 442 387 442 498 442 996 
+327 327 327 332 498 498 885 498 498 498 1217 498 276 940 327 327 
+327 327 332 332 498 498 498 498 885 498 608 387 276 664 327 327 
+553 295 332 498 498 498 498 498 498 498 498 498 461 885 332 498 
+498 498 885 351 351 498 553 498 332 498 351 498 461 885 885 885 
+498 608 608 608 608 608 608 885 664 608 608 608 608 332 332 332 
+332 719 664 719 719 719 719 719 885 719 719 719 719 719 553 608 
+498 498 498 498 498 498 498 664 442 442 442 442 442 276 276 276 
+276 498 498 498 498 498 498 498 885 498 498 498 498 498 442 498 
+442 ]
+/Encoding /WinAnsiEncoding
+/FontDescriptor 25 0 R
+>>
+endobj
+25 0 obj
+<<
+/Type /FontDescriptor
+/FontName /CGTimes-Italic
+/Flags 98
+/FontBBox [ -250 -241 1460 940 ]
+/MissingWidth 325
+/StemV 75
+/StemH 75
+/ItalicAngle -11
+/CapHeight 940
+/XHeight 658
+/Ascent 940
+/Descent 241
+/Leading 193
+/MaxWidth 1217
+/AvgWidth 410
+>>
+endobj
+33 0 obj
+<<
+/Type /Font
+/Subtype /TrueType
+/Name /F3
+/BaseFont /Symbol,Italic
+>>
+endobj
+34 0 obj
+<<
+/Type /Font
+/Subtype /TrueType
+/Name /F4
+/BaseFont /TimesNewRoman
+/Encoding /WinAnsiEncoding
+>>
+endobj
+35 0 obj
+<<
+/Type /Font
+/Subtype /TrueType
+/Name /F5
+/BaseFont /Symbol
+/FirstChar 31
+/LastChar 255
+/Widths [ 600 250 333 713 500 549 833 778 439 333 333 500 549 250 549 250 
+278 500 500 500 500 500 500 500 500 500 500 278 278 549 549 549 
+444 549 722 667 722 612 611 763 603 722 333 631 722 686 889 722 
+722 768 741 556 592 611 690 439 768 645 795 611 333 863 333 658 
+500 500 631 549 549 494 439 521 411 603 329 603 549 549 576 521 
+549 549 521 549 603 439 576 713 686 493 686 494 480 200 480 549 
+600 600 600 600 600 600 600 600 600 600 600 600 600 600 600 600 
+600 600 600 600 600 600 600 600 600 600 600 600 600 600 600 600 
+600 600 620 247 549 167 713 500 753 753 753 753 1042 987 603 987 
+603 400 549 411 549 549 713 494 460 549 549 549 549 1000 603 1000 
+658 823 686 795 987 768 768 823 768 768 713 713 713 713 713 713 
+713 768 713 790 790 890 823 549 250 713 603 603 1042 987 603 987 
+603 494 329 790 790 786 713 384 384 384 384 384 384 494 494 494 
+494 600 329 274 686 686 686 384 384 384 384 384 384 494 494 494 
+600 ]
+/FontDescriptor 36 0 R
+>>
+endobj
+36 0 obj
+<<
+/Type /FontDescriptor
+/FontName /Symbol
+/Flags 6
+/FontBBox [ -250 -220 1248 1000 ]
+/MissingWidth 600
+/StemV 105
+/StemH 105
+/ItalicAngle 0
+/CapHeight 1000
+/XHeight 700
+/Ascent 1000
+/Descent 220
+/Leading 220
+/MaxWidth 1040
+/AvgWidth 580
+>>
+endobj
+87 0 obj
+<<
+/Type /Font
+/Subtype /TrueType
+/Name /F6
+/BaseFont /TimesNewRoman-Italic
+/FirstChar 31
+/LastChar 255
+/Widths [ 778 250 333 420 500 500 833 778 214 333 333 500 675 250 333 250 
+278 500 500 500 500 500 500 500 500 500 500 333 333 675 675 675 
+500 920 611 611 667 722 611 611 722 722 333 444 667 556 833 667 
+722 611 722 611 500 556 722 611 833 611 556 556 389 278 389 422 
+500 333 500 500 444 500 444 278 500 500 278 278 444 278 722 500 
+500 500 500 389 389 278 500 444 667 444 444 389 400 275 400 541 
+778 778 778 333 500 556 889 500 500 333 1000 500 333 944 778 778 
+778 778 333 333 556 556 350 500 889 333 980 389 333 667 778 778 
+556 250 389 500 500 500 500 275 500 333 760 276 500 675 333 760 
+500 400 549 300 300 333 576 523 250 333 300 310 500 750 750 750 
+500 611 611 611 611 611 611 889 667 611 611 611 611 333 333 333 
+333 722 667 722 722 722 722 722 675 722 722 722 722 722 556 611 
+500 500 500 500 500 500 500 667 444 444 444 444 444 278 278 278 
+278 500 500 500 500 500 500 500 549 500 500 500 500 500 444 500 
+444 ]
+/Encoding /WinAnsiEncoding
+/FontDescriptor 88 0 R
+>>
+endobj
+88 0 obj
+<<
+/Type /FontDescriptor
+/FontName /TimesNewRoman-Italic
+/Flags 98
+/FontBBox [ -250 -241 1220 897 ]
+/MissingWidth 776
+/StemV 72
+/StemH 72
+/ItalicAngle -11
+/CapHeight 897
+/XHeight 627
+/Ascent 897
+/Descent 241
+/Leading 172
+/MaxWidth 1017
+/AvgWidth 397
+>>
+endobj
+102 0 obj
+<<
+/Type /Font
+/Subtype /TrueType
+/Name /F7
+/BaseFont /Arial-Bold
+/FirstChar 31
+/LastChar 255
+/Widths [ 750 278 333 474 556 556 889 722 238 333 333 389 584 278 333 278 
+278 556 556 556 556 556 556 556 556 556 556 333 333 584 584 584 
+611 975 722 722 722 722 667 611 778 722 278 556 722 611 833 722 
+778 667 778 722 667 611 722 667 944 667 667 611 333 278 333 584 
+556 333 556 611 556 611 556 333 611 611 278 278 556 278 889 611 
+611 611 611 389 556 333 611 556 778 556 556 500 389 280 389 584 
+750 750 750 278 556 500 1000 556 556 333 1000 667 333 1000 750 750 
+750 750 278 278 500 500 350 556 1000 333 1000 556 333 944 750 750 
+667 278 333 556 556 556 556 280 556 333 737 370 556 584 333 737 
+552 400 549 333 333 333 576 556 278 333 333 365 556 834 834 834 
+611 722 722 722 722 722 722 1000 722 667 667 667 667 278 278 278 
+278 722 722 778 778 778 778 778 584 778 722 722 722 722 667 667 
+611 556 556 556 556 556 556 889 556 556 556 556 556 278 278 278 
+278 611 611 611 611 611 611 611 549 611 611 611 611 611 556 611 
+556 ]
+/Encoding /WinAnsiEncoding
+/FontDescriptor 103 0 R
+>>
+endobj
+103 0 obj
+<<
+/Type /FontDescriptor
+/FontName /Arial-Bold
+/Flags 16416
+/FontBBox [ -250 -247 1214 926 ]
+/MissingWidth 753
+/StemV 153
+/StemH 153
+/ItalicAngle 0
+/CapHeight 926
+/XHeight 648
+/Ascent 926
+/Descent 247
+/Leading 210
+/MaxWidth 1012
+/AvgWidth 481
+>>
+endobj
+104 0 obj
+<<
+/Type /Font
+/Subtype /TrueType
+/Name /F8
+/BaseFont /Arial
+/Encoding /WinAnsiEncoding
+>>
+endobj
+2 0 obj
+[ /PDF /Text  ]
+endobj
+5 0 obj
+<<
+/Kids [4 0 R 12 0 R 15 0 R 18 0 R 21 0 R 26 0 R ]
+/Count 6
+/Type /Pages
+/Parent 105 0 R
+>>
+endobj
+30 0 obj
+<<
+/Kids [29 0 R 37 0 R 40 0 R 43 0 R 46 0 R 49 0 R ]
+/Count 6
+/Type /Pages
+/Parent 105 0 R
+>>
+endobj
+53 0 obj
+<<
+/Kids [52 0 R 56 0 R 59 0 R 62 0 R 65 0 R 68 0 R ]
+/Count 6
+/Type /Pages
+/Parent 105 0 R
+>>
+endobj
+72 0 obj
+<<
+/Kids [71 0 R 75 0 R 78 0 R 81 0 R 84 0 R 89 0 R ]
+/Count 6
+/Type /Pages
+/Parent 105 0 R
+>>
+endobj
+93 0 obj
+<<
+/Kids [92 0 R 96 0 R 99 0 R ]
+/Count 3
+/Type /Pages
+/Parent 105 0 R
+>>
+endobj
+105 0 obj
+<<
+/Kids [5 0 R 30 0 R 53 0 R 72 0 R 93 0 R ]
+/Count 27
+/Type /Pages
+/MediaBox [ 0 0 612 792 ]
+>>
+endobj
+1 0 obj
+<<
+/Creator (Microsoft Word )
+/CreationDate (Tuesday, July 20, 1999 11:11:13 AM)
+/Title (Fajem1.PDF)
+/Author (Gwen Ames)
+/Producer (Acrobat PDFWriter 3.0 for Windows)
+/Keywords ()
+/Subject ()
+>>
+endobj
+3 0 obj
+<<
+/Pages 105 0 R
+/Type /Catalog
+/DefaultGray 106 0 R
+/DefaultRGB  107 0 R
+>>
+endobj
+106 0 obj
+[/CalGray
+<<
+/WhitePoint [0.9643 1 0.8251 ]
+/Gamma 1.9 
+>>
+]
+endobj
+107 0 obj
+[/CalRGB
+<<
+/WhitePoint [0.9643 1 0.8251 ]
+/Gamma [1.9 1.9 1.9 ]
+/Matrix [0.511 0.2903 0.0273 0.3264 0.6499 0.1279 0.1268 0.0598 0.6699 ]
+>>
+]
+endobj
+xref
+0 108
+0000000000 65535 f
+0000150475 00000 n
+0000149746 00000 n
+0000150696 00000 n
+0000001844 00000 n
+0000149780 00000 n
+0000141036 00000 n
+0000142155 00000 n
+0000142437 00000 n
+0000143549 00000 n
+0000000021 00000 n
+0000001820 00000 n
+0000004121 00000 n
+0000001988 00000 n
+0000004097 00000 n
+0000008312 00000 n
+0000004266 00000 n
+0000008288 00000 n
+0000011745 00000 n
+0000008457 00000 n
+0000011721 00000 n
+0000016681 00000 n
+0000011878 00000 n
+0000016657 00000 n
+0000143821 00000 n
+0000144942 00000 n
+0000020609 00000 n
+0000016839 00000 n
+0000020585 00000 n
+0000024703 00000 n
+0000149897 00000 n
+0000020755 00000 n
+0000024679 00000 n
+0000145224 00000 n
+0000145320 00000 n
+0000145444 00000 n
+0000146532 00000 n
+0000028931 00000 n
+0000024888 00000 n
+0000028907 00000 n
+0000034308 00000 n
+0000029103 00000 n
+0000034284 00000 n
+0000039968 00000 n
+0000034442 00000 n
+0000039944 00000 n
+0000045234 00000 n
+0000040102 00000 n
+0000045210 00000 n
+0000049158 00000 n
+0000045368 00000 n
+0000049134 00000 n
+0000052850 00000 n
+0000150016 00000 n
+0000049292 00000 n
+0000052826 00000 n
+0000056879 00000 n
+0000053009 00000 n
+0000056855 00000 n
+0000060557 00000 n
+0000057013 00000 n
+0000060533 00000 n
+0000063849 00000 n
+0000060716 00000 n
+0000063825 00000 n
+0000068887 00000 n
+0000063995 00000 n
+0000068863 00000 n
+0000072760 00000 n
+0000069021 00000 n
+0000072736 00000 n
+0000075589 00000 n
+0000150135 00000 n
+0000072906 00000 n
+0000075565 00000 n
+0000082204 00000 n
+0000075723 00000 n
+0000082180 00000 n
+0000086043 00000 n
+0000082363 00000 n
+0000086019 00000 n
+0000090936 00000 n
+0000086190 00000 n
+0000090912 00000 n
+0000106602 00000 n
+0000091083 00000 n
+0000106577 00000 n
+0000146808 00000 n
+0000147935 00000 n
+0000118650 00000 n
+0000106775 00000 n
+0000118625 00000 n
+0000127262 00000 n
+0000150254 00000 n
+0000118838 00000 n
+0000127238 00000 n
+0000138014 00000 n
+0000127437 00000 n
+0000137989 00000 n
+0000140885 00000 n
+0000138176 00000 n
+0000140860 00000 n
+0000148223 00000 n
+0000149347 00000 n
+0000149629 00000 n
+0000150352 00000 n
+0000150797 00000 n
+0000150883 00000 n
+trailer
+<<
+/Size 108
+/Root 3 0 R
+/Info 1 0 R
+/ID [<2b0c5e4654461fdb9a6537e0a6d03f69><2b0c5e4654461fdb9a6537e0a6d03f69>]
+>>
+startxref
+151052
+%%EOF
