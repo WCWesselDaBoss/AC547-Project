@@ -68,12 +68,14 @@ the size floor. A company can have more than one reason:
 | Missing SIC code | 3,017 |
 | No XBRL facts in SEC's file | 2,464 |
 
-**facts_long** (`facts_long_drops.csv`): 2,433,288 rows kept, 1,196,485 of
-them originally reported values. Dropped facts: 9,200,448 not from a 10-K
-or 10-K/A; 545,501 not an annual period; 297,340 a second tag for a period
-the company's preferred tag already covers; 222,892 outside FY2011-FY2025;
-32,322 in units other than USD or shares; 164 with the wrong unit or
-period type for the line item.
+**facts_long** (`facts_long_drops.csv`): 2,456,096 rows kept, 1,196,485 of
+them originally reported values (one per company, line item and period,
+always from the earliest filing that reported it). Dropped facts:
+9,200,448 not from a 10-K or 10-K/A; 545,501 not an annual period;
+274,532 a second mapped tag for the same period in the same filing (the
+company's preferred tag is kept); 222,892 outside FY2011-FY2025; 32,322 in
+units other than USD or shares; 164 with the wrong unit or period type
+for the line item.
 
 **financials_annual** (`financials_annual_log.csv`): 74,868 company-years.
 FY2012-FY2025: 39,853 pass the $100M size floor, 28,550 fail (kept as
@@ -89,10 +91,11 @@ for invalid adjusted prices and seven returned no data.
 
 ## Phase 2 scores: coverage and blanks
 
-Counts from the November 17, 2026 download (`data/logs/scores_log.csv`).
+Counts after the Phase 1 `is_original` fix (rebuilt 2026-11-17 with
+`python run_pipeline.py --skip-download`; `data/logs/scores_log.csv`).
 All 39,853 size-floor company-years (FY2012-FY2025, 5,493 companies) are
 in `scores.parquet`. Every other `financials_annual` row is counted:
-5,991 are FY2011 prior-year rows and 29,027 fail the size floor (kept
+5,990 are FY2011 prior-year rows and 29,025 fail the size floor (kept
 only as possible prior years).
 
 A score is blank when any input is missing; nothing is estimated. Each
@@ -100,28 +103,29 @@ blank has its reason in `missing_inputs`.
 
 | Score | Computed | Share | Main reasons for blanks |
 | --- | --- | --- | --- |
-| M-Score | 16,589 | 42% | No cost of revenue (13,612 years), receivables missing (9,137) |
-| Z''-Score | 33,297 | 84% | Equity, operating income or total liabilities missing |
-| F-Score | 13,410 | 34% | No same-filing prior share count (12,482) or no cost of revenue; 6,496 lack a t-2 year |
-| Accruals ratio | 35,445 | 89% | Missing prior-year total assets |
+| M-Score | 16,594 | 42% | No cost of revenue (13,612 years), receivables missing (9,139) |
+| Z''-Score | 33,296 | 84% | Equity, operating income or total liabilities missing |
+| F-Score | 13,408 | 34% | No same-filing prior share count (12,482) or no cost of revenue; 6,494 lack a t-2 year |
+| Accruals ratio | 35,446 | 89% | Missing prior-year total assets |
 | Cash conversion | 22,615 | 57% | Blank by design when net income <= 0 (14,271) |
 
-**Neutral values (CLAUDE.md section 5).** LVGI is set to 1 in 8,251 of the
-16,589 M-Scores (50%) because long-term debt is missing, and SGAI in 6,341
+**Neutral values (CLAUDE.md section 5).** LVGI is set to 1 in 8,252 of the
+16,594 M-Scores (50%) because long-term debt is missing, and SGAI in 6,342
 (38%) because SG&A is missing. A Phase 2 check found that 12,237 of the
 19,027 size-floor years missing `long_term_debt` report other debt tags
-in the same 10-K, most often `LongTermDebtAndCapitalLeaseObligations`
-(5,204). So the gap is mainly tag mapping, not absence of debt. Whether
-to map more debt tags is a Phase 1 decision; see `docs/methodology.md`.
+in the same 10-K. Phase 1 tested each candidate against
+`LongTermDebtNoncurrent`: none agrees closely enough to map (best 61%,
+and most are one component of debt, such as unsecured or senior notes),
+so the neutral-value rule stays. Evidence is in `docs/methodology.md`.
 
-**Flags and zones.** 1,721 of 16,589 M-Scores (10.4%) exceed -1.78.
-Z'' zones: 15,676 safe, 6,203 grey, 11,418 distress.
+**Flags and zones.** 1,719 of 16,594 M-Scores (10.4%) exceed -1.78.
+Z'' zones: 15,675 safe, 6,203 grey, 11,418 distress.
 
 **Returns (stretch goal, `data/logs/returns_by_flag.csv`).** 22,746 of
 39,853 scored years have a ticker and a full 12-month price window.
-Flagged companies had a mean excess return over SPY of +9.7% but a median
-of -11.7% (1,015 years); unflagged companies +2.0% mean and -6.3% median
-(9,068 years). The groups disagree on direction depending on mean or
+Flagged companies had a mean excess return over SPY of +9.9% but a median
+of -12.2% (1,011 years); unflagged companies +2.0% mean and -6.3% median
+(9,062 years). The groups disagree on direction depending on mean or
 median. Results are biased upward because delisted companies mostly lack
 prices, and they show correlation, not cause (see `docs/methodology.md`).
 
@@ -142,12 +146,15 @@ November 11, 2026). The three companies cover September (Apple), January
 `verification/tieout.xlsx` recomputes all 28 score outputs with Excel
 formulas for Apple FY2024 and FY2020 (stock split), AMD FY2018 and
 Analog Devices FY2017. **All 112 Excel results match the Python
-output.** All 76 inputs were also read from the 10-K statements
-(`verification/tenk_values.csv`): 73 tie; the 3 differences are an
-unmapped debt tag, a company-specific depreciation definition, and a
-Phase 1 bug that uses ASC 606 restated values as "original" in 1,256
-company-years (3.2%), documented in `docs/methodology.md` for the Phase 1
-owner. Findings and remaining hand checks are in
-`verification/tieout_notes.md`. `pytest` runs 207 tests, each with an
-expected answer worked by hand from `tests/fixtures/`.
+output** (recalculated in Excel on 2026-11-17: 0 differences on every
+company sheet). All 76 inputs were also read from the 10-K statements
+(`verification/tenk_values.csv`): 74 tie. The 2 differences are
+documented choices: Analog Devices' long-term debt, tagged only as
+`UnsecuredLongTermDebt`, which no mapped tag captures, and AMD's
+depreciation, where the company-consistent tag is depreciation only.
+A third difference, ASC 606 restated values marked as "original", was a
+Phase 1 bug fixed on 2026-11-17 (1,572 company-years changed, 972 by
+more than 1%; see `docs/methodology.md`). Findings and remaining hand
+checks are in `verification/tieout_notes.md`. `pytest` runs 211 tests,
+each with an expected answer worked by hand from `tests/fixtures/`.
 

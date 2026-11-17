@@ -18,8 +18,8 @@ conversion. Each result is then compared with the value in
 | --- | --- | --- | --- | --- | --- | --- |
 | AAPL FY2024 | Inputs hand-verified in Phase 1 | -2.727 | No | 1.871 (grey) | 7 | 28 of 28 match |
 | AAPL FY2020 | 4-for-1 stock split (Aug 2020) | -3.068 | No | 2.567 (grey) | 7 | 28 of 28 match |
-| AMD FY2018 | Flagged by the M-Score | -0.641 | Yes | -2.011 (distress) | 7 | 28 of 28 match |
-| ADI FY2017 | Flagged; long-term debt untagged | -1.348 | Yes | 2.299 (grey) | 4 | 28 of 28 match |
+| AMD FY2018 | Flagged by the M-Score | -0.623 | Yes | -2.011 (distress) | 7 | 28 of 28 match |
+| ADI FY2017 | Flagged; long-term debt untagged | -1.355 | Yes | 2.299 (grey) | 4 | 28 of 28 match |
 
 **Result: 112 of 112 outputs match with no differences.** The largest
 numeric gap is about 1e-15, floating-point noise from a different order
@@ -29,8 +29,11 @@ of operations. The match tolerance on each sheet (cell B5) is 1e-9.
 build machine. The workbook's formulas were evaluated with `pycel`, an
 independent Excel-formula engine, which found no formula errors. The
 file stores formulas without cached values, so Excel calculates them
-when the file is opened. **To do: open the workbook in Excel and confirm
-the README summary shows 0 differences for every sheet.**
+when the file is opened. **Done 2026-11-17:** after the Phase 1
+`is_original` fix the workbook was rebuilt and recalculated in Microsoft
+Excel; the README summary shows 0 differences on all four company
+sheets. The M-Scores above are the post-fix values (AMD -0.641 and ADI
+-1.348 before the fix; both still flagged).
 
 **Why this is evidence.** The Excel formulas were written separately
 from the Python, cell by cell from CLAUDE.md section 5. A shared
@@ -59,8 +62,8 @@ $0.5mm, or 0.5 million shares).
   operations" (none had discontinued operations, so it equals net
   income), and AMD and ADI print no "total liabilities" line; those
   rows are hand-derived from printed lines, as each note says.
-- **Result: 73 of 76 tie.** The three differences are explained below
-  (findings 6 to 8).
+- **Result: 74 of 76 tie** after the Phase 1 fix (73 before). The two
+  remaining differences are findings 6 and 7; finding 8 is fixed.
 
 ## Differences and findings to explain
 
@@ -119,7 +122,12 @@ data and model issues, which belong in the results discussion:
    FY2017 SGI (1.533 vs 1.493 on the original figure). Across the
    universe it affects 1,582 values (>1% gap) in 1,256 company-years;
    details and the proposed fix are in docs/methodology.md. **Raised
-   with the Phase 1 owner.**
+   with the Phase 1 owner.** **Fixed in Phase 1 on 2026-11-17:** our
+   value is now $5,107.5mm from the FY2017 10-K, and the row reads OK.
+   Measured directly on `financials_annual`, the fix changed 1,572
+   size-floor company-years (972 by more than 1%); see
+   docs/methodology.md. The figures in finding 1 were computed before
+   the fix (ADI's FY2017 M is now -1.355 with the neutral LVGI).
 
 ## Still to do
 

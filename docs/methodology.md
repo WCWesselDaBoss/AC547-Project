@@ -173,6 +173,21 @@ different measurement. A possible later improvement, not done here, is to
 use shares issued only where the same 10-K reports zero treasury shares;
 that would need its own agreement test.
 
+**Known issue: some tagged revenue is not total revenue (found
+2026-11-17; not fixed).** A few 10-Ks tag a figure far below the
+company's total revenue as `Revenues`. Example: Apogee Enterprises (CIK
+6845) reports `Revenues` of $72.7mm for FY2014 in its own 10-K, against
+$771.4mm the year before, so its FY2014 M-Score (+3.91) is a false flag.
+Before the `is_original` fix the same problem sat in FY2012 instead
+(that year took $63.5mm from a later 10-K; it is now the correct
+$700.2mm). A screen for revenue below 20% of **both** the prior and the
+next year finds 203 such company-years at 185 companies, 49 of them in
+size-floor years; 101 scored company-years use one as year t or t-1, and
+8 of those are flagged. These values are what the 10-K's XBRL reported,
+so they are not changed here; replacing them would need a rule and
+evidence agreed by the team (for example, excluding a year whose revenue
+fails this screen, logged in `missing_inputs`).
+
 ### facts_long (src/pipeline/facts.py)
 
 - Only us-gaap facts for mapped tags, from 10-K and 10-K/A filings, in USD
@@ -421,20 +436,21 @@ M-Score are in neither group.
 - **Tickers.** Tickers are current SEC tickers. A reused ticker could
   attach another company's prices to an old filing.
 
-**Full-universe result (November 17, 2026 download).**
+**Full-universe result (rebuilt 2026-11-17 after the Phase 1
+`is_original` fix).**
 
 - **Coverage:** of 39,853 scored company-years, 25,602 have a ticker and
   22,746 have a full 12-month price window.
-- **Compared:** 10,083 company-years with both an M-Score and a full
+- **Compared:** 10,073 company-years with both an M-Score and a full
   window.
 
 | Group | Count | Mean excess return | Median excess return |
 | --- | --- | --- | --- |
-| Flagged (M > -1.78) | 1,015 | +9.7% | -11.7% |
-| Not flagged | 9,068 | +2.0% | -6.3% |
+| Flagged (M > -1.78) | 1,011 | +9.9% | -12.2% |
+| Not flagged | 9,062 | +2.0% | -6.3% |
 
 The mean and median disagree. The *typical* flagged company (median)
-trailed SPY by 5.4 points more than the typical unflagged one. The mean
+trailed SPY by 5.9 points more than the typical unflagged one. The mean
 is pulled up by a few very large winners, which is common in small,
 fast-growing companies (the M-Score rewards sales growth). This is
 descriptive only, with no significance test, biased upward by missing
@@ -443,10 +459,11 @@ December 1 go/no-go, not a finding.
 
 ### Full-universe check of the neutral-value rules (2026-11-17)
 
-On the 39,853 scored company-years:
+On the 39,853 scored company-years (counts updated after the Phase 1
+`is_original` fix on 2026-11-17):
 
-- **LVGI is neutral (1) in 8,251 of 16,589 M-Scores (50%)** because
-  `long_term_debt` is missing; SGAI is neutral in 6,341 (38%).
+- **LVGI is neutral (1) in 8,252 of 16,594 M-Scores (50%)** because
+  `long_term_debt` is missing; SGAI is neutral in 6,342 (38%).
 - **Most missing debt is a tagging gap, not absence of debt.** 12,237 of
   the 19,027 size-floor years missing `long_term_debt` report other
   debt-like instant tags in the same 10-K. The most common are
@@ -454,12 +471,14 @@ On the 39,853 scored company-years:
   it at 61% agreement because it includes lease obligations) and
   `LongTermDebt` (4,545; includes the current portion). Analog Devices,
   for example, reports $7.55bn of `UnsecuredLongTermDebt` at FY2017
-  year-end, which no mapped tag captures. Mapping more tags is a Phase 1
-  decision; this is the evidence for it.
-- **Effect on flags.** 1,050 of the 1,721 flagged company-years (61%) use
+  year-end, which no mapped tag captures. **Phase 1 result:** each
+  candidate was tested against `LongTermDebtNoncurrent`; none agrees
+  closely enough to map (see Phase 1, "Re-check of long-term debt
+  tags"), so the neutral-value rule stays.
+- **Effect on flags.** 1,047 of the 1,719 flagged company-years (61%) use
   a neutral LVGI. LVGI's coefficient is -0.327, so a true LVGI of 1.2
-  would lower M by 0.065: only 75 of those flags are that close to
-  -1.78 (160 within 0.16, i.e. a true LVGI of 1.5). Most flags therefore
+  would lower M by 0.065: only 71 of those flags are that close to
+  -1.78 (157 within 0.16, i.e. a true LVGI of 1.5). Most flags therefore
   do not depend on the rule. A true LVGI below 1 would raise M instead,
   so the rule can also hide flags. Example: Analog Devices FY2021 has a
   neutral LVGI; its true LVGI from the unmapped `UnsecuredLongTermDebt`
@@ -469,7 +488,8 @@ On the 39,853 scored company-years:
 ### Phase 1 data issue found by the 10-K tie-out (2026-11-17)
 
 Hand-reading all 76 tie-out inputs from the 10-Ks
-(`verification/tenk_values.csv`) found 73 matches and 3 differences:
+(`verification/tenk_values.csv`) found 73 matches and 3 differences
+(after the fix below: 74 matches, differences 1 and 2 remain):
 
 1. **ADI FY2017 long-term debt**: $7,551.1mm in the 10-K, missing in our
    data (the unmapped-tag gap described above).
@@ -504,3 +524,21 @@ all mapped tags, then apply the preferred-tag rule only among facts from
 that same filing. Not changed here, because CLAUDE.md section 6 keeps
 each phase's code with its owner. Table columns and types do not change,
 so Phase 3 is unaffected apart from these values updating after the fix.
+
+**Fixed in Phase 1 on 2026-11-17** (`src/pipeline/facts.py`,
+`choose_tag_per_filing` then `mark_is_original`). ADI FY2017 revenue is
+now $5,107.5mm from the FY2017 10-K, and its tie-out row reads OK.
+Measured as a before/after comparison of `financials_annual` on the
+size-floor years FY2012-FY2025: **1,572 company-years changed, 972 by
+more than 1%, at 644 companies** (revenue 543, CFO 521, cost of revenue
+426, depreciation 219, receivables 13, continuing-operations income 5,
+total assets 2). That is fewer than the estimate above; in particular no
+net income value changed, because `net_income` has a single mapped tag,
+so a switch between mapped tags cannot occur for it. The estimate's
+method was not committed, so the gap could not be traced exactly; a
+likely cause is counting tags mapped to other line items. Effect on
+scores: 1,317 M-Scores changed value; flags went from 1,721 to 1,719
+(25 newly flagged, 30 no longer flagged, 11 became computable or
+blank); 179 F-Scores changed; no Z'' zone changed. ADI FY2017 stays
+flagged (M -1.348 to -1.355) and AMD FY2018 stays flagged (-0.641 to
+-0.623; its FY2016-17 inputs were ASC 606 restatements).
