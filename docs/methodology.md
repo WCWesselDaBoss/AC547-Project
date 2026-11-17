@@ -352,9 +352,47 @@ M-Score are in neither group.
 - **Tickers.** Tickers are current SEC tickers. A reused ticker could
   attach another company's prices to an old filing.
 
-On the 50-company sample (illustrative only): 665 scored years, 553
-with a ticker, and 472 with a full 12-month window. Of those, 19 flagged
-company-years had a mean excess return of -2.0% (median +2.2%), and 255
-unflagged ones had a mean of +2.6% (median -2.9%). With 19 flagged
-observations, this says nothing yet. The full-universe run decides the
-December 1 go/no-go.
+**Full-universe result (November 17, 2026 download).**
+
+- **Coverage:** of 39,853 scored company-years, 25,602 have a ticker and
+  22,746 have a full 12-month price window.
+- **Compared:** 10,083 company-years with both an M-Score and a full
+  window.
+
+| Group | Count | Mean excess return | Median excess return |
+| --- | --- | --- | --- |
+| Flagged (M > -1.78) | 1,015 | +9.7% | -11.7% |
+| Not flagged | 9,068 | +2.0% | -6.3% |
+
+The mean and median disagree. The *typical* flagged company (median)
+trailed SPY by 5.4 points more than the typical unflagged one. The mean
+is pulled up by a few very large winners, which is common in small,
+fast-growing companies (the M-Score rewards sales growth). This is
+descriptive only, with no significance test, biased upward by missing
+delisted companies, and correlation, not cause. It is an input to the
+December 1 go/no-go, not a finding.
+
+### Full-universe check of the neutral-value rules (2026-11-17)
+
+On the 39,853 scored company-years:
+
+- **LVGI is neutral (1) in 8,251 of 16,589 M-Scores (50%)** because
+  `long_term_debt` is missing; SGAI is neutral in 6,341 (38%).
+- **Most missing debt is a tagging gap, not absence of debt.** 12,237 of
+  the 19,027 size-floor years missing `long_term_debt` report other
+  debt-like instant tags in the same 10-K. The most common are
+  `LongTermDebtAndCapitalLeaseObligations` (5,204 years; Phase 1 rejected
+  it at 61% agreement because it includes lease obligations) and
+  `LongTermDebt` (4,545; includes the current portion). Analog Devices,
+  for example, reports $7.55bn of `UnsecuredLongTermDebt` at FY2017
+  year-end, which no mapped tag captures. Mapping more tags is a Phase 1
+  decision; this is the evidence for it.
+- **Effect on flags.** 1,050 of the 1,721 flagged company-years (61%) use
+  a neutral LVGI. LVGI's coefficient is -0.327, so a true LVGI of 1.2
+  would lower M by 0.065: only 75 of those flags are that close to
+  -1.78 (160 within 0.16, i.e. a true LVGI of 1.5). Most flags therefore
+  do not depend on the rule. A true LVGI below 1 would raise M instead,
+  so the rule can also hide flags. Example: Analog Devices FY2021 has a
+  neutral LVGI; its true LVGI from the unmapped `UnsecuredLongTermDebt`
+  tag is 0.569 (the stock-financed Maxim deal grew assets faster than
+  debt), which raises M from -1.741 to -1.600. The flag holds.

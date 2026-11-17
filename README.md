@@ -43,6 +43,10 @@ Then:
 | `python run_pipeline.py --sample-only` | Rebuild only `data/sample/`, e.g. after changing `data/case_studies.csv` (needs `data/processed/`) |
 | `python -m src.pipeline.tag_coverage` | Re-run the tag coverage report that justified the tag map |
 | `python -m src.pipeline.tieout` | Rebuild the hand-verification sheet in `verification/` |
+| `python run_pipeline.py --scores-only` | Rebuild only the scores and returns tables (full and sample) from existing Phase 1 tables |
+| `python -m src.scores.build_scores` | Rebuild `scores.parquet` (add `--sample` for `data/sample/`) |
+| `python -m src.scores.returns` | Rebuild `returns.parquet` and print the flagged vs. not-flagged comparison |
+| `python -m src.scores.tieout` | Rebuild `verification/tieout.xlsx` (Excel recomputes every score) |
 
 Sources: SEC `companyfacts.zip` and `submissions.zip` (rebuilt nightly
 by SEC) and Yahoo Finance daily adjusted closes via yfinance. Download
@@ -83,6 +87,48 @@ an SEC common-stock ticker and 2,606 have full price history. 2,414 of the
 (survivorship bias; see `docs/methodology.md`). Six tickers were removed
 for invalid adjusted prices and seven returned no data.
 
+## Phase 2 scores: coverage and blanks
+
+Counts from the November 17, 2026 download (`data/logs/scores_log.csv`).
+All 39,853 size-floor company-years (FY2012-FY2025, 5,493 companies) are
+in `scores.parquet`. Every other `financials_annual` row is counted:
+5,991 are FY2011 prior-year rows and 29,027 fail the size floor (kept
+only as possible prior years).
+
+A score is blank when any input is missing; nothing is estimated. Each
+blank has its reason in `missing_inputs`.
+
+| Score | Computed | Share | Main reasons for blanks |
+| --- | --- | --- | --- |
+| M-Score | 16,589 | 42% | No cost of revenue (13,612 years), receivables missing (9,137) |
+| Z''-Score | 33,297 | 84% | Equity, operating income or total liabilities missing |
+| F-Score | 13,410 | 34% | No same-filing prior share count (12,482) or no cost of revenue; 6,496 lack a t-2 year |
+| Accruals ratio | 35,445 | 89% | Missing prior-year total assets |
+| Cash conversion | 22,615 | 57% | Blank by design when net income <= 0 (14,271) |
+
+**Neutral values (CLAUDE.md section 5).** LVGI is set to 1 in 8,251 of the
+16,589 M-Scores (50%) because long-term debt is missing, and SGAI in 6,341
+(38%) because SG&A is missing. A Phase 2 check found that 12,237 of the
+19,027 size-floor years missing `long_term_debt` report other debt tags
+in the same 10-K, most often `LongTermDebtAndCapitalLeaseObligations`
+(5,204). So the gap is mainly tag mapping, not absence of debt. Whether
+to map more debt tags is a Phase 1 decision; see `docs/methodology.md`.
+
+**Flags and zones.** 1,721 of 16,589 M-Scores (10.4%) exceed -1.78.
+Z'' zones: 15,676 safe, 6,203 grey, 11,418 distress.
+
+**Returns (stretch goal, `data/logs/returns_by_flag.csv`).** 22,746 of
+39,853 scored years have a ticker and a full 12-month price window.
+Flagged companies had a mean excess return over SPY of +9.7% but a median
+of -11.7% (1,015 years); unflagged companies +2.0% mean and -6.3% median
+(9,068 years). The groups disagree on direction depending on mean or
+median. Results are biased upward because delisted companies mostly lack
+prices, and they show correlation, not cause (see `docs/methodology.md`).
+
+**Peer groups.** 37,839 company-years are ranked within an industry-size
+group (median 46 companies); 2,014 fall back to the whole 2-digit
+industry because their group had fewer than 5 companies.
+
 ## Verification
 
 `verification/phase1_tieout.csv` lists revenue, net income, total assets
@@ -92,3 +138,11 @@ pipeline, with the XBRL tag and filing link, for comparison with each
 November 11, 2026). The three companies cover September (Apple), January
 (Walmart, labeled FY2024 under the Compustat convention) and December
 (Coca-Cola) fiscal year ends.
+
+`verification/tieout.xlsx` recomputes all 28 score outputs with Excel
+formulas for Apple FY2024 and FY2020 (stock split), AMD FY2018 and
+Analog Devices FY2017. **All 112 Excel results match the Python
+output.** Findings and remaining hand checks are in
+`verification/tieout_notes.md`. `pytest` runs 207 tests, each with an
+expected answer worked by hand from `tests/fixtures/`.
+

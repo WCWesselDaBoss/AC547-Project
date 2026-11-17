@@ -1,9 +1,10 @@
 # Phase 2 score tie-out notes
 
 Workbook: `verification/tieout.xlsx`, built by
-`python -m src.scores.tieout --sample` (the `--sample` flag reads
-`data/sample/`; without it, `data/processed/`). Built 2026-11-16 from the
-committed sample tables.
+`python -m src.scores.tieout` from the full tables in `data/processed/`
+(November 17, 2026 download; `--sample` builds it from `data/sample/`).
+First built from the sample on 2026-11-16; the full-data rebuild gives
+identical results.
 
 ## What was checked
 
@@ -70,13 +71,19 @@ data and model issues, which belong in the results discussion:
    debt: total liabilities rose from $2.8bn (FY2016) to $11.0bn (FY2017)
    after the Linear Technology acquisition. From FY2022 the debt appears
    under `LongTermDebtNoncurrent`, so earlier years probably use a tag
-   Phase 1 does not map. **Raised with the Phase 1 owner.** The neutral
+   Phase 1 does not map. On the full raw data, ADI reports this debt as
+   `UnsecuredLongTermDebt` ($7.55bn at FY2017 year-end), which no mapped
+   tag captures; across the universe, 12,237 of the 19,027 size-floor
+   years missing `long_term_debt` report other debt tags (see
+   docs/methodology.md). **Raised with the Phase 1 owner.** The neutral
    rule worked as designed, but here the true LVGI would differ from 1.
-   ADI's flag does not depend on it: LVGI's coefficient is negative
-   (-0.327), so a true LVGI above 1 would *lower* M slightly. That is
-   roughly 0.1 to 0.3 for an LVGI of 1.3 to 2.0, leaving M near
-   -1.45 to -1.65, still above -1.78. **Verify** this once the debt is
-   tagged.
+   **Checked with the unmapped tag:** using `UnsecuredLongTermDebt`
+   from the raw SEC file (original 10-K values), FY2017's true LVGI is
+   1.371 (debt $1.73bn -> $7.55bn), which moves M from -1.348 to -1.469:
+   still flagged. FY2021 (Maxim acquisition) has a true LVGI of 0.569:
+   debt rose ($5.15bn -> $6.25bn), but the mostly stock-financed deal
+   roughly doubled total assets, so leverage *fell*, and M moves from
+   -1.741 to -1.600: still flagged, more strongly. Both flags hold.
 2. **ADI's flag looks like an acquisition false positive.** The drivers
    are AQI 2.83 (goodwill and intangibles from Linear) and SGI 1.53
    (acquired revenue). The M-Score cannot tell acquired growth from
