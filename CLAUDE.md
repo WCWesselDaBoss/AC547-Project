@@ -77,7 +77,7 @@ Phases hand off only through these Parquet tables in `data/processed/`. Column n
 - Annual flow items (revenue, net income, cash flow) must cover roughly a full year (period length 350 to 380 days). Balance sheet items are instant values at `period_end`.
 - The same period's value appears in several filings (as a comparative, or restated). Mark the value from the **earliest** filing as `is_original = True`. Scores use original values, because that is what investors saw at the time. Later values are kept for the restatement stretch feature.
 - `filing_url` links to the filing on EDGAR, built from the CIK and accession number. This is what click-to-trace opens.
-- When a company reports two mapped tags for the same line item and period, `facts_long` keeps only the company's preferred tag (the one it reports in the most years), so each company, line item and period has exactly one original value. FY2011 facts are kept only so FY2012 has a prior year.
+- `facts_long` has one row per company, line item, period and filing. When one filing reports the same period under two mapped tags, that filing's row uses the company's preferred tag (the one it reports in the most years). The original is the earliest filing that reported the period under **any** mapped tag, so a later tag switch (for example at the ASC 606 adoption) can never turn a restated value into the original. Each company, line item and period has exactly one original value. FY2011 facts are kept only so FY2012 has a prior year.
 
 **Rules for `financials_annual`:**
 
