@@ -22,6 +22,7 @@ import pandas as pd
 
 import config
 from src.scores import accruals, altman, beneish, common, peers, piotroski
+from src.scores import verdicts
 
 NOTES_COLUMNS = [
     "beneish_notes",
@@ -34,8 +35,9 @@ SCORES_COLUMNS = (
     + beneish.INDEX_COLUMNS
     + ["z_score", "z_zone"]
     + altman.RATIO_COLUMNS
-    + ["f_score"]
+    + ["f_score", "f_band"]
     + piotroski.SIGNAL_COLUMNS
+    + ["flags_raised"]
     + ["accruals_ratio", "cash_conversion"]
     + ["peer_group", "peer_group_level", "peer_group_size"]
     + [peers.percentile_column(score) for score in peers.RANKED_SCORES]
@@ -47,6 +49,8 @@ SCORES_TYPES = {
     "m_flag": "boolean",
     "z_zone": "string",
     "f_score": "Int64",
+    "f_band": "string",
+    "flags_raised": "Int64",
     "peer_group": "string",
     "peer_group_level": "string",
     "peer_group_size": "int64",
@@ -148,6 +152,9 @@ def build_scores(financials_df, facts_long_df, companies_df):
         *[scored_df[column] for column in NOTES_COLUMNS]
     )
     scored_df = peers.add_percentile_ranks(peers.assign_peer_groups(scored_df))
+    # Verdicts restate the scores for display (section 4); they are
+    # added after the scores so they can never feed back into them.
+    scored_df = verdicts.add_verdicts(scored_df)
     scores_df = to_contract_types(scored_df)
     log_rows += coverage_log(scores_df)
     return scores_df, log_rows

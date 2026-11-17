@@ -164,6 +164,12 @@ ALTMAN_Z2_DISTRESS_BELOW = 1.10
 # place could award or deny a point (CLAUDE.md section 5).
 F_SCORE_TIE_TOLERANCE = 1e-9
 
+# F-Score display bands (CLAUDE.md section 4, "Verdict columns"): 0-3
+# weak, 4-6 middle, 7-9 strong. A team convention for display, not
+# Piotroski's; his paper compared the highest and lowest scores.
+F_SCORE_WEAK_MAX = 3
+F_SCORE_STRONG_MIN = 7
+
 # Peer groups (src/scores/peers.py): an industry-size group smaller than
 # this falls back to the whole 2-digit SIC industry (Phase 2 spec).
 MIN_PEER_GROUP_SIZE = 5
