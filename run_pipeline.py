@@ -16,7 +16,7 @@ import time
 
 from src.pipeline import companies, download, facts, financials
 from src.pipeline import prices, sample
-from src.scores import build_scores, returns
+from src.scores import build_scores, drivers, returns
 
 
 def run_stage(name, function, *args, **kwargs):
@@ -60,15 +60,19 @@ def main(argv=None):
         run_stage("5. prices", prices.main, download=not args.skip_download)
     if not args.sample_only:
         run_stage("6. scores", build_scores.main, [])
+        # The M-Score components pushing each score up, with their
+        # approved plain-English sentences (CLAUDE.md section 4).
+        run_stage("7. score drivers", drivers.main, [])
         # Stretch goal (section 7): 12-month returns after each 10-K.
-        run_stage("7. returns", returns.main, [])
+        run_stage("8. returns", returns.main, [])
     if not args.scores_only:
-        run_stage("8. sample", sample.main)
+        run_stage("9. sample", sample.main)
     # Scores for the sample are computed from the sample's own tables, so
     # a fresh clone's app shows numbers it can reproduce (peer ranks on
     # 50 companies are illustrative only, CLAUDE.md section 4).
-    run_stage("9. sample scores", build_scores.main, ["--sample"])
-    run_stage("10. sample returns", returns.main, ["--sample"])
+    run_stage("10. sample scores", build_scores.main, ["--sample"])
+    run_stage("11. sample score drivers", drivers.main, ["--sample"])
+    run_stage("12. sample returns", returns.main, ["--sample"])
 
 
 if __name__ == "__main__":

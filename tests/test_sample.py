@@ -108,10 +108,12 @@ def test_pipeline_runs_stages_in_order(monkeypatch):
         "4. financials_annual",
         "5. prices",
         "6. scores",
-        "7. returns",
-        "8. sample",
-        "9. sample scores",
-        "10. sample returns",
+        "7. score drivers",
+        "8. returns",
+        "9. sample",
+        "10. sample scores",
+        "11. sample score drivers",
+        "12. sample returns",
     ]
     assert calls[3][1] == {"download": False}
 
@@ -126,7 +128,12 @@ def test_sample_only_runs_just_the_sample(monkeypatch):
         lambda name, function, *a, **k: calls.append(name),
     )
     run_pipeline.main(["--sample-only"])
-    assert calls == ["8. sample", "9. sample scores", "10. sample returns"]
+    assert calls == [
+        "9. sample",
+        "10. sample scores",
+        "11. sample score drivers",
+        "12. sample returns",
+    ]
 
 
 def test_scores_only_skips_phase_1(monkeypatch):
@@ -140,9 +147,11 @@ def test_scores_only_skips_phase_1(monkeypatch):
     run_pipeline.main(["--scores-only"])
     assert calls == [
         "6. scores",
-        "7. returns",
-        "9. sample scores",
-        "10. sample returns",
+        "7. score drivers",
+        "8. returns",
+        "10. sample scores",
+        "11. sample score drivers",
+        "12. sample returns",
     ]
 
 

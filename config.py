@@ -118,6 +118,7 @@ FINANCIALS_PATH = PROCESSED_DIR / "financials_annual.parquet"
 PRICES_PATH = PROCESSED_DIR / "prices.parquet"
 SCORES_PATH = PROCESSED_DIR / "scores.parquet"
 SCORES_LOG = LOG_DIR / "scores_log.csv"
+SCORE_DRIVERS_PATH = PROCESSED_DIR / "score_drivers.parquet"
 RETURNS_PATH = PROCESSED_DIR / "returns.parquet"
 
 # ---------------------------------------------------------------------------
@@ -169,6 +170,14 @@ F_SCORE_TIE_TOLERANCE = 1e-9
 # Piotroski's; his paper compared the highest and lowest scores.
 F_SCORE_WEAK_MAX = 3
 F_SCORE_STRONG_MIN = 7
+
+# score_drivers (src/scores/drivers.py) keeps at most this many
+# M-Score components per company-year, and only contributions above
+# DRIVER_MIN_CONTRIBUTION: an index meant to be exactly 1 ("no change")
+# can come out as 1.0000000000000002, and a 1e-16 contribution must not
+# be reported as something pushing the score up.
+MAX_DRIVERS = 3
+DRIVER_MIN_CONTRIBUTION = 1e-9
 
 # Peer groups (src/scores/peers.py): an industry-size group smaller than
 # this falls back to the whole 2-digit SIC industry (Phase 2 spec).
