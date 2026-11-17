@@ -121,6 +121,39 @@ listed first. Beneish (1999) used Compustat data, whose depreciation item
 is understood to include amortization; this should be verified against
 the paper when Phase 2 cites it.
 
+**Re-check of long-term debt tags (2026-11-17; no tag added).** Phase 2
+found that 12,237 of the 19,027 size-floor years missing
+`long_term_debt` report another debt-like tag in the same 10-K (for
+example, Analog Devices tags its $7,551.1mm of non-current debt only as
+`UnsecuredLongTermDebt`). Each candidate was tested the same way as above
+(earliest-filed value at the 10-K's balance-sheet date; agreement within
+0.5% with `LongTermDebtNoncurrent` where both are reported; November 11
+download):
+
+| Candidate | Both reported | Agree (0.5%) | Within 5% | Would fill (size-floor years) | Why it differs |
+| --- | --- | --- | --- | --- | --- |
+| UnsecuredLongTermDebt | 206 | 23.3% | 30.1% | 123 | unsecured debt only |
+| LongTermNotesPayable | 948 | 49.7% | 54.0% | 906 | notes only |
+| SeniorLongTermNotes | 288 | 19.4% | 27.1% | 379 | senior notes only |
+| LongTermDebtAndCapitalLeaseObligations | 2,599 | 60.6% | 77.1% | 5,085 | includes finance leases |
+| LongTermDebt | 16,548 | 27.1% | 55.3% | 4,480 | includes the current portion (75.2% agreement with non-current + current) |
+| SecuredLongTermDebt | 386 | 33.2% | 42.2% | 428 | secured debt only |
+| ConvertibleLongTermNotesPayable | 379 | 18.2% | 20.3% | 600 | convertible notes only |
+| OtherLongTermDebtNoncurrent | 714 | 26.1% | 30.1% | 521 | "other" debt only |
+
+**Decision: no tag added.** None measures non-current long-term debt
+with high agreement: most are one component of a company's debt, so for
+a company that also reports other debt they understate it. For some
+filers (ADI among them) the component *is* all of the debt, but the
+data cannot tell those filers apart from the rest, so mapping the tag
+would put a partial debt figure into LVGI and F-Score signal 5 for many
+companies. The neutral-value rule in section 5 (LVGI = 1, flagged) stays
+the documented treatment; ADI FY2017 long-term debt remains a known
+tie-out difference. A possible later improvement, not done here, is a
+calculated total: the sum of debt components reported in the same 10-K,
+accepted only where it ties to a reported total. It would need its own
+evidence and a team decision.
+
 ### facts_long (src/pipeline/facts.py)
 
 - Only us-gaap facts for mapped tags, from 10-K and 10-K/A filings, in USD
