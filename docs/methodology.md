@@ -173,20 +173,44 @@ different measurement. A possible later improvement, not done here, is to
 use shares issued only where the same 10-K reports zero treasury shares;
 that would need its own agreement test.
 
-**Known issue: some tagged revenue is not total revenue (found
-2026-11-17; not fixed).** A few 10-Ks tag a figure far below the
-company's total revenue as `Revenues`. Example: Apogee Enterprises (CIK
-6845) reports `Revenues` of $72.7mm for FY2014 in its own 10-K, against
-$771.4mm the year before, so its FY2014 M-Score (+3.91) is a false flag.
-Before the `is_original` fix the same problem sat in FY2012 instead
-(that year took $63.5mm from a later 10-K; it is now the correct
-$700.2mm). A screen for revenue below 20% of **both** the prior and the
-next year finds 203 such company-years at 185 companies, 49 of them in
-size-floor years; 101 scored company-years use one as year t or t-1, and
-8 of those are flagged. These values are what the 10-K's XBRL reported,
-so they are not changed here; replacing them would need a rule and
-evidence agreed by the team (for example, excluding a year whose revenue
-fails this screen, logged in `missing_inputs`).
+**Revenue tags that disagree within one filing (guard added
+2026-11-17).** Every mapped revenue tag is meant to be total revenue, but
+some 10-Ks report the same year under two of them with very different
+values; the smaller is usually a segment or a figure entered in the wrong
+scale. Example: Apogee Enterprises' (CIK 6845) FY2014 10-K reports
+`Revenues` $72.7mm and `SalesRevenueNet` $933.9mm. Apogee reports
+`Revenues` in more years, so the preferred-tag rule picked $72.7mm and
+its FY2014 M-Score was a false flag (+3.92).
+
+Evidence (original filings, full data): 7,475 original revenue values
+come from a filing that also reports another mapped revenue tag; 2,785
+of those disagree by more than 1%. Judged against the company's own
+original revenue in the neighbouring years, the larger value is closer
+in 67% of those cases, but in **87% (554 of 635) where one value is more
+than 3x the other**. Most of the remaining 13% are companies that make
+the same scale error every year (for example `Revenues` 8,739 next to
+`SalesRevenueNet` 8,738,739), so the neighbouring years share the error
+and the larger value is in fact right.
+
+**Rule (`facts.apply_revenue_guard`).** Within one filing, if two mapped
+revenue tags for the same period differ by more than
+`config.REVENUE_TAG_CONFLICT_RATIO` (3x), the larger is used; smaller
+gaps keep the company's preferred tag, because some are legitimate (gross
+vs net of sales taxes). Revenue only; other line items were not tested.
+Each override is counted in `facts_long_drops.csv` as
+`adjusted:revenue_tags_disagree_used_largest` (454 filings). Effect on
+the size-floor years: revenue changed in 107 company-years at 43
+companies (for example Apogee FY2014 $933.9mm, Crown Holdings FY2013
+$8,656mm, The Andersons FY2015 $4,198mm, Kratos FY2013 $950.6mm); 7 more
+company-years now pass the size floor (39,860); M flags fell from 1,719
+to 1,708 (12 removed, including Apogee FY2014, and 1 added).
+
+**Correction.** An earlier note here (2026-11-17) said a screen for
+revenue below 20% of both neighbouring years found 49 mis-tagged
+size-floor years. That was wrong: most of those 49 are genuine, such as
+biotech milestone revenue and Cedar Fair's 2020 park closures. Only
+about 8 were tag conflicts, and the guard above handles them. Revenue is
+never removed for being unusually low.
 
 ### facts_long (src/pipeline/facts.py)
 
@@ -242,7 +266,8 @@ fails this screen, logged in `missing_inputs`).
 - **Size floor.** `passes_size_floor` is true when revenue or total assets
   is at least $100M in that year (nominal). Rows that fail are kept, since
   they can still serve as a prior year; a year with neither value cannot
-  pass. FY2012-FY2025: 39,853 pass, 28,550 fail, 475 untestable.
+  pass. FY2012-FY2025: 39,860 pass, 28,543 fail, 475 untestable
+  (after the 2026-11-17 revenue guard; 39,853 and 28,550 before).
 - Counts are in `data/logs/financials_annual_log.csv`.
 
 ### prices (src/pipeline/prices.py)
@@ -275,11 +300,14 @@ fails this screen, logged in `missing_inputs`).
   mis-scales the whole series, not just those days. Six tickers were
   removed in the November 2026 download (CBIO, CODQL, DEC, LIANY, NFE,
   VATE; listed in the manifest).
-- **Results (November 11, 2026 download).** Of 5,493 scored companies,
-  2,705 have an SEC common-stock ticker, 2,692 have prices and 2,606 have
+- **Results (November 11, 2026 download; rebuilt 2026-11-17).** Of
+  5,495 scored companies, 2,706 have an SEC common-stock ticker, 2,692
+  have prices and 2,606 have
   full price history. Seven tickers returned no data from Yahoo
-  ("possibly delisted"). Of the 2,422 scored companies that stopped filing
-  10-Ks by FY2023, 2,414 have no prices.
+  ("possibly delisted"; 8 after the rebuild, because one newly scored
+  company's ticker was never downloaded in an offline run). Of the 2,423
+  scored companies that stopped filing 10-Ks by FY2023, 2,415 have no
+  prices.
 
 ### Committed sample (src/pipeline/sample.py)
 
@@ -422,7 +450,7 @@ M-Score are in neither group.
 **Limitations. State these with any result.**
 
 - **Survivorship bias.** Most companies that stopped filing have no
-  Yahoo prices. Phase 1 found 2,414 of 2,422 such scored companies with
+  Yahoo prices. Phase 1 found 2,415 of 2,423 such scored companies with
   no prices. Failed companies, likely including real manipulators, drop
   out, so the results are **biased upward** and describe mainly
   survivors.
@@ -437,17 +465,17 @@ M-Score are in neither group.
   attach another company's prices to an old filing.
 
 **Full-universe result (rebuilt 2026-11-17 after the Phase 1
-`is_original` fix).**
+`is_original` fix and revenue guard).**
 
-- **Coverage:** of 39,853 scored company-years, 25,602 have a ticker and
-  22,746 have a full 12-month price window.
-- **Compared:** 10,073 company-years with both an M-Score and a full
+- **Coverage:** of 39,860 scored company-years, 25,643 have a ticker and
+  22,749 have a full 12-month price window.
+- **Compared:** 10,089 company-years with both an M-Score and a full
   window.
 
 | Group | Count | Mean excess return | Median excess return |
 | --- | --- | --- | --- |
-| Flagged (M > -1.78) | 1,011 | +9.9% | -12.2% |
-| Not flagged | 9,062 | +2.0% | -6.3% |
+| Flagged (M > -1.78) | 1,005 | +10.0% | -12.2% |
+| Not flagged | 9,084 | +2.0% | -6.3% |
 
 The mean and median disagree. The *typical* flagged company (median)
 trailed SPY by 5.9 points more than the typical unflagged one. The mean
@@ -459,11 +487,11 @@ December 1 go/no-go, not a finding.
 
 ### Full-universe check of the neutral-value rules (2026-11-17)
 
-On the 39,853 scored company-years (counts updated after the Phase 1
-`is_original` fix on 2026-11-17):
+On the 39,860 scored company-years (counts updated after the Phase 1
+`is_original` fix and revenue guard on 2026-11-17):
 
-- **LVGI is neutral (1) in 8,252 of 16,594 M-Scores (50%)** because
-  `long_term_debt` is missing; SGAI is neutral in 6,342 (38%).
+- **LVGI is neutral (1) in 8,259 of 16,619 M-Scores (50%)** because
+  `long_term_debt` is missing; SGAI is neutral in 6,345 (38%).
 - **Most missing debt is a tagging gap, not absence of debt.** 12,237 of
   the 19,027 size-floor years missing `long_term_debt` report other
   debt-like instant tags in the same 10-K. The most common are
@@ -475,7 +503,7 @@ On the 39,853 scored company-years (counts updated after the Phase 1
   candidate was tested against `LongTermDebtNoncurrent`; none agrees
   closely enough to map (see Phase 1, "Re-check of long-term debt
   tags"), so the neutral-value rule stays.
-- **Effect on flags.** 1,047 of the 1,719 flagged company-years (61%) use
+- **Effect on flags.** 1,044 of the 1,708 flagged company-years (61%) use
   a neutral LVGI. LVGI's coefficient is -0.327, so a true LVGI of 1.2
   would lower M by 0.065: only 71 of those flags are that close to
   -1.78 (157 within 0.16, i.e. a true LVGI of 1.5). Most flags therefore
@@ -539,6 +567,8 @@ method was not committed, so the gap could not be traced exactly; a
 likely cause is counting tags mapped to other line items. Effect on
 scores: 1,317 M-Scores changed value; flags went from 1,721 to 1,719
 (25 newly flagged, 30 no longer flagged, 11 became computable or
-blank); 179 F-Scores changed; no Z'' zone changed. ADI FY2017 stays
+blank); 179 F-Scores changed; no Z'' zone changed. The revenue guard
+added the same day (Phase 1, Tag mapping) then moved flags to 1,708.
+ADI FY2017 stays
 flagged (M -1.348 to -1.355) and AMD FY2018 stays flagged (-0.641 to
 -0.623; its FY2016-17 inputs were ASC 606 restatements).
