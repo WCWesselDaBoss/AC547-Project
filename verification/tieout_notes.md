@@ -135,4 +135,6 @@ data and model issues, which belong in the results discussion:
   (Phase 3 owns it). Once a case is chosen and in the sample, add one
   line to `TIEOUT_CASES` in `src/scores/tieout.py` and rebuild.
 - Spot-check a few of the 10-K values in column G against the filings.
-- Open in Excel and confirm the README summary shows 0 differences.
+
+Done: recalculated in Microsoft Excel on 2026-11-17 (William, Phase 1
+owner); the README summary shows 0 differences on every company sheet.
