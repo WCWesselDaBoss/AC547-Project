@@ -323,7 +323,7 @@ real rankings need the full tables.
 
 ## Phase 2: score engine
 
-### Coefficient sources (to verify against the original papers)
+### Coefficient sources
 
 Every coefficient and cutoff the code uses is in `config.py` and listed
 below. "Confidence" says how sure we are of the citation, not the number.
@@ -333,50 +333,38 @@ before it is cited in the report**. Mark the "Checked" column when done.
 
 | Constant (`config.py`) | Value | Source | Confidence | Checked |
 | --- | --- | --- | --- | --- |
-| `BENEISH_INTERCEPT` | -4.84 | Beneish, M. D. (1999). The detection of earnings manipulation. *Financial Analysts Journal*, 55(5), 24-36. Unweighted probit, 8 variables. | High | [ ] |
-| `BENEISH_COEFFICIENTS` dsri 0.920, gmi 0.528, aqi 0.404, sgi 0.892, depi 0.115, sgai -0.172, tata 4.679, lvgi -0.327 | see left | Beneish (1999), same table as the intercept | High | [ ] |
-| `BENEISH_FLAG_CUTOFF` | -1.78 | Beneish (1999); secondary sources tie -1.78 to a 20:1 relative cost of missing a manipulator vs. a false alarm | Medium: confirm the cost ratio in the paper | [ ] |
-| `BENEISH_ALTERNATE_CUTOFF` | -2.22 | Widely used by practitioners; **origin not confirmed**. It may come from a later paper or the 5-variable model. Present it only as a "commonly used" alternative unless the source is found. | Low | [ ] |
-| `ALTMAN_Z2_COEFFICIENTS` x1 6.56, x2 3.26, x3 6.72, x4 1.05 | see left | **Confirmed in Altman (2000), p. 27** (see below). Altman's Z'' model for non-manufacturers. First appeared in Altman, E. I. (1983), *Corporate Financial Distress* (Wiley); restated in Altman (2000), "Predicting Financial Distress of Companies: Revisiting the Z-Score and ZETA Models" (NYU Stern working paper). Secondary sources cite 1983, 1993, 2000 and 2002 editions, so confirm which edition you cite. | Medium | [ ] |
-| `ALTMAN_Z2_SAFE_ABOVE`, `ALTMAN_Z2_DISTRESS_BELOW` | 2.60, 1.10 | Same as the Z'' coefficients | Medium | [ ] |
+| `BENEISH_INTERCEPT` | -4.84 | Beneish, M. D. (1999). The detection of earnings manipulation. *Financial Analysts Journal*, 55(5), 24-36. Unweighted probit, 8 variables. | High | [x] Beneish (June 1999 working-paper version, `beneish1999.pdf`), Table 3 Panel A, "Unweighted Probit" row: -4.840 (PDF p. 24) |
+| `BENEISH_COEFFICIENTS` dsri 0.920, gmi 0.528, aqi 0.404, sgi 0.892, depi 0.115, sgai -0.172, tata 4.679, lvgi -0.327 | see left | Beneish (1999), same table as the intercept | High | [x] Same row: ".920 .528 .404 .892 .115 -.172 4.679 -.327" (PDF p. 24). TATA is **4.679**; the 4.697 in Svabova et al. (2020) is their typo |
+| `BENEISH_FLAG_CUTOFF` | -1.78 | Beneish (1999): the cutoff that minimizes expected misclassification cost at relative error costs of 20:1 or 30:1 | High | [x] PDF p. 17: "at relative error costs of 20:1 or 30:1, the model classifies firms as manipulators when the estimated probabilities exceed .0376 (a score greater than -1.78)"; same cutoff in the holdout sample |
+| `BENEISH_ALTERNATE_CUTOFF` | -2.22 | Widely used by practitioners; **not in Beneish (1999)** (no -2.22 anywhere in the paper; its other cutoffs are -1.49 at 10:1 and -1.78 at 20:1/30:1). Origin still unconfirmed. Present it only as a "commonly used" alternative. | Low | [x] Checked absent from Beneish (1999); source still open |
+| `ALTMAN_Z2_COEFFICIENTS` x1 6.56, x2 3.26, x3 6.72, x4 1.05 | see left | Altman, E. I. (2000). Predicting financial distress of companies: Revisiting the Z-Score and ZETA models. NYU Stern working paper. Model first applied in Altman, Hartzell and Peck (1995). | High | [x] Altman (2000), p. 27: "Z" = 6.56 (X1)+ 3.26 (X2) + 6.72 (X3) + 1.05 (X4)"; X4 uses book value of equity |
+| `ALTMAN_Z2_SAFE_ABOVE`, `ALTMAN_Z2_DISTRESS_BELOW` | 2.60, 1.10 | Widely reported for Z'' and attributed to Altman, Hartzell and Peck (1995); **not in Altman (2000)**, which gives zones only for Z' (1.23 / 2.90) | Medium | [ ] Open: no primary text read |
 | (no constant) | none | The "+3.25" emerging-market variant (Altman, Hartzell & Peck, 1995) is a different model and is **not** used | High | [x] Altman (2000), p. 27 |
-| Piotroski signal definitions (no numeric coefficients) | 9 binary signals | Piotroski, J. D. (2000). Value investing: The use of historical financial statement information to separate winners from losers. *Journal of Accounting Research*, 38 (Supplement), 1-41. | High (one source lists the issue as 38(3); check the JSTOR record) | [ ] |
-| `F_SCORE_TIE_TOLERANCE` | 1e-9 | Our choice, not from a paper; only stops floating-point rounding from deciding a signal | n/a | n/a |
+| Piotroski signal definitions (no numeric coefficients) | 9 binary signals | Piotroski, J. D. (2000). Value investing: The use of historical financial statement information to separate winners from losers. *Journal of Accounting Research*, 38 (Supplement), 1-41. | High | [x] Piotroski (2000), pp. 7-9 (signal definitions) and p. 14 (Table 1 notes), from `value_investing_the_use_of_historical_financial_statement_information.pdf`; the journal header reads "Vol. 38 Supplement 2000", which settles the 38(3) question |
+| `F_SCORE_TIE_TOLERANCE` | 1e-9 | Our choice, not from a paper; only stops floating-point rounding from deciding a signal. Consistent with Piotroski's rule that a signal is one only if the change is positive, "zero otherwise" | n/a | n/a |
 
-**Verification attempt (2026-11-17).** Primary texts were sought online;
-results:
+**Verification (2026-11-17), from the two papers added to the repo root.**
+`beneish1999.pdf` is Beneish's June 1999 working-paper version of the
+FAJ article (author's manuscript, 27 pages), so page numbers are the
+PDF's, not the journal's; the coefficients and cutoffs should be
+identical to the published version, but cite the FAJ article after a
+quick check of its Table 3 if the library copy is available.
 
-- **Altman Z'' coefficients: confirmed** in Altman (2000), "Predicting
-  Financial Distress of Companies: Revisiting the Z-Score and ZETA
-  Models", NYU Stern working paper, p. 27: "Z" = 6.56 (X1)+ 3.26 (X2) +
-  6.72 (X3) + 1.05 (X4)"; "The book value of equity was used for X 4";
-  and the +3.25 constant belongs only to the emerging-market version
-  ("In the emerging market model, we added a constant term of +3.25").
-  The paper credits the application to Altman, Hartzell and Peck (1995)
-  and cites Altman (1983), *Corporate Financial Distress*.
-- **Altman Z'' zones 2.60 / 1.10: NOT found** in Altman (2000), which gives
-  zones only for the Z' model (1.23 / 2.90). The Z'' zones must be traced
-  to another source (possibly a later Altman book) before citing.
-- **Update (later the same day): TATA 4.679 is corroborated** by several
-  further independent secondary sources, including the Wikipedia entry
-  citing Beneish (1999), so Svabova et al.'s 4.697 is treated as a
-  transposition and 4.679 is kept. The Z'' zones 2.60 / 1.10 are widely
-  reported and attributed to Altman, Hartzell and Peck (1995), not yet
-  read in a primary text. The origin of -2.22 remains unresolved; it is
-  used only as the slider's alternative setting.
-- **Beneish coefficients: corroborated by a secondary source only.**
-  Svabova, Kramarova, Chutka and Strakova (2020), *Oeconomia Copernicana*
-  11(3), 485-508, reproduce the model with eight coefficients identical
-  to ours, but print TATA as **4.697**, not 4.679. Probably a transposed
-  digit, but **check the original's table**; TATA has the largest
-  coefficient.
-- **Beneish cutoffs: conflicting secondary sources.** Svabova et al.
-  (2020) attribute -2.22 to Beneish (1999); Omeir, Vasiliauskaite and
-  Soleimanizadeh (2023), *Journal of Governance and Regulation* 12(3),
-  attribute -1.78 to Beneish (1999). Settle from the original.
-- **Beneish (1999) and Piotroski (2000) full texts could not be read**
-  (paywalled or blocked). Get them through the UA library: Beneish via
-  DOI 10.2469/faj.v55.n5.2296; Piotroski via JSTOR 2672906.
+- **Beneish coefficients: confirmed**, including TATA = 4.679 (Table 3,
+  Panel A, unweighted probit; estimation sample of 50 manipulators and
+  1,708 non-manipulators).
+- **-1.78: confirmed** as the cutoff for relative error costs of 20:1 or
+  30:1, which Beneish calls the relevant range for investors (PDF pp.
+  16-17). At 10:1 the cutoff is -1.49.
+- **-2.22: not from Beneish (1999).** Kept only as the slider's
+  alternative; origin open.
+- **Altman Z'' coefficients and no constant: confirmed** in Altman (2000),
+  p. 27 (read 2026-11-17 from a public copy of the working paper).
+- **Z'' zones 2.60 / 1.10: still open.** Not in Altman (2000) or either
+  added paper. Needs Altman, Hartzell and Peck (1995) or a later Altman
+  text.
+- **Piotroski signals: confirmed** as implemented, apart from known
+  differences 4, 5 and 7 below.
 
 ### Known differences from the papers (state these in results)
 
@@ -384,23 +372,39 @@ These are deliberate simplifications or data constraints. Check each
 against the paper when verifying the coefficients:
 
 1. **TATA uses the cash-flow form.** We compute (income from continuing
-   operations - CFO) / total assets, as CLAUDE.md section 5 specifies. As
-   we understand it, Beneish (1999) computed total accruals from balance
-   sheet changes (change in current assets excluding cash, less change in
-   current liabilities excluding current debt and taxes payable, less
-   depreciation); the cash-flow form is used in later work such as
-   Beneish, Lee and Nichols (2013). **Verify** this in the paper. The
-   coefficients were estimated on the balance-sheet form.
+   operations - CFO) / total assets, as CLAUDE.md section 5 specifies.
+   **Confirmed difference:** Beneish (1999, PDF p. 12) defines total
+   accruals as "the change in working capital accounts other than cash
+   less depreciation", a balance-sheet form, and the coefficients were
+   estimated on it. The cash-flow form is used in later work (for
+   example Beneish, Lee and Nichols, 2013).
 2. **Depreciation** includes depletion and amortization where companies
    tag them together (Phase 1 limitation).
 3. **Z'' EBIT** is operating income, which excludes non-operating items.
 4. **Piotroski ROA** uses net income. Piotroski used net income before
-   extraordinary items. Extraordinary items were removed from US GAAP in
+   extraordinary items (confirmed, p. 7). Extraordinary items were removed from US GAAP in
    2015 (ASU 2015-01), so the difference matters only for early years.
 5. **Piotroski EQ_OFFER** (signal 7) asks whether the firm issued common
-   equity. We test whether shares outstanding rose, which also catches
+   equity "in the year preceding portfolio formation" (p. 9). We test whether shares outstanding rose, which also catches
    option and RSU vesting but misses issuance offset by buybacks.
-6. **Coefficients are from the 1980s-90s samples** and were never
+6. **Beneish's own data treatment differs from ours** (PDF p. 12). He
+   set AQI to 1 when its denominator was zero (we leave it blank and
+   note `aqi_zero_denominator`), set SGAI to 1 when SG&A was missing (the
+   same as our rule), set DEPI to 1 when amortization of intangibles was
+   missing, and winsorized every variable at the 1st and 99th
+   percentiles (we do not). The DEPI note implies his depreciation
+   measure involved amortization of intangibles (Compustat #65), most
+   likely to remove it, i.e. depreciation excluding intangibles
+   amortization. That is an inference; Phase 1 maps depreciation,
+   depletion and amortization first, so our DEPI may include
+   amortization that Beneish excluded.
+7. **Piotroski's leverage includes current maturities.** Table 1 notes
+   (p. 14): "total long-term debt (including the portion of long-term
+   debt classified as current) scaled by average total assets". Our
+   `long_term_debt` is non-current only. Also, the main text (p. 9)
+   scales asset turnover by beginning-of-year assets while the Table 1
+   notes say average assets; we follow the main text and CLAUDE.md.
+8. **Coefficients are from the 1980s-90s samples** and were never
    re-estimated on our data. Scores rank companies; they are not
    calibrated probabilities.
 
