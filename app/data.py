@@ -34,9 +34,16 @@ SCREENER_KEYS = [
     "screener_f_range",
 ]
 
+# The case shown on the case studies page.
+CASE_INDEX = "case_index"
+
 # Every widget value that must survive moving between pages (see
 # keep_widget_state).
-PERSISTENT_KEYS = SCREENER_KEYS + [SELECTED_CIK, SELECTED_YEAR]
+PERSISTENT_KEYS = SCREENER_KEYS + [SELECTED_CIK, SELECTED_YEAR, CASE_INDEX]
+
+# The fixture source has its own made-up case file, so tests never depend
+# on the real, hand-curated data/case_studies.csv.
+CASE_STUDIES_FILE = "case_studies.csv"
 
 
 def keep_widget_state():
@@ -148,3 +155,24 @@ def company_facts(cik):
 def company_financials(cik):
     """Return financials_annual rows for one company in the source."""
     return load_company_financials(resolve_data_source()[1], cik)
+
+
+def case_studies_path():
+    """Return the case studies CSV for the current data source.
+
+    Real data (sample or full) uses the committed, hand-curated
+    data/case_studies.csv; the fixture source uses its own copy.
+    """
+    source, data_dir = resolve_data_source()
+    if source == "fixture":
+        return data_dir / CASE_STUDIES_FILE
+    return config.CASE_STUDIES_PATH
+
+
+@st.cache_data(show_spinner="Loading case studies...")
+def load_case_studies(path):
+    """Read the case studies CSV, or return None if it does not exist."""
+    path = Path(path)
+    if not path.exists():
+        return None
+    return pd.read_csv(path)

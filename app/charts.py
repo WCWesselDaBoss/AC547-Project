@@ -65,9 +65,11 @@ def trend_figure(scores_df, column, title, selected_year, references=()):
     )
     for y_value, text in references:
         _reference_line(figure, y_value, text)
-    figure.add_vline(
-        x=selected_year, line={"color": style.GRIDLINE, "width": 8}
-    )
+    # selected_year None means no year is selected (case studies).
+    if selected_year is not None:
+        figure.add_vline(
+            x=selected_year, line={"color": style.GRIDLINE, "width": 8}
+        )
     figure.update_layout(
         title={"text": title, "font": {"size": 15}},
         height=TREND_HEIGHT,
@@ -182,4 +184,37 @@ def percentile_figure(row):
         ]
     )
     figure.update_yaxes(autorange="reversed")
+    return figure
+
+
+def shade_years(figure, first_year, last_year, text):
+    """Shade fiscal years first_year to last_year with a label on top.
+
+    Used by case studies to mark the years whose 10-K was filed before
+    the event: the only years an analyst could have read at the time.
+    """
+    figure.add_vrect(
+        x0=first_year - 0.5,
+        x1=last_year + 0.5,
+        fillcolor=style.GRIDLINE,
+        opacity=0.5,
+        line_width=0,
+        layer="below",
+        annotation_text=text,
+        annotation_position="top left",
+        annotation_font={"color": style.INK_SECONDARY, "size": 11},
+    )
+    return figure
+
+
+def case_m_trend(history, before_years, cutoff):
+    """Return the M-Score trend for a case, pre-event years shaded."""
+    figure = m_trend(history, None, cutoff)
+    if before_years:
+        shade_years(
+            figure,
+            min(before_years),
+            max(before_years),
+            "10-K filed before the event",
+        )
     return figure

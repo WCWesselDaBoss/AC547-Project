@@ -171,6 +171,35 @@ def test_trace_button_opens_the_panel(fixture_source):
     assert len(app_test.dataframe) == before + 1
 
 
+def test_case_page_shows_hit_and_steps_through_cases(fixture_source):
+    """Fixture case 1 is a hit; Next moves to case 2, Previous back."""
+    app_test = run_app("views/case_studies.py")
+    assert not app_test.exception
+    assert app_test.subheader[1].value == (
+        "The earnings manipulation check warned before the event."
+    )
+    app_test.button(key="case_next").click().run()
+    assert app_test.selectbox(key=data.CASE_INDEX).value == 1
+    assert app_test.subheader[0].value == "Service Co"
+    app_test.button(key="case_previous").click().run()
+    assert app_test.selectbox(key=data.CASE_INDEX).value == 0
+
+
+def test_every_real_case_runs_on_the_sample(monkeypatch):
+    """Each case in data/case_studies.csv draws on the sample data."""
+    monkeypatch.setattr(config, "APP_DATA_SOURCE", "sample")
+    st.cache_data.clear()
+    cases = pd.read_csv(config.CASE_STUDIES_PATH)
+    for index in range(len(cases)):
+        app_test = AppTest.from_file(APP_SCRIPT, default_timeout=30)
+        app_test.session_state[data.CASE_INDEX] = index
+        app_test.run()
+        app_test.switch_page("views/case_studies.py").run()
+        assert not app_test.exception, cases.loc[index, "name"]
+        assert not app_test.warning, cases.loc[index, "name"]
+    st.cache_data.clear()
+
+
 def test_bad_data_source_shows_message_not_crash(monkeypatch):
     """A typo in EQR_DATA_SOURCE gives a readable error, not a traceback."""
     monkeypatch.setattr(config, "APP_DATA_SOURCE", "smaple")

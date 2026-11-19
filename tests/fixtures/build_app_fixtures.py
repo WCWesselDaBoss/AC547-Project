@@ -196,6 +196,34 @@ def build_facts_long_fixture(financials_df):
     return facts.to_contract_types(all_facts_df)
 
 
+# A made-up case study for tests: the event comes after Stretch Co's
+# FY2022 10-K (filed 2023-02-20) and before its FY2023 10-K (2024-02-20),
+# so FY2021 and FY2022 count as "filed before the event". Service Co is
+# included as a case the radar cannot score (no cost of revenue). The
+# URLs are placeholders, never shown as real SEC sources.
+CASE_STUDY_ROWS = [
+    (102, "Stretch Co", "Made-up enforcement action", "2023-06-30",
+     "https://www.sec.gov/fixture-placeholder",
+     "Fixture case: aggressive FY2022 accounting."),
+    (103, "Service Co", "Made-up restatement", "2024-06-30",
+     "https://www.sec.gov/fixture-placeholder",
+     "Fixture case the radar cannot score."),
+]  # fmt: skip
+CASE_STUDY_COLUMNS = [
+    "cik",
+    "name",
+    "event_type",
+    "event_date",
+    "source_url",
+    "note",
+]
+
+
+def build_case_studies_fixture():
+    """Return the fixture case_studies table as it is written to CSV."""
+    return pd.DataFrame(CASE_STUDY_ROWS, columns=CASE_STUDY_COLUMNS)
+
+
 def build_app_fixtures():
     """Return a dict of table name -> DataFrame for every APP_TABLES file."""
     financials_df = build_fixtures.build_financials_fixture()
@@ -223,6 +251,10 @@ def main():
         path = APP_FIXTURE_DIR / f"{table}.parquet"
         table_df.to_parquet(path, index=False)
         print(f"Wrote {len(table_df)} rows to {path}")
+    # Case studies are a CSV, like data/case_studies.csv (section 4).
+    case_path = APP_FIXTURE_DIR / "case_studies.csv"
+    build_case_studies_fixture().to_csv(case_path, index=False)
+    print(f"Wrote {len(CASE_STUDY_ROWS)} rows to {case_path}")
 
 
 if __name__ == "__main__":
