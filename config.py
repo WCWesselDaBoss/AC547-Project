@@ -218,6 +218,80 @@ CASE_STUDIES_PATH = DATA_DIR / "case_studies.csv"
 # Any other companies the team wants in the sample, beyond case studies.
 SAMPLE_EXTRA_CIKS = []
 
+# ---------------------------------------------------------------------------
+# Dashboard data source (Phase 3)
+# ---------------------------------------------------------------------------
+# The app reads one folder of finished Parquet tables and never computes a
+# score (CLAUDE.md section 3). Three folders hold the same table names, so
+# switching data needs no code change, only this setting:
+#   fixture: tiny made-up tables in tests/fixtures/app/ (hand-checkable)
+#   sample:  the committed 50-company sample in data/sample/
+#   full:    every company, in data/processed/ (gitignored, built locally)
+#   auto:    full if all its tables exist, otherwise sample (the default,
+#            so a fresh clone with only data/sample/ runs with no setup)
+# Set it per session, e.g. (PowerShell): $env:EQR_DATA_SOURCE = "fixture"
+APP_FIXTURE_DIR = PROJECT_ROOT / "tests" / "fixtures" / "app"
+APP_DATA_DIRS = {
+    "fixture": APP_FIXTURE_DIR,
+    "sample": SAMPLE_DIR,
+    "full": PROCESSED_DIR,
+}
+APP_DATA_SOURCE_AUTO = "auto"
+APP_DATA_SOURCE = os.environ.get("EQR_DATA_SOURCE", APP_DATA_SOURCE_AUTO)
+
+# Tables the dashboard needs, by file stem. prices and returns are left
+# out: the app does not chart prices, and returns is a stretch goal that
+# the app shows only if its file happens to be present.
+APP_TABLES = (
+    "companies",
+    "facts_long",
+    "financials_annual",
+    "scores",
+    "score_drivers",
+)
+
+
+def missing_app_tables(data_dir):
+    """Return the APP_TABLES file names that are missing from data_dir."""
+    return [
+        f"{table}.parquet"
+        for table in APP_TABLES
+        if not (data_dir / f"{table}.parquet").exists()
+    ]
+
+
+def app_data_dir(source=None):
+    """Return the folder the dashboard should read its tables from.
+
+    source is "auto", "fixture", "sample" or "full" (default: the
+    EQR_DATA_SOURCE setting). "auto" prefers full data but falls back to
+    the sample, because data/processed/ is gitignored and may be partly
+    built (e.g. Phase 1 tables present but no scores yet). A source named
+    explicitly is never swapped for another: if its tables are missing,
+    this raises, so the analyst cannot mistake sample results for full
+    ones (CLAUDE.md section 6, no silent fixes).
+    """
+    if source is None:
+        source = APP_DATA_SOURCE
+    source = source.strip().lower()
+    if source == APP_DATA_SOURCE_AUTO:
+        if not missing_app_tables(APP_DATA_DIRS["full"]):
+            return APP_DATA_DIRS["full"]
+        source = "sample"
+    if source not in APP_DATA_DIRS:
+        valid = ", ".join([APP_DATA_SOURCE_AUTO, *APP_DATA_DIRS])
+        raise ValueError(
+            f"Unknown data source {source!r}; use one of: {valid}"
+        )
+    data_dir = APP_DATA_DIRS[source]
+    missing = missing_app_tables(data_dir)
+    if missing:
+        raise FileNotFoundError(
+            f"Data source {source!r} ({data_dir}) is missing: "
+            f"{', '.join(missing)}"
+        )
+    return data_dir
+
 
 def fiscal_year_from_period_end(period_end):
     """Return the fiscal year label for a period ending on period_end.
