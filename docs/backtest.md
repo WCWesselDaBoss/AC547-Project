@@ -239,6 +239,7 @@ every registered test is reported, whatever it shows.
 | 10 | Do flagged companies blow up more often? Questions (a) and (b) below | Registered 2026-11-19 before any test-10 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | Run 2026-11-19: (a) passed (t = 6.57); (b) did not (t = 1.76) |
 | 11 | After a 10-K becomes public, how fast do stocks fall 50%, by flag count? Question (a) below | Registered 2026-11-19 before any test-11 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | Run 2026-11-19: (a) passed (log-rank p = 6.4 x 10^-56, Flagged faster) |
 | 11a | Method change: scipy instead of lifelines for test 11 (below) | Made 2026-11-19 before any test-11 result was computed, because lifelines cannot be installed with the project's pandas | Definitions unchanged |
+| 12 | Test 11 repeated for drops of 10% to 90% (below) | Registered 2026-11-19 after seeing test 11, before any test-12 result was computed | Exploratory: describes how the gap changes with drop size; to run |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -797,6 +798,37 @@ Limitations:
   passing result is supporting evidence, not confirmation; it would need
   new years to confirm.
 - This is an analysis for a class project, not investment advice.
+
+### Test 12: drops of 10% to 90% (registered before running; exploratory)
+
+Registered after seeing test 11 and before any test-12 result was
+computed. Because the idea came from test 11's result, this test is
+exploratory: it describes whether the Flagged-Clean gap grows or shrinks
+with the size of the drop, and cannot confirm anything on its own.
+
+- **Definitions:** exactly test 11's (observations, start, eligibility,
+  24-month follow-up, censoring, groups, Kaplan-Meier from scipy), with
+  the event changed: the first trading day after the start on which the
+  adjusted close is at or below (100% - d) of the start price, for each
+  drop size d = 10%, 20%, 30%, 40%, 50%, 60%, 70%, 80% and 90%. The 50%
+  row repeats test 11 and must match it.
+- **Reported for each drop size:** for 0, 1, 2 and 3 flags, Clean and
+  Flagged, the Kaplan-Meier percent that had reached the drop by 3, 6,
+  12 and 24 months and the median days to it (only among stocks that
+  reached it); and a two-sided log-rank test of Flagged against Clean.
+- **Multiple tests:** nine log-rank tests are run, so each is compared
+  with 0.01 / 9 = 0.0011 (a Bonferroni adjustment). Because the test is
+  exploratory, a result below that bar is reported as a pattern, not as
+  a confirmed finding.
+- **Outputs:** a "Test 12 results" section here, whatever the results;
+  a chart of drop size against the 24-month percent by tier,
+  `docs/screenshots/test12_drop_sizes.png`; details in
+  `data/logs/backtest_drop_sizes.csv`.
+- **Limitations:** test 11's (survivorship, overlapping observations
+  from the same companies so p-values are too optimistic, weaker by
+  construction, correlation not cause, years already studied), plus:
+  small drops such as 10% happen to most stocks in two years, so they
+  say little about risk.
 
 ## Data coverage
 
