@@ -233,6 +233,7 @@ every registered test is reported, whatever it shows.
 | 6 | 2014-2025 window and the equal-weighted comparison group | After seeing tests 1-4 | Reported above |
 | 7 | Value tilt, tests V1 to V3 below | Registered 2026-11-19, before any value-portfolio return was computed | Run 2026-11-19; no registered test passed (results below) |
 | 8 | Best-score value stocks (V3) against the whole value group (V1) | After seeing test 7 | Exploratory: t = 2.20, at the pass mark, but not registered |
+| 9 | Large companies minus red flags, tests L1 and L2 below | Registered 2026-11-19 after tests 1-8 (all years already seen), before any test-9 return was computed | To run |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -327,6 +328,42 @@ What this shows:
   registered, and test 7 ran five comparisons, so one reaching the pass
   mark by chance is not surprising. Treat it as an idea for a new test
   on new data, not a finding.
+
+### Test 9: large companies minus red flags (registered before running)
+
+Background: over 2014-2025 the checks may have picked slightly better
+stocks than comparable companies (test 6), but the equal-weighted pool
+of mostly smaller companies trailed SPY by 3.2 points a year. This test
+keeps a large-company, size-weighted pool like SPY's and only removes
+the companies the checks flag, so any edge from the checks is not
+swamped by company size. Every year in the window has been seen in
+earlier tests, so even a pass is weaker evidence than a test on new
+years.
+
+- **Pool.** On each formation date, the 500 companies in the comparison
+  group (eligible, latest score usable, ticker, price checks) with the
+  largest public float from the 10-K behind their latest score.
+  Companies with no float or a float of zero or less are left out and
+  counted.
+- **Weights.** Each stock's share of the portfolio at formation is its
+  public float divided by the total of the stocks held, then held
+  unchanged (buy and hold) to the next June 30, like an index between
+  rebalances.
+- **Portfolios** (long only, 20 bps, no borrowing fee):
+  - L1 `large_500`: the whole pool (the control, our stand-in for the
+    S&P 500 without banks, insurers and REITs);
+  - L2 `large_500_no_flags`: the pool without any company whose latest
+    score raises a warning (`flags_raised` of 1 or more). Companies with
+    no flag count (no scores) stay in. The remaining stocks are
+    re-weighted by float.
+- **Questions and pass mark.** (a) Does L2 beat SPY? (b) Does L2 beat
+  L1? Question (b) isolates the checks, because SPY also holds sectors
+  our universe excludes. Evidence window 2014-2025, yearly differences,
+  pass mark t >= 2.2; years ahead are reported. L1 against SPY is
+  reported to show how well the pool stands in for SPY. 2021-2025 is
+  reported but not used as evidence.
+- **Fixed here:** 500 companies, public-float size and weights, "any
+  warning" as the exclusion rule, 20 bps and the window.
 
 ## Data coverage
 
