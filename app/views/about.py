@@ -95,8 +95,11 @@ On a company page, the **🔎 Trace to the 10-K** button under each verdict
 (or the **Trace to SEC filing** tab) shows the formula, the stored
 result, the Python function that computed it, and every input with its
 XBRL tag, filing date, accession number and a link to the filing on
-EDGAR. All calculations live in the project's `src/` folder and are
-covered by automated tests and an Excel tie-out against the 10-Ks
+EDGAR. Where a stock price is available, the company page and each case
+study also chart it, with a marker on the date each 10-K became public
+colored by how many warnings that 10-K raised. All calculations live in
+the project's `src/` folder and are covered by automated tests and an
+Excel tie-out against the 10-Ks
 (`verification/`); this app only displays finished results.
 """)
 

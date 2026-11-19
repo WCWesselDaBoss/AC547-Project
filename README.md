@@ -255,9 +255,9 @@ page reads finished tables and only filters and draws them.
 | Page | What it answers | Screenshot |
 | --- | --- | --- |
 | Screener | Which companies in a year show the most warning signs? Filters for fiscal year, industry, size, the M-Score cutoff (slider, default -1.78), Z'' zone and F-Score range; riskiest first; notes on who is excluded and why scores are blank | `01_screener.png` |
-| Company detail | In five seconds: a one-line verdict and three traffic-light cards. Then why (the stored `score_drivers` sentences), how it compares with peers (one sentence per percentile), and the detail (trends, peer ranks, every component) | `02_company_verdict.png` |
+| Company detail | In five seconds: a one-line verdict and three traffic-light cards. Then why (the stored `score_drivers` sentences), how it compares with peers (one sentence per percentile), and the detail (a stock price chart with a marker on each 10-K's filing date colored by its warning count, trends, peer ranks, every component) | `02_company_verdict.png`, `09_price_chart_company.png` |
 | Click-to-trace | For any score or part of one: the formula, the stored result, the Python function that computed it, and every input with its XBRL tag, period, filing date, accession number and EDGAR link. Opened from the button under each card or the "Trace to SEC filing" tab | `03_trace_popup.png`, `04_trace_tab.png` |
-| Case studies | Did the radar warn before a known accounting problem became public? Hits, misses and companies it could not score are all shown | `05`-`07_case_*.png` |
+| Case studies | Did the radar warn before a known accounting problem became public? Hits, misses and companies it could not score are all shown, with the same price chart and a dashed line on the event date | `05`-`07_case_*.png`, `10_price_chart_case.png` |
 | About and limitations | Data sources, universe rules, citations, coverage computed from the data on screen, and limitations | `08_about.png` |
 
 Design choices worth knowing:

@@ -13,7 +13,9 @@ change so the backup slides match the live demo.
 
 Needs Google Chrome (or set CHROME_PATH). It drives Chrome through its
 DevTools protocol with the "websockets" package, which Streamlit already
-installs, so no extra download is required. Only localhost is contacted.
+installs, so no extra download is required. Only localhost is contacted:
+Chrome is started with every other address blocked (see OFFLINE_FLAGS),
+so the shots also prove the pages load without an internet connection.
 """
 
 import argparse
@@ -101,6 +103,30 @@ SHOTS = [
     ),
     ("08_about.png", "/about", "Keeping the data current", None, None, True),
 ]
+
+# Close-ups of the price chart for the backup slides: (file name, path,
+# text that proves the page loaded, heading to scroll to the top). The
+# viewport is captured, not the full page, so the chart fills the shot.
+CHART_HEADING = "Stock price and 10-K warnings"
+CHART_SHOTS = [
+    (
+        "09_price_chart_company.png",
+        "/company?cik=1336917&year=2015",
+        "checks raised concerns",
+        CHART_HEADING,
+    ),
+    (
+        "10_price_chart_case.png",
+        "/case-studies?case=1",
+        "earnings manipulation check",
+        CHART_HEADING,
+    ),
+]
+
+# Send every non-localhost request to a closed local port, so a page that
+# needed the internet would fail here just as it would on the demo laptop
+# with Wi-Fi off. Chrome never sends localhost through a proxy.
+OFFLINE_FLAGS = ["--proxy-server=127.0.0.1:9"]
 
 # True once Streamlit has no spinner or skeleton on screen.
 JS_IDLE = """
@@ -196,6 +222,18 @@ class DevTools:
         if not clicked:
             raise RuntimeError(f"No button or tab labeled {label!r}")
 
+    async def scroll_to(self, text):
+        """Scroll the first element whose own text is text to the top."""
+        found = await self.evaluate(
+            "(() => { const el = [...document.querySelectorAll('p, strong,"
+            " h1, h2, h3')].find(e => e.innerText.trim() === "
+            f"{json.dumps(text)}); if (el) {{ el.scrollIntoView("
+            "{block: 'start'}); return true; } return false; })()"
+        )
+        if not found:
+            raise RuntimeError(f"No heading {text!r} to scroll to")
+        await asyncio.sleep(SETTLE_SECONDS)
+
     async def set_height(self, height):
         """Resize the viewport to VIEW_WIDTH x height."""
         await self.send(
@@ -231,6 +269,12 @@ async def capture_all(page_socket_url, output_dir):
                 await tools.click(action)
                 await tools.wait_for_text(after)
             await tools.screenshot(output_dir / name, full_page)
+            print(f"Saved {name}")
+        for name, path, ready, heading in CHART_SHOTS:
+            await tools.send("Page.navigate", {"url": APP_URL + path})
+            await tools.wait_for_text(ready)
+            await tools.scroll_to(heading)
+            await tools.screenshot(output_dir / name, full_page=False)
             print(f"Saved {name}")
 
 
@@ -277,6 +321,7 @@ def main(argv=None):
                 f"--user-data-dir={profile_dir}",
                 f"--window-size={VIEW_WIDTH},{VIEW_HEIGHT}",
                 "--hide-scrollbars",
+                *OFFLINE_FLAGS,
                 "about:blank",
             ],
             stdout=subprocess.DEVNULL,
