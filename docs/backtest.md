@@ -237,7 +237,7 @@ every registered test is reported, whatever it shows.
 | 9a | Data fix: public-float plausibility check (below), applied to tests 7 and 9 | Found while running test 9; set from the spread of float-to-price-x-shares and float-to-assets ratios, without looking at returns | Test 7 re-run and both versions reported; the first test-9 run is discarded (below) |
 | 9b | Data fix: assets limit tightened from 1,000 to 100 times (below) | Found in the second test-9 run: SeaWorld's FY2019-22 floats, about 1,000 times too large, still passed and took 7.3% of the 2020 pool; set from the float-to-assets spread, without looking at returns | Tests 7 and 9 re-run with it; only this final run is reported |
 | 10 | Do flagged companies blow up more often? Questions (a) and (b) below | Registered 2026-11-19 before any test-10 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | Run 2026-11-19: (a) passed (t = 6.57); (b) did not (t = 1.76) |
-| 11 | After a 10-K becomes public, how fast do stocks fall 50%, by flag count? Question (a) below | Registered 2026-11-19 before any test-11 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | To run |
+| 11 | After a 10-K becomes public, how fast do stocks fall 50%, by flag count? Question (a) below | Registered 2026-11-19 before any test-11 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | Run 2026-11-19: (a) passed (log-rank p = 6.4 x 10^-56, Flagged faster) |
 | 11a | Method change: scipy instead of lifelines for test 11 (below) | Made 2026-11-19 before any test-11 result was computed, because lifelines cannot be installed with the project's pandas | Definitions unchanged |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
@@ -698,6 +698,105 @@ same statistics. Direction: scipy's log-rank statistic is positive when
 the first group's drops come earlier, so (a) passes only if p < 0.01
 and the statistic for Flagged (first) against Clean is positive. Every
 other definition above is unchanged.
+
+### Test 11 results
+
+Run with `python -m src.scores.time_to_drop` (code:
+`src/scores/time_to_drop.py`; tests with a hand-checked example in
+`tests/test_backtest.py`). Details, one row per observation:
+`data/logs/backtest_time_to_drop.csv`. Chart for the slides:
+`docs/screenshots/test11_survival.png`.
+
+**Who was observed.** 8,200 scored company-years with all three scores
+and an original 10-K filed by 2024-06-30. 4,784 passed the eligibility
+checks at the start (2,924 had no current ticker, 384 were under $5, 86
+lacked 20 days of prices, 22 had no prices). The 4,784 observations come
+from 872 companies (a median of 5 years each).
+
+**Registered question (a): do Flagged stocks reach a 50% drop faster
+than Clean stocks?** Log-rank test, Flagged (1,690 observations)
+against Clean (3,094): statistic +15.75 (positive: Flagged's drops came
+earlier), p = 6.4 x 10^-56. **Passes** (p < 0.01, in the direction
+asked). Read the p-value with the limitation below: the observations are
+not independent, so it is far too small, but even a much larger p-value
+would pass.
+
+![Time to a 50% drop by flag count](screenshots/test11_survival.png)
+
+How to read the chart: each curve starts at 100% on the day the 10-K
+became public and steps down each time a stock in that group first
+closes at half its starting price or less. A lower curve means more of
+the group fell by half, sooner.
+
+**Percent that had fallen 50%, by time since the 10-K** (Kaplan-Meier
+estimates; because every censored stock was followed the full 24
+months, which ends within a few days of day 730 depending on weekends
+and leap years, these almost exactly equal the plain shares, e.g.
+556 / 3,094 = 18.0%):
+
+| Group | Observations | Drops | 3 months | 6 months | 12 months | 24 months | Median days to the drop, only among stocks that dropped |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0 flags (Clean) | 3,094 | 556 | 1.7% | 3.0% | 8.2% | 18.0% | 378 |
+| 1 flag | 1,190 | 371 | 3.8% | 7.6% | 18.1% | 31.2% | 329 |
+| 2 flags | 420 | 216 | 12.4% | 20.5% | 38.8% | 51.5% | 225 |
+| 3 flags | 80 | 44 | 12.5% | 30.0% | 43.8% | 55.0% | 176 |
+| Flagged (1 or more) | 1,690 | 631 | 6.3% | 11.8% | 24.4% | 37.3% | 271 |
+
+The median days column describes only the stocks that did fall by half;
+it is not how long a typical stock in the group took, because most
+stocks in every group never dropped.
+
+What this shows:
+
+- **Flagged stocks fell by half more often and sooner.** Within 24
+  months, 37.3% of Flagged observations had fallen 50% against 18.0% of
+  Clean ones, and the gap is visible from the first months (6.3% against
+  1.7% by 3 months).
+- **The risk rises with each added flag.** 18.0% (0 flags), 31.2% (1),
+  51.5% (2) and 55.0% (3) within 24 months. Among the stocks that
+  dropped, the drop also came sooner with more flags (median 378 days
+  with no flags, 176 with three). The 3-flag tier has only 80
+  observations, so its curve is the least precise.
+- **This agrees with test 10** (blowup rates by year) using a different
+  method and a longer window: the checks flag a higher risk of a large
+  fall, even though they did not reliably predict returns (tests 1-9).
+
+Checks made after the run (not registered; they do not change the
+result):
+
+- **Hand check.** CVU, FY2018: 10-K filed 2019-04-01, which was the
+  start day (close $6.53). The lowest close before the drop was 52.1% of
+  that; on 2020-02-26 it closed at $3.18 (48.7%), day 331, as logged.
+- **One-day touches.** 363 drops were followed the next day by a close
+  back above 50% (187 Flagged, 176 Clean). This includes price glitches
+  and also genuine stocks hovering at the line, so it is a strict check.
+  Counting all of them as no drop, (a) still passes (statistic +13.60, p
+  = 3.9 x 10^-42) and the tiers keep their order (12.7%, 23.1%, 40.4%,
+  42.8% within 24 months).
+- **No early censoring.** No observation's prices stopped within its 24
+  months; every censored stock was followed the full period. This is the
+  same survivorship signal as tests 9 and 10.
+
+Limitations:
+
+- **Survivorship.** Tickers are current ones: 2,924 of the 8,200
+  candidate observations (36%) had no current ticker, and companies that
+  crashed and delisted are mostly among them. Flagged companies are
+  probably missing more often, so the gap is likely understated.
+- **Observations are not independent.** The 4,784 observations come from
+  872 companies, and one company's 24-month windows overlap from year to
+  year, so the log-rank test treats repeated, related observations as
+  separate evidence. Its p-value is too optimistic, possibly by many
+  orders of magnitude. The direction and size of the gap, which hold in
+  every tier and in the one-day check, matter more than the exact
+  p-value.
+- **Weaker by construction.** Flagged companies include those in the Z''
+  distress zone or with a weak F-Score, so faster drops are partly what
+  the definitions predict.
+- **Correlation, not cause, and years already studied.** Even the
+  passing result is supporting evidence, not confirmation; it would need
+  new years to confirm.
+- This is an analysis for a class project, not investment advice.
 
 ## Data coverage
 
