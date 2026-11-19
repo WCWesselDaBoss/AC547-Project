@@ -251,6 +251,18 @@ BLOWUP_FINAL_END = "2026-06-30"
 # A blowup: the adjusted close falls to this share or less of the
 # trade-date close on any trading day in the window.
 BLOWUP_THRESHOLD = 0.5
+
+# Test 11, time to a 50% drop (src/scores/time_to_drop.py; registered in
+# docs/backtest.md before it was run). Only 10-Ks filed on or before this
+# date, so every observation has 24 months of prices to follow.
+TIME_TO_DROP_LAST_FILING = "2024-06-30"
+TIME_TO_DROP_FOLLOW_UP_MONTHS = 24
+# The event: an adjusted close at or below this share of the start price.
+TIME_TO_DROP_THRESHOLD = 0.5
+# Days at which the share already down 50% is read off the curves
+# (3, 6, 12 and 24 months).
+TIME_TO_DROP_HORIZON_DAYS = {3: 91, 6: 183, 12: 365, 24: 730}
+TIME_TO_DROP_PASS_P = 0.01
 BACKTEST_LONG_FLAGS = 0  # flags_raised for the long leg
 BACKTEST_SHORT_FLAGS = 3  # flags_raised for the short leg
 # A score is used only if its 10-K was filed within this many months

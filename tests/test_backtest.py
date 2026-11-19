@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.scores import backtest, blowups, public_float
+from src.scores import backtest, blowups, public_float, time_to_drop
 
 DAYS = pd.bdate_range("2021-06-01", "2023-06-30").astype("datetime64[ns]")
 FORMATION = ["2021-06-30", "2022-06-30"]
@@ -1109,3 +1109,201 @@ def test_blowup_pools(monkeypatch):
     assert large.loc["C", "flags_raised"] == 3
     comparison = in_2021[in_2021["pool"] == "comparison"]
     assert sorted(comparison["ticker"]) == ["A", "B", "C", "D", "G"]
+
+
+# ---------------------------------------------------------------------------
+# Test 11: time to a 50% drop (src/scores/time_to_drop.py)
+# ---------------------------------------------------------------------------
+# One 10-K each, filed Wednesday 2021-01-06, so every start is that day.
+# Weekday calendar from 2020-12-01 (more than 20 trading days before).
+#   FAST: 10, then 6 from 2021-02-01, then exactly 5.00 (50%) from Monday
+#         2021-02-15 = day 40 -> event at day 40.
+#   STEADY: 10 every day to 2023-06-30 -> no drop; censored at 24 months,
+#           2023-01-06 = day 730.
+#   STOP: 10, last price Friday 2021-04-16 = day 100 -> censored at 100.
+TTD_DAYS = pd.bdate_range("2020-12-01", "2023-06-30").astype("datetime64[ns]")
+TTD_START = pd.Timestamp("2021-01-06")
+
+
+def ttd_series(steps, last_day=None):
+    """Return a price series on TTD_DAYS (NaN after last_day)."""
+    prices = pd.Series(steps[0][1], index=TTD_DAYS, dtype="float64")
+    for date, price in steps[1:]:
+        prices[prices.index >= date] = price
+    if last_day is not None:
+        prices[prices.index > last_day] = np.nan
+    return prices
+
+
+TTD_PRICES = {
+    "FAST": ttd_series(
+        [
+            (None, 10.0),
+            (pd.Timestamp("2021-02-01"), 6.0),
+            (pd.Timestamp("2021-02-15"), 5.0),
+        ]
+    ),
+    "STEADY": ttd_series([(None, 10.0)]),
+    "STOP": ttd_series([(None, 10.0)], last_day="2021-04-16"),
+}
+
+
+def ttd_end():
+    """Return the follow-up end for TTD_START."""
+    return time_to_drop.follow_up_end(pd.DatetimeIndex(TTD_DAYS), TTD_START)
+
+
+def test_follow_up_ends_24_months_later():
+    """2021-01-06 + 24 months = Friday 2023-01-06, a trading day."""
+    assert ttd_end() == pd.Timestamp("2023-01-06")
+
+
+def test_drop_on_day_40_is_an_event():
+    """FAST falls to 6 (60%, no event), then to exactly 5.00 (50%) on
+    2021-02-15, 40 calendar days after the start."""
+    event, days, drop_date = time_to_drop.drop_outcome(
+        TTD_PRICES["FAST"], TTD_START, ttd_end()
+    )
+    assert event is True
+    assert days == 40
+    assert drop_date == pd.Timestamp("2021-02-15")
+
+
+def test_no_drop_is_censored_at_24_months():
+    """STEADY never drops: censored at the end of follow-up, day 730."""
+    event, days, drop_date = time_to_drop.drop_outcome(
+        TTD_PRICES["STEADY"], TTD_START, ttd_end()
+    )
+    assert (event, days) == (False, 730)
+    assert pd.isna(drop_date)
+
+
+def test_prices_that_stop_are_censored_at_the_last_price():
+    """STOP's prices end 2021-04-16 without a drop: censored at day
+    100, not counted as surviving to 24 months."""
+    event, days, _ = time_to_drop.drop_outcome(
+        TTD_PRICES["STOP"], TTD_START, ttd_end()
+    )
+    assert (event, days) == (False, 100)
+
+
+def ttd_frame():
+    """Return the three outcomes as an eligible-observation table:
+    FAST is Flagged (2 flags); STEADY and STOP are Clean (0 flags)."""
+    rows = []
+    for ticker, flags in [("FAST", 2), ("STEADY", 0), ("STOP", 0)]:
+        event, days, _ = time_to_drop.drop_outcome(
+            TTD_PRICES[ticker], TTD_START, ttd_end()
+        )
+        rows.append((ticker, flags, event, days))
+    frame = pd.DataFrame(
+        rows, columns=["ticker", "flags_raised", "event", "duration_days"]
+    )
+    frame["event"] = frame["event"].astype("boolean")
+    frame["tier"] = frame["flags_raised"].map(time_to_drop.tier_label)
+    frame["group"] = np.where(frame["flags_raised"] >= 1, "flagged", "clean")
+    return frame
+
+
+def test_kaplan_meier_with_censoring():
+    """All three together: on day 40, 1 of the 3 at risk drops, so the
+    share not yet dropped is 2/3. STOP leaves the count at day 100 and
+    STEADY at day 730 without dropping, so the curve stays at 2/3:
+    33.3% dropped by 3, 6, 12 and 24 months. STOP counts as "not yet
+    dropped" only for the 100 days it was watched."""
+    curve = time_to_drop.survival_curve(ttd_frame())
+    assert float(curve.evaluate(39)) == pytest.approx(1.0)
+    assert float(curve.evaluate(40)) == pytest.approx(2 / 3)
+    assert float(curve.evaluate(730)) == pytest.approx(2 / 3)
+
+
+def test_tier_summary_and_median_among_dropped():
+    """2 flags: 1 observation, dropped at day 40 -> 100% by 3 months,
+    median 40 days (only among stocks that dropped). 0 flags: 2
+    observations, both censored -> 0% dropped and no median."""
+    summary = time_to_drop.tier_summary(ttd_frame()).set_index("group")
+    assert summary.loc["2 flags", "pct_dropped_3m"] == pytest.approx(100.0)
+    assert summary.loc["2 flags", "median_days_only_among_dropped"] == 40
+    assert summary.loc["0 flags", "censored"] == 2
+    assert summary.loc["0 flags", "pct_dropped_24m"] == pytest.approx(0.0)
+    assert np.isnan(summary.loc["0 flags", "median_days_only_among_dropped"])
+
+
+def test_log_rank_by_hand():
+    """Flagged {FAST} vs Clean {STEADY, STOP}. The only drop is on day
+    40, with 1 Flagged and 2 Clean stocks at risk (3 in all):
+    expected Flagged drops E = 1 x 1/3 = 1/3, observed O = 1;
+    variance V = (1 x 2 x 1 x (3 - 1)) / (3^2 x (3 - 1)) = 2/9;
+    Z = (O - E) / sqrt(V) = (2/3) / 0.4714 = 1.414 (positive: Flagged
+    dropped earlier); two-sided p = 0.157, so it does not pass."""
+    question = time_to_drop.registered_question(ttd_frame())
+    assert question["statistic"] == pytest.approx(2**0.5, rel=1e-6)
+    assert question["p_value"] == pytest.approx(0.1573, abs=1e-4)
+    assert question["flagged_faster"] is True
+    assert question["passes"] is False
+
+
+def test_observations_keep_only_complete_scores_filed_in_time():
+    """Observation filters: all three scores, filed on or before
+    2024-06-30. cik 1 FY2023 (filed 2024-03-01) is kept; cik 2 lacks an
+    F-Score; cik 3 FY2024 was filed 2025-02-01."""
+    scores_df = pd.DataFrame(
+        {
+            "cik": [1, 2, 3],
+            "fiscal_year": [2023, 2023, 2024],
+            "flags_raised": pd.array([1, 0, 0], dtype="Int64"),
+            "m_score": [-2.0, -2.0, -2.0],
+            "z_score": [3.0, 3.0, 3.0],
+            "f_score": pd.array([7, None, 7], dtype="Int64"),
+        }
+    )
+    financials_df = pd.DataFrame(
+        {
+            "cik": [1, 2, 3],
+            "fiscal_year": [2023, 2023, 2024],
+            "filed_date": pd.to_datetime(
+                ["2024-03-01", "2024-03-01", "2025-02-01"]
+            ),
+        }
+    )
+    companies_df = pd.DataFrame(
+        {"cik": [1, 2, 3], "ticker": pd.array(["A", "B", "C"], dtype="string")}
+    )
+    obs = time_to_drop.observations(scores_df, financials_df, companies_df)
+    assert obs["cik"].tolist() == [1]
+
+
+def test_follow_observations_checks_eligibility_on_each_start():
+    """Filed Saturday 2021-01-02 -> start Monday 2021-01-04. STEADY is
+    eligible (followed to 2023-01-04, day 730); CHEAP ($4) is under the
+    $5 minimum; cik 3 has no ticker. Only eligible rows get an outcome."""
+    spy = ttd_series([(None, 400.0)])
+    prices = pd.DataFrame(
+        {
+            "SPY": spy,
+            "STEADY": TTD_PRICES["STEADY"],
+            "CHEAP": ttd_series([(None, 4.0)]),
+        }
+    )
+    obs = pd.DataFrame(
+        {
+            "cik": [1, 2, 3],
+            "fiscal_year": 2020,
+            "flags_raised": pd.array([0, 1, 0], dtype="Int64"),
+            "filed_date": pd.Timestamp("2021-01-02"),
+            "ticker": pd.array(["STEADY", "CHEAP", None], dtype="string"),
+        }
+    )
+    followed = time_to_drop.follow_observations(
+        obs, prices, pd.DatetimeIndex(TTD_DAYS)
+    ).set_index("cik")
+    assert followed.loc[1, "start"] == pd.Timestamp("2021-01-04")
+    assert followed["status"].tolist() == [
+        "eligible",
+        "under_min_price",
+        "no_ticker",
+    ]
+    assert followed.loc[1, "duration_days"] == 730
+    assert not bool(followed.loc[1, "event"])
+    assert pd.isna(followed.loc[2, "event"])
+    assert followed.loc[2, "group"] == "flagged"
