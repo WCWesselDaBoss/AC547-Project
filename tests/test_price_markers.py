@@ -139,3 +139,36 @@ def test_ticker_without_prices_returns_an_empty_result(data_dir):
     assert result.status == pm.STATUS_NO_PRICES
     assert result.ticker == "GONE"
     assert result.prices.empty and result.markers.empty
+
+
+def test_missing_prices_file_means_no_prices(data_dir):
+    """The app's test folder has no prices.parquet: status no_prices,
+    not an error."""
+    (data_dir / "prices.parquet").unlink()
+    assert pm.price_markers(data_dir, 1).status == pm.STATUS_NO_PRICES
+    assert pm.market_prices(data_dir).empty
+
+
+def test_rebase_to_100():
+    """Company 50 -> 60 (+20%) and SPY 400 -> 420 (+5%) over the dates
+    shown, which start 2024-01-09 (SPY's 2024-01-08 price is before the
+    company's first date and is dropped). Rebased: company 100 -> 120,
+    SPY 100 -> 105; a marker at 55 becomes 110."""
+    prices = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2024-01-09", "2024-01-10"]),
+            "adj_close": [50.0, 60.0],
+        }
+    )
+    market = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2024-01-08", "2024-01-09", "2024-01-10"]),
+            "adj_close": [380.0, 400.0, 420.0],
+        }
+    )
+    markers = pd.DataFrame({"fiscal_year": [2023], "adj_close": [55.0]})
+    company, spy, rebased = pm.rebase_to_100(prices, markers, market)
+    assert company["value"].tolist() == pytest.approx([100.0, 120.0])
+    assert spy["value"].tolist() == pytest.approx([100.0, 105.0])
+    assert spy["date"].iloc[0] == pd.Timestamp("2024-01-09")
+    assert rebased["value"].tolist() == pytest.approx([110.0])

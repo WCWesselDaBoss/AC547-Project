@@ -305,8 +305,10 @@ APP_DATA_SOURCE_AUTO = "auto"
 APP_DATA_SOURCE = os.environ.get("EQR_DATA_SOURCE", APP_DATA_SOURCE_AUTO)
 
 # Tables the dashboard needs, by file stem. prices and returns are left
-# out: the app does not chart prices, and returns is a stretch goal that
-# the app shows only if its file happens to be present.
+# out: the price chart (app/components/price_chart.py) is drawn only when
+# prices.parquet is present and shows a message otherwise, and returns is
+# a stretch goal that the app shows only if its file happens to be
+# present.
 APP_TABLES = (
     "companies",
     "facts_long",

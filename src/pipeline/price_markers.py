@@ -19,6 +19,8 @@ from typing import NamedTuple
 
 import pandas as pd
 
+import config
+
 MARKER_COLUMNS = [
     "fiscal_year",
     "filed_date",
@@ -103,8 +105,12 @@ def ticker_prices(prices_path, ticker):
     """Return date and adj_close for one ticker, oldest first.
 
     The filter is applied while reading, so only that ticker's rows are
-    loaded, not the whole prices file (about 9 million rows in full).
+    loaded, not the whole prices file (about 9 million rows in full). A
+    folder with no prices file (the app's test fixtures) gives an empty
+    table: prices are optional for the dashboard.
     """
+    if not Path(prices_path).exists():
+        return empty_prices()
     prices = pd.read_parquet(
         prices_path,
         columns=["ticker", "date", "adj_close"],
@@ -215,3 +221,43 @@ def price_markers(data_dir, cik):
         )
     markers, skipped = build_markers(prices, company_filings(data_dir, cik))
     return PriceMarkers(STATUS_OK, ticker, prices, markers, skipped)
+
+
+def market_prices(data_dir):
+    """Return the market benchmark's (SPY's) adjusted closes, oldest
+    first; empty if the folder has no prices."""
+    return ticker_prices(
+        Path(data_dir) / "prices.parquet", config.MARKET_BENCHMARK_TICKER
+    )
+
+
+def rebase_to_100(prices_df, markers_df, market_df):
+    """Return (company line, market line, markers) rebased to 100.
+
+    For comparing the company with SPY on one scale: each line is
+    divided by its own adjusted close on the first date shown (the
+    company's first price date) and multiplied by 100, so both start at
+    100 and 130 means "up 30% since then". The market line covers only
+    the company's date range. Marker heights are rebased with the
+    company's line so they stay on it. Each returned table has a value
+    column in place of adj_close.
+    """
+    start, end = prices_df["date"].iloc[0], prices_df["date"].iloc[-1]
+    base = prices_df["adj_close"].iloc[0]
+    company = prices_df.assign(value=prices_df["adj_close"] / base * 100)
+    in_range = market_df[
+        (market_df["date"] >= start) & (market_df["date"] <= end)
+    ]
+    market = in_range.copy()
+    if market.empty:
+        market["value"] = pd.Series([], dtype="float64")
+    else:
+        market["value"] = (
+            market["adj_close"] / market["adj_close"].iloc[0] * 100
+        )
+    markers = markers_df.assign(value=markers_df["adj_close"] / base * 100)
+    return (
+        company[["date", "value"]].reset_index(drop=True),
+        market[["date", "value"]].reset_index(drop=True),
+        markers.drop(columns="adj_close").reset_index(drop=True),
+    )
