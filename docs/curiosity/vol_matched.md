@@ -98,3 +98,124 @@ volatility bucket, Clean and Flagged side by side, for each drop size
 (`docs/curiosity/vol_buckets.png`); details in
 `data/logs/curiosity_vol_matched.csv`. Code: `src/curiosity/vol_matched.py`.
 Tests: `tests/test_curiosity.py`.
+
+## Results (run 2026-11-19)
+
+Run with `python -m src.curiosity.vol_matched`. Everything above this
+section was committed before any result was computed.
+
+**Short answer: mostly volatility, partly not.** About 70% of the raw
+Flagged-Clean gap disappears once stocks of similar volatility are
+compared, but a smaller gap remains under all three methods, and it is
+concentrated among the most volatile stocks.
+
+**Observations.** 4,784 eligible observations from test 11; 1 (Flagged)
+had fewer than 200 valid daily returns and was excluded, leaving 4,783
+(3,094 Clean, 1,689 Flagged, from 872 companies). Flagged stocks were
+more volatile: median trailing volatility 51.7% a year against 34.0% for
+Clean.
+
+**Volatility buckets** (cutoffs, annualized): 9.0%, 26.8%, 34.4%,
+44.0%, 59.0%, 241.3%. No bucket had fewer than 30 Clean or 30 Flagged
+observations, so none is "too few to compare".
+
+![Flagged vs Clean within volatility buckets](vol_buckets.png)
+
+### Method 1: within-bucket comparison
+
+Share that dropped within 24 months (Kaplan-Meier):
+
+| Bucket (volatility) | Clean / Flagged observations | 30% drop: Clean | Flagged | Gap | 50% drop: Clean | Flagged | Gap |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 (9-27%) | 812 / 145 | 24.5% | 29.0% | +4.4 pts | 4.2% | 4.8% | +0.6 pts |
+| 2 (27-34%) | 765 / 191 | 41.3% | 39.8% | -1.5 pts | 14.3% | 12.6% | -1.7 pts |
+| 3 (34-44%) | 669 / 288 | 48.0% | 50.1% | +2.1 pts | 20.8% | 23.3% | +2.5 pts |
+| 4 (44-59%) | 552 / 404 | 55.0% | 61.1% | +6.1 pts | 28.4% | 37.9% | +9.5 pts |
+| 5 (59-241%) | 296 / 661 | 63.9% | 78.2% | +14.4 pts | 39.3% | 57.5% | +18.2 pts |
+
+| Drop | Raw gap (no volatility matching) | Volatility-adjusted gap | Robustness: clipped returns |
+| --- | --- | --- | --- |
+| 30% | +17.8 pts | +5.1 pts | +4.4 pts |
+| 50% | +19.4 pts | +5.8 pts | +5.4 pts |
+
+- Matching on volatility shrinks the gap by about 70% (17.8 to 5.1
+  points for 30% drops; 19.4 to 5.8 for 50%).
+- What remains comes mostly from the two most volatile buckets. In the
+  three calmest buckets the gap is small and changes sign.
+- Caveat for bucket 5: it spans 59% to 241% volatility, and within it
+  Flagged stocks were more volatile than Clean ones (median 74.7% against
+  68.7%; in buckets 1 to 4 the medians differ by at most 1.2 points). So
+  part of bucket 5's gap is still volatility; method 2 adjusts for
+  volatility continuously and is the better guide there.
+- Robustness: clipping daily returns at the pooled 1st and 99th
+  percentiles (-8.5% and +8.7% a day) narrows the top bucket (its upper
+  cutoff falls from 241% to 98%) and lowers the adjusted gaps a little,
+  to +4.4 and +5.4 points. The conclusion is the same.
+
+### Method 2: Cox regression (Flagged and log volatility together)
+
+| Drop | Hazard ratio for Flagged | 95% interval | p-value (clustered by company) | Drops / observations |
+| --- | --- | --- | --- | --- |
+| 30% | 1.25 | 1.13 to 1.37 | 1.2 x 10^-5 | 2,356 / 4,783 |
+| 50% | 1.36 | 1.19 to 1.56 | 9.9 x 10^-6 | 1,187 / 4,783 |
+
+In plain English: among stocks with the same trailing volatility,
+flagged stocks reached a 30% drop at 1.25 times the rate of clean
+stocks, and a 50% drop at 1.36 times the rate. Volatility itself
+matters much more: each doubling of volatility multiplies the rate of a
+50% drop by about 3.2 (hazard ratio 5.35 per unit of log volatility).
+The standard errors are clustered by company, which addresses the
+repeated-company problem that made tests 11 and 12's p-values too
+optimistic. The model assumes the Flagged effect is proportional over
+the 24 months; that assumption was not tested here.
+
+### Method 3: volatility-only benchmark
+
+Actual share that dropped within 24 months against the average chance
+predicted from each stock's own volatility (zero-drift formula):
+
+| Group | Observations | Median volatility | 30% drop: actual | Predicted | Actual / predicted | 50% drop: actual | Predicted | Actual / predicted |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Clean (0 flags) | 3,094 | 34.0% | 43.0% | 45.6% | 0.94 | 18.0% | 18.6% | 0.97 |
+| Flagged (1+) | 1,689 | 51.7% | 60.7% | 59.6% | 1.02 | 37.4% | 33.9% | 1.10 |
+| 1 flag | 1,189 | 46.4% | 56.4% | 56.3% | 1.00 | 31.2% | 29.9% | 1.04 |
+| 2 flags | 420 | 63.3% | 70.7% | 66.9% | 1.06 | 51.4% | 42.8% | 1.20 |
+| 3 flags | 80 | 69.4% | 73.8% | 69.9% | 1.06 | 55.0% | 46.4% | 1.19 |
+
+- Clean stocks dropped slightly less often than their volatility
+  predicts; Flagged stocks slightly more, most clearly for 50% drops
+  with 2 or 3 flags (about 1.2 times the predicted share).
+- The volatility-only model explains most of the difference between the
+  groups by itself: it predicts 33.9% of Flagged and 18.6% of Clean
+  stocks would fall 50%, against actual 37.4% and 18.0%.
+- This model ignores drift and fat tails, so its predicted levels are
+  rough; the comparison between groups is more meaningful than the
+  levels.
+
+### What this means
+
+- The flags are partly a proxy for volatility: most of the extra
+  drop risk in tests 10 to 12 is what flagged stocks' own price swings
+  would predict.
+- They are not only a proxy: with volatility held equal, flagged stocks
+  still reached large drops 25% to 36% faster (method 2), and the excess
+  is largest for 50% drops, for 2 or 3 flags, and among the most volatile
+  stocks.
+- For the dashboard, this supports describing the flags as signalling a
+  higher risk of large drops, while adding that much of that risk also
+  shows in the stock's own volatility.
+
+### Limitations
+
+- **Survivorship.** Current tickers only, so companies that crashed and
+  delisted are mostly missing.
+- **Years already studied** in tests 1 to 12; this question was chosen
+  after seeing their results.
+- **Historical volatility is not implied volatility.** Options are priced
+  on implied volatility, which usually includes an extra charge for
+  crash protection, so even this positive result does not show that
+  buying puts on flagged stocks would profit.
+- **Model assumptions.** The buckets are coarse at the top (see bucket
+  5); the Cox model's proportional-hazards assumption was not tested;
+  the barrier formula ignores drift and fat tails.
+- **Correlation, not cause.** Not investment advice.
