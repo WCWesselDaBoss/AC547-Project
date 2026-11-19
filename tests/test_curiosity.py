@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from src.curiosity import implied_vol as iv
 from src.curiosity import vol_matched as vm
 
 
@@ -148,3 +149,227 @@ def test_cox_direction_on_made_up_data():
     assert 1.5 < result["hazard_ratio_flagged"] < 2.7
     assert result["ci_low"] > 1
     assert result["companies"] == frame["cik"].nunique()
+
+
+# ---------------------------------------------------------------------------
+# Part 2: implied volatility (src/curiosity/implied_vol.py)
+# ---------------------------------------------------------------------------
+WEEK = pd.DatetimeIndex(
+    pd.bdate_range("2024-03-01", "2024-03-15").astype("datetime64[ns]")
+)
+
+
+def test_usable_rows_drop_missing_codes():
+    """-99.99 strike, 0 premium and a blank volatility are all missing;
+    only the complete row is usable."""
+    surface = pd.DataFrame(
+        {
+            "impl_volatility": [0.4, np.nan, 0.4, 0.4],
+            "impl_strike": [50.0, 50.0, -99.99, 50.0],
+            "impl_premium": [6.0, 6.0, 6.0, 0.0],
+        }
+    )
+    assert iv.usable_rows(surface).index.tolist() == [0]
+
+
+def test_fallback_uses_two_days_earlier_never_later():
+    """Start Wednesday 2024-03-06 has no row. Monday 03-04 (2 trading
+    days earlier) and Thursday 03-07 (1 day later) both do: the earlier
+    one is used, never the later one, even though it is closer."""
+    rows = pd.DataFrame(
+        {"impl_volatility": [0.30, 0.99]},
+        index=pd.to_datetime(["2024-03-04", "2024-03-07"]),
+    )
+    row = iv.option_row(rows, WEEK, pd.Timestamp("2024-03-06"))
+    assert row.name == pd.Timestamp("2024-03-04")
+    assert row["impl_volatility"] == 0.30
+
+
+def test_fallback_gives_up_after_five_trading_days():
+    """The only row is 6 trading days before the start: no option data.
+    A row only after the start is never used either."""
+    rows = pd.DataFrame(
+        {"impl_volatility": [0.3, 0.4]},
+        index=pd.to_datetime(["2024-03-01", "2024-03-14"]),
+    )
+    assert iv.option_row(rows, WEEK, pd.Timestamp("2024-03-11")) is None
+
+
+def test_fallback_prefers_the_start_day():
+    """A usable row on the start day itself is used first."""
+    rows = pd.DataFrame(
+        {"impl_volatility": [0.3, 0.5]},
+        index=pd.to_datetime(["2024-03-05", "2024-03-06"]),
+    )
+    row = iv.option_row(rows, WEEK, pd.Timestamp("2024-03-06"))
+    assert row["impl_volatility"] == 0.5
+
+
+def test_name_check():
+    """Punctuation, case and corporate words are ignored; a name cut off
+    at 28 characters still matches by containment; unrelated names do
+    not."""
+    assert iv.clean_name("The Apple, Inc.") == "APPLE"
+    assert iv.names_match("Apple Inc.", "APPLE INC")
+    assert iv.names_match(
+        "International Business Machines Corp", "INTERNATIONAL BUSINESS MACHI"
+    )
+    assert iv.names_match("Spectrum Brands Holdings, Inc.", "SPECTRUM BRANDS")
+    assert not iv.names_match("Apple Inc.", "APPLIED MATERIALS INC")
+    assert not iv.names_match("Cencora, Inc.", "CORE SCIENTIFIC INC")
+
+
+def test_name_in_effect_on_a_date():
+    """Names effective 2010 and 2020: on 2015 the 2010 name applies; on
+    2021 the 2020 name; before 2010 there is none."""
+    names = pd.DataFrame(
+        {
+            "secid": [1, 1],
+            "effect_date": pd.to_datetime(["2010-01-01", "2020-01-01"]),
+            "issuer": ["OLD NAME CO", "NEW NAME CO"],
+        }
+    )
+    assert iv.name_on(names, 1, pd.Timestamp("2015-06-30")) == "OLD NAME CO"
+    assert iv.name_on(names, 1, pd.Timestamp("2021-06-30")) == "NEW NAME CO"
+    assert iv.name_on(names, 1, pd.Timestamp("2005-06-30")) is None
+
+
+def make_match_inputs():
+    """Ticker XYZ has two secids: 10 (named Xyzzy Corp) and 20 (named
+    Other Things Inc). Ticker ABC has one secid, 30, whose name does not
+    match. Ticker NOP is not in WRDS."""
+    obs = pd.DataFrame(
+        {
+            "cik": [1, 2, 3],
+            "fiscal_year": [2020, 2020, 2020],
+            "ticker": ["XYZ", "ABC", "NOP"],
+            "start": pd.to_datetime(["2021-03-01"] * 3),
+        }
+    )
+    sec_names = {1: "Xyzzy Corp", 2: "Abacus Robotics Inc", 3: "Nop Inc"}
+    names = pd.DataFrame(
+        {
+            "secid": [10, 20, 30],
+            "effect_date": pd.to_datetime(["2015-01-01"] * 3),
+            "issuer": ["XYZZY CORP", "OTHER THINGS INC", "ABC GOLD MINES"],
+        }
+    )
+    by_ticker = {"XYZ": [10, 20], "ABC": [30]}
+    return obs, sec_names, by_ticker, names
+
+
+def test_two_secids_resolved_by_name_and_rejections_counted():
+    """XYZ: only secid 10's name passes, so it is used. ABC's name fails
+    and goes to the review file. NOP has no WRDS ticker."""
+    obs, sec_names, by_ticker, names = make_match_inputs()
+    matches, review = iv.match_observations(
+        obs, sec_names, by_ticker, names, approved=set()
+    )
+    matches = matches.set_index("cik")
+    assert matches.loc[1, "secid"] == 10
+    assert matches.loc[2, "reject_reason"] == iv.REJECT_NAME
+    assert matches.loc[3, "reject_reason"] == iv.REJECT_NO_WRDS_TICKER
+    assert set(zip(review["cik"], review["secid"])) == {(1, 20), (2, 30)}
+
+
+def test_hand_approval_turns_a_review_pair_into_a_match():
+    """Approving (2, 30) by hand makes ABC a match; approving the second
+    XYZ secid (1, 20) makes XYZ ambiguous, so it is rejected."""
+    obs, sec_names, by_ticker, names = make_match_inputs()
+    matches, _ = iv.match_observations(
+        obs, sec_names, by_ticker, names, approved={(2, 30), (1, 20)}
+    )
+    matches = matches.set_index("cik")
+    assert matches.loc[2, "secid"] == 30
+    assert matches.loc[1, "reject_reason"] == iv.REJECT_AMBIGUOUS
+
+
+def test_review_file_keeps_earlier_approvals(tmp_path):
+    """Rewriting the review file keeps marks typed into the old copy."""
+    path = tmp_path / "name_review.csv"
+    review = pd.DataFrame(
+        {
+            "cik": [2],
+            "ticker": ["ABC"],
+            "secid": [30],
+            "sec_name": ["A"],
+            "wrds_name": ["B"],
+            "similarity": [0.1],
+        }
+    )
+    iv.write_review(review, path)
+    marked = pd.read_csv(path)
+    marked["approved"] = "yes"
+    marked.to_csv(path, index=False)
+    iv.write_review(review, path)
+    assert iv.approved_pairs(path) == {(2, 30)}
+
+
+def test_put_payoff_at_expiry():
+    """Strike 50, price 35 at expiry, premium 6: payoff 50 - 35 = 15;
+    return (15 - 6) / 6 = +150%. At a price of 55 the put expires
+    worthless: payoff 0, return -100%."""
+    assert iv.put_return_at_expiry(50.0, 35.0, 6.0) == pytest.approx(
+        (15.0, 1.5)
+    )
+    assert iv.put_return_at_expiry(50.0, 55.0, 6.0) == pytest.approx(
+        (0.0, -1.0)
+    )
+
+
+def test_exit_rule_on_a_fake_price_path():
+    """Price ratios 0.95, 0.85, 0.72, 0.70, 0.60: the first close at or
+    below 70% of the reference is position 3 (exactly 0.70). A path that
+    never gets there has no early exit (held to expiry)."""
+    assert iv.first_exit_day([0.95, 0.85, 0.72, 0.70, 0.60]) == 3
+    assert iv.first_exit_day([0.95, 0.9, 0.8, 0.71]) is None
+
+
+def test_black_scholes_put():
+    """Textbook value: price 100, strike 100, one year, 20% volatility,
+    zero rate and dividend: 100 x (2N(0.1) - 1) = 7.9656. Intrinsic
+    value (here 0) is never above it, and with no time left the value is
+    the intrinsic value."""
+    value = iv.black_scholes_put(100.0, 100.0, 1.0, 0.2)
+    assert value == pytest.approx(7.9656, abs=1e-4)
+    assert iv.black_scholes_put(80.0, 100.0, 0.0, 0.2) == 20.0
+    assert iv.black_scholes_put(80.0, 100.0, 1.0, 0.2) >= 20.0
+
+
+def test_review_helpers_flag_renames_but_approve_nothing():
+    """Company 1 was renamed (its former SEC name is the WRDS name);
+    secid 20's own history later carries company 2's SEC name; company
+    3 matches neither (a reused ticker). The helpers only add columns:
+    the approved column is untouched by them."""
+    review = pd.DataFrame(
+        {
+            "cik": [1, 2, 3],
+            "secid": [10, 20, 30],
+            "sec_name": ["Ecovyst Inc.", "Magnite, Inc.", "Everpure, Inc."],
+            "wrds_name": [
+                "PQ GROUP HOLDINGS INC",
+                "RUBICON PROJ INC",
+                "PANDORA MEDIA INC",
+            ],
+        }
+    )
+    former = {1: ["PQ Group Holdings Inc."], 2: [], 3: []}
+    names = pd.DataFrame(
+        {
+            "secid": [10, 20, 20, 30],
+            "effect_date": pd.to_datetime(
+                ["2017-01-01", "2014-01-01", "2020-07-01", "2011-01-01"]
+            ),
+            "issuer": [
+                "PQ GROUP HOLDINGS INC",
+                "RUBICON PROJ INC",
+                "MAGNITE INC",
+                "PANDORA MEDIA INC",
+            ],
+        }
+    )
+    helped = iv.add_review_helpers(review, former, names).set_index("cik")
+    assert helped["former_sec_name_matches"].tolist() == [True, False, False]
+    assert helped["wrds_history_has_sec_name"].tolist() == [False, True, False]
+    assert helped.loc[1, "sec_former_names"] == "PQ Group Holdings Inc."
+    assert "approved" not in helped.columns
