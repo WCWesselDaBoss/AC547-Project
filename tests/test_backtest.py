@@ -18,7 +18,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.scores import backtest, blowups, public_float, time_to_drop
+from src.scores import (
+    backtest,
+    blowups,
+    drop_sizes,
+    public_float,
+    time_to_drop,
+)
 
 DAYS = pd.bdate_range("2021-06-01", "2023-06-30").astype("datetime64[ns]")
 FORMATION = ["2021-06-30", "2022-06-30"]
@@ -1307,3 +1313,47 @@ def test_follow_observations_checks_eligibility_on_each_start():
     assert not bool(followed.loc[1, "event"])
     assert pd.isna(followed.loc[2, "event"])
     assert followed.loc[2, "group"] == "flagged"
+
+
+# ---------------------------------------------------------------------------
+# Test 12: drops of 10% to 90% (src/scores/drop_sizes.py)
+# ---------------------------------------------------------------------------
+def test_drop_sizes_on_the_test_11_example():
+    """FAST: 10 -> 6 (60%) on 2021-02-01, day 26 -> 5 (50%) on day 40.
+    Drops of 10% to 40% are reached on day 26 (a 40% drop needs a close
+    of 60% or less, and 6.00 is exactly 60%); 50% on day 40; 60% to 90%
+    never, so censored at day 730. STOP never drops: censored at 100 for
+    every size. With no threshold given, drop_outcome stays at 50%."""
+    price_wide = pd.DataFrame(TTD_PRICES)
+    eligible = pd.DataFrame(
+        {
+            "ticker": ["FAST", "STOP"],
+            "start": TTD_START,
+            "end": ttd_end(),
+        }
+    )
+    expected_fast = {
+        0.1: (True, 26),
+        0.2: (True, 26),
+        0.3: (True, 26),
+        0.4: (True, 26),
+        0.5: (True, 40),
+        0.6: (False, 730),
+        0.9: (False, 730),
+    }
+    for size, (event, days) in expected_fast.items():
+        frame = drop_sizes.outcomes_at(eligible, price_wide, size)
+        fast = frame.set_index("ticker").loc["FAST"]
+        stop = frame.set_index("ticker").loc["STOP"]
+        assert (bool(fast["event"]), fast["duration_days"]) == (event, days)
+        assert (bool(stop["event"]), stop["duration_days"]) == (False, 100)
+        assert frame["drop_size"].eq(size).all()
+    default = time_to_drop.drop_outcome(
+        TTD_PRICES["FAST"], TTD_START, ttd_end()
+    )
+    assert default[:2] == (True, 40)
+
+
+def test_bonferroni_bar():
+    """0.01 divided by nine drop sizes = 0.00111."""
+    assert drop_sizes.bonferroni_bar() == pytest.approx(0.01 / 9)

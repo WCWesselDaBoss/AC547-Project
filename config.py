@@ -263,6 +263,10 @@ TIME_TO_DROP_THRESHOLD = 0.5
 # (3, 6, 12 and 24 months).
 TIME_TO_DROP_HORIZON_DAYS = {3: 91, 6: 183, 12: 365, 24: 730}
 TIME_TO_DROP_PASS_P = 0.01
+# Test 12 (exploratory): test 11 repeated for these drop sizes, each
+# log-rank test judged against TIME_TO_DROP_PASS_P / the number of sizes
+# (a Bonferroni adjustment for running several tests).
+DROP_SIZES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 BACKTEST_LONG_FLAGS = 0  # flags_raised for the long leg
 BACKTEST_SHORT_FLAGS = 3  # flags_raised for the short leg
 # A score is used only if its 10-K was filed within this many months

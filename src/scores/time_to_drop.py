@@ -71,23 +71,26 @@ def follow_up_end(calendar, start):
     return calendar[calendar <= limit][-1]
 
 
-def drop_outcome(stock_prices, start, end):
+def drop_outcome(stock_prices, start, end, threshold=None):
     """Return (event, duration_days, drop_date) for one observation.
 
     stock_prices is the stock's whole adjusted-close series (date index,
     NaN on days without a price). The reference is the close on start.
+    threshold is the share of the reference that counts as the drop:
+    config.TIME_TO_DROP_THRESHOLD (0.5, a 50% drop; test 11) unless given
+    (test 12 uses 0.9 for a 10% drop down to 0.1 for a 90% drop).
     - event = True: the first day after start with a close at or below
-      50% of the reference; duration = calendar days from start to it.
+      threshold x the reference; duration = calendar days from start.
     - event = False, censored at end: no such day within follow-up.
     - event = False, censored at the last price: the prices stop before
       end (no price anywhere after the stock's last one) without a drop.
     """
+    if threshold is None:
+        threshold = config.TIME_TO_DROP_THRESHOLD
     window = stock_prices.loc[start:end].dropna()
     reference = window.iloc[0]
     after_start = window.iloc[1:]
-    hit = after_start[
-        after_start <= config.TIME_TO_DROP_THRESHOLD * reference + RATIO_SLACK
-    ]
+    hit = after_start[after_start <= threshold * reference + RATIO_SLACK]
     if not hit.empty:
         drop_date = hit.index[0]
         return True, (drop_date - start).days, drop_date
