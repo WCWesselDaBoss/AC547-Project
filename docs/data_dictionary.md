@@ -158,3 +158,20 @@ cause.
 | mkt_ret_12m | float64 | SPY return over the same dates | `returns.compute_returns` |
 | excess_ret_12m | float64 | ret_12m - mkt_ret_12m | `returns.compute_returns` |
 | has_full_price_history | bool | Stock has a price within 7 days of both window dates | `returns.compute_returns` |
+
+## case_studies.csv (data/case_studies.csv)
+
+One row per case study. Hand-curated and committed by Phase 3; every
+CIK in it is automatically included in `data/sample/`
+(`src/pipeline/sample.py`). Read by `app/case_view.py`, which checks the
+columns and types. Every row's source and note must be verified by a
+team member against the filing on sec.gov before it is committed.
+
+| Column | Type | Meaning | Source |
+| --- | --- | --- | --- |
+| cik | integer | SEC Central Index Key; must match a scored company | EDGAR |
+| name | text | Company name as SEC lists it | EDGAR |
+| event_type | text | What became public, e.g. "First public disclosure: SEC subpoena on procurement accounting" | the filing at source_url |
+| event_date | YYYY-MM-DD | Date of the FIRST public disclosure of the problem in a company filing (an investigation, a filing delay tied to an accounting review, or a non-reliance notice); not the later SEC action. A fiscal year counts as "before the event" only if its 10-K was filed before this date | the filing at source_url |
+| source_url | text | sec.gov link to the 8-K, press release exhibit or SEC order that documents the event | EDGAR |
+| note | text | What the source says, plus the later SEC action (release number, date, link, period of misconduct, penalty); only facts stated in the cited sources | SEC releases and filings |
