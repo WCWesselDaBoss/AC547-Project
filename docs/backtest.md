@@ -239,7 +239,7 @@ every registered test is reported, whatever it shows.
 | 10 | Do flagged companies blow up more often? Questions (a) and (b) below | Registered 2026-11-19 before any test-10 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | Run 2026-11-19: (a) passed (t = 6.57); (b) did not (t = 1.76) |
 | 11 | After a 10-K becomes public, how fast do stocks fall 50%, by flag count? Question (a) below | Registered 2026-11-19 before any test-11 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | Run 2026-11-19: (a) passed (log-rank p = 6.4 x 10^-56, Flagged faster) |
 | 11a | Method change: scipy instead of lifelines for test 11 (below) | Made 2026-11-19 before any test-11 result was computed, because lifelines cannot be installed with the project's pandas | Definitions unchanged |
-| 12 | Test 11 repeated for drops of 10% to 90% (below) | Registered 2026-11-19 after seeing test 11, before any test-12 result was computed | Exploratory: describes how the gap changes with drop size; to run |
+| 12 | Test 11 repeated for drops of 10% to 90% (below) | Registered 2026-11-19 after seeing test 11, before any test-12 result was computed | Run 2026-11-19 (exploratory): Flagged fell faster at every drop size, all nine log-rank p-values below the Bonferroni bar |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -829,6 +829,63 @@ with the size of the drop, and cannot confirm anything on its own.
   construction, correlation not cause, years already studied), plus:
   small drops such as 10% happen to most stocks in two years, so they
   say little about risk.
+
+### Test 12 results (exploratory)
+
+Run with `python -m src.scores.drop_sizes` (code:
+`src/scores/drop_sizes.py`, which reuses test 11's functions; tests in
+`tests/test_backtest.py`). Details: `data/logs/backtest_drop_sizes.csv`.
+The same 4,784 eligible observations as test 11. The 50% row matches
+test 11 exactly, as it must.
+
+![Drop size against the share that fell that much](screenshots/test12_drop_sizes.png)
+
+**Share that fell by each amount within 24 months** (Kaplan-Meier), with
+the Flagged-Clean gap and the log-rank test (bar: p < 0.0011):
+
+| Drop | 0 flags (Clean) | 1 flag | 2 flags | 3 flags | Flagged | Gap | Flagged / Clean | Log-rank statistic | p |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 10% | 75.5% | 80.4% | 88.8% | 91.3% | 83.0% | +7.5 pts | 1.1x | +10.60 | 3.0e-26 |
+| 20% | 57.9% | 68.6% | 80.0% | 80.0% | 72.0% | +14.1 pts | 1.2x | +12.71 | 5.2e-37 |
+| 30% | 43.0% | 56.3% | 70.8% | 73.8% | 60.7% | +17.7 pts | 1.4x | +14.00 | 1.5e-44 |
+| 40% | 28.9% | 41.9% | 62.9% | 70.0% | 48.4% | +19.5 pts | 1.7x | +14.90 | 3.1e-50 |
+| 50% | 18.0% | 31.2% | 51.5% | 55.0% | 37.3% | +19.4 pts | 2.1x | +15.75 | 6.4e-56 |
+| 60% | 10.7% | 21.7% | 39.3% | 48.8% | 27.4% | +16.7 pts | 2.6x | +15.48 | 4.5e-54 |
+| 70% | 5.0% | 14.4% | 32.7% | 41.4% | 20.2% | +15.2 pts | 4.0x | +16.74 | 6.3e-63 |
+| 80% | 2.1% | 7.2% | 21.9% | 31.2% | 12.0% | +9.9 pts | 5.7x | +14.42 | 3.6e-47 |
+| 90% | 0.6% | 2.3% | 10.7% | 16.2% | 5.0% | +4.4 pts | 8.0x | +10.05 | 9.2e-24 |
+
+The 3, 6 and 12-month percents and the median days to each drop (only
+among stocks that reached it) are in the details file and the run
+output.
+
+What this shows (exploratory):
+
+- **Flagged stocks fell faster at every drop size,** and the tiers keep
+  their order (0 < 1 < 2 flags, with 3 flags highest or tied) at every
+  size. All nine log-rank p-values are below the Bonferroni bar, but
+  with the same caveat as test 11: the observations overlap, so the
+  p-values are far too optimistic.
+- **The bigger the drop, the more the warnings matter in relative
+  terms.** A 10% fall within two years is common for everyone (75.5% of
+  Clean, 83.0% of Flagged), so the flags add little there. For a 70%
+  fall, Flagged stocks were 4 times as likely as Clean ones (20.2% vs
+  5.0%), and for a 90% fall 8 times (5.0% vs 0.6%).
+- **The absolute gap peaks at 40-50% drops** (about +19.5 points) and
+  shrinks for the largest drops only because few stocks of any kind
+  fall that far.
+- **Small groups at the extremes.** At 90%, only 19 Clean and 85 Flagged
+  observations dropped (13 of them in the 80-observation 3-flag tier),
+  so those rows rest on few cases.
+- Together with tests 10 and 11, this points the same way: the checks
+  flag the risk of a large fall, and the larger the fall, the stronger
+  the link. Because the test was chosen after test 11, treat this as a
+  pattern worth testing on new years, not a confirmed finding.
+
+Limitations: those of test 11 (survivorship, overlapping observations
+from 872 companies, weaker by construction, correlation not cause,
+years already studied), plus the small counts at 80-90% drops. This is
+an analysis for a class project, not investment advice.
 
 ## Data coverage
 
