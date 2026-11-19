@@ -236,7 +236,7 @@ every registered test is reported, whatever it shows.
 | 9 | Large companies minus red flags, tests L1 and L2 below | Registered 2026-11-19 after tests 1-8 (all years already seen), before any test-9 return was computed | Final run after data fixes 9a and 9b; no registered test passed |
 | 9a | Data fix: public-float plausibility check (below), applied to tests 7 and 9 | Found while running test 9; set from the spread of float-to-price-x-shares and float-to-assets ratios, without looking at returns | Test 7 re-run and both versions reported; the first test-9 run is discarded (below) |
 | 9b | Data fix: assets limit tightened from 1,000 to 100 times (below) | Found in the second test-9 run: SeaWorld's FY2019-22 floats, about 1,000 times too large, still passed and took 7.3% of the 2020 pool; set from the float-to-assets spread, without looking at returns | Tests 7 and 9 re-run with it; only this final run is reported |
-| 10 | Do flagged companies blow up more often? Questions (a) and (b) below | Registered 2026-11-19 before any test-10 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | To run |
+| 10 | Do flagged companies blow up more often? Questions (a) and (b) below | Registered 2026-11-19 before any test-10 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | Run 2026-11-19: (a) passed (t = 6.57); (b) did not (t = 1.76) |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -511,6 +511,121 @@ The definitions below are fixed.
     so even a pass is weaker evidence than a test on new years.
 - **Outputs:** a "Test 10 results" section here, whatever the results;
   details in `data/logs/backtest_blowups.csv`.
+
+### Test 10 results
+
+Run with `python -m src.scores.blowups` (code: `src/scores/blowups.py`;
+tests with a hand-checked example in `tests/test_backtest.py`). Details:
+`data/logs/backtest_blowups.csv` (one row per pool, window and stock)
+and `data/logs/backtest_blowup_rates.csv`. Years are formation years:
+"2019" is the window from June 2019 to June 2020.
+
+| Registered question (yearly Flagged rate - Clean rate, 12 years) | Mean | Median | Years Flagged higher | t | Passes (t >= 2.2)? |
+| --- | --- | --- | --- | --- | --- |
+| (a) Comparison group | +13.2 pts | +13.3 pts | 12 of 12 | 6.57 | **Yes** |
+| (b) The 500 largest companies | +3.8 pts | +0.8 pts | 6 of 12 (3 tied at 0, 3 lower) | 1.76 | No |
+
+**Pooled 12-year rates** (blowups / stocks with a known outcome):
+
+| Group | Comparison group | Rate | 500 largest | Rate |
+| --- | --- | --- | --- | --- |
+| Clean (0 flags) | 315 of 3,411 | 9.2% | 42 of 1,123 | 3.7% |
+| Flagged (1+ flags) | 455 of 1,896 | 24.0% | 32 of 379 | 8.4% |
+| Ratio, Flagged / Clean | | 2.6 | | 2.3 |
+| 1 flag | 252 of 1,341 | 18.8% | 25 of 329 | 7.6% |
+| 2 flags | 166 of 471 | 35.2% | 7 of 45 | 15.6% |
+| 3 flags | 37 of 84 | 44.0% | 0 of 5 | 0% |
+| Whole pool (all stocks, grouped or not) | 2,963 of 19,223 | 15.4% | 353 of 6,000 | 5.9% |
+
+**By year, comparison group** (blowups / stocks; rate):
+
+| Year | Clean | Flagged | Difference | Whole pool |
+| --- | --- | --- | --- | --- |
+| 2014 | 7 / 211 (3.3%) | 10 / 71 (14.1%) | +10.8 pts | 6.8% |
+| 2015 | 20 / 225 (8.9%) | 19 / 77 (24.7%) | +15.8 pts | 17.2% |
+| 2016 | 2 / 233 (0.9%) | 10 / 101 (9.9%) | +9.0 pts | 3.7% |
+| 2017 | 8 / 245 (3.3%) | 9 / 117 (7.7%) | +4.4 pts | 4.6% |
+| 2018 | 21 / 320 (6.6%) | 24 / 135 (17.8%) | +11.2 pts | 11.1% |
+| 2019 (March 2020 crash) | 83 / 331 (25.1%) | 55 / 147 (37.4%) | +12.3 pts | 36.5% |
+| 2020 | 2 / 297 (0.7%) | 3 / 171 (1.8%) | +1.1 pts | 2.7% |
+| 2021 | 45 / 289 (15.6%) | 92 / 218 (42.2%) | +26.6 pts | 28.7% |
+| 2022 | 25 / 307 (8.1%) | 44 / 196 (22.4%) | +14.3 pts | 14.3% |
+| 2023 | 25 / 302 (8.3%) | 77 / 251 (30.7%) | +22.4 pts | 18.1% |
+| 2024 | 47 / 331 (14.2%) | 57 / 199 (28.6%) | +14.4 pts | 19.6% |
+| 2025 | 30 / 320 (9.4%) | 55 / 213 (25.8%) | +16.4 pts | 13.4% |
+
+**By year, 500 largest companies:**
+
+| Year | Clean | Flagged | Difference | Whole pool |
+| --- | --- | --- | --- | --- |
+| 2014 | 1 / 80 (1.3%) | 0 / 19 (0%) | -1.3 pts | 2.8% |
+| 2015 | 4 / 83 (4.8%) | 1 / 22 (4.5%) | -0.3 pts | 10.4% |
+| 2016 | 0 / 89 (0%) | 0 / 26 (0%) | 0 | 0.8% |
+| 2017 | 0 / 89 (0%) | 0 / 25 (0%) | 0 | 0.8% |
+| 2018 | 2 / 107 (1.9%) | 1 / 29 (3.4%) | +1.6 pts | 4.0% |
+| 2019 (March 2020 crash) | 12 / 106 (11.3%) | 5 / 35 (14.3%) | +3.0 pts | 22.0% |
+| 2020 | 0 / 102 (0%) | 0 / 40 (0%) | 0 | 0.4% |
+| 2021 | 7 / 97 (7.2%) | 13 / 40 (32.5%) | +25.3 pts | 12.8% |
+| 2022 | 4 / 94 (4.3%) | 1 / 39 (2.6%) | -1.7 pts | 3.2% |
+| 2023 | 3 / 94 (3.2%) | 4 / 39 (10.3%) | +7.1 pts | 2.8% |
+| 2024 | 5 / 95 (5.3%) | 3 / 31 (9.7%) | +4.4 pts | 4.0% |
+| 2025 | 4 / 87 (4.6%) | 4 / 34 (11.8%) | +7.2 pts | 6.6% |
+
+What this shows:
+
+- **In the comparison group, flagged companies blew up far more often,
+  every year.** Over 12 years, 24.0% of flagged stocks fell to half
+  their price or less within a year, against 9.2% of clean ones (2.6
+  times as often), and the gap was positive in all 12 years (t = 6.57).
+  The rate rose with each added flag: 9.2% (0), 18.8% (1), 35.2% (2),
+  44.0% (3). It held in the March 2020 crash window, when every group's
+  rate jumped.
+- **Among the 500 largest companies the evidence is weak.** Flagged
+  large companies blew up 8.4% of the time against 3.7% (2.3 times), but
+  blowups are rare at this size, most years had few or none in either
+  group, and one window (2021-22, +25 points) supplies most of the gap.
+  Flagged was higher in only 6 of 12 years; the test does not pass. So
+  this test cannot rule out that the comparison-group result mainly
+  reflects smaller, more volatile companies.
+- **The checks behave like risk flags, not return predictors.** This
+  fits the earlier tests: flagged companies did not reliably earn lower
+  returns (tests 1-9), but they fell by half much more often. Large
+  falls can be offset by large rebounds in the same group (the 2020-21
+  short squeeze in test 6).
+
+Checks made after the run (not registered; they do not change the
+result):
+
+- **One-day price dips.** Yahoo's prices contain occasional one-day
+  spikes. 159 of the 2,963 comparison-group blowups rest on a single
+  day at or below 50%, split evenly between the groups (22 clean, 20
+  flagged; 117 not grouped). Counting those as non-blowups, (a) still
+  passes (+12.8 points, 12 of 12 years, t = 6.38) and (b) still does not
+  (+3.5 points, t = 1.50).
+- **Hand check.** Sarepta (SRPT), 2015 window: trade-date close $30.43,
+  low $10.74 on 2016-02-08, ratio 0.3529, as logged.
+- **No unknowns.** No stock's prices stopped mid-window, the same
+  survivorship signal as the backtest's zero delistings: companies that
+  failed have no current ticker, so they never entered the pool.
+
+Limitations:
+
+- **Survivorship.** Tickers are current ones, so companies that blew up
+  and then delisted are largely missing (there were no unknowns at all).
+  Flagged companies are probably missing more often, which would make
+  this test understate the difference.
+- **Coverage.** Only companies with all three scores are grouped: 28%
+  of comparison-group stock-years and 25% of the large pool's. Clean and
+  Flagged describe that minority, not every stock.
+- **Weaker by construction.** Flagged companies include those in the Z''
+  distress zone or with a weak F-Score, so a higher blowup rate is
+  partly what the definitions predict. Question (b) only partly controls
+  for size, and did not pass.
+- **Correlation, not cause, and years already studied.** This is test 10
+  on years seen in earlier tests, so even the passing result is
+  supporting evidence, not confirmation. It would need new years to
+  confirm.
+- This is an analysis for a class project, not investment advice.
 
 ## Data coverage
 
