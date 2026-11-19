@@ -277,9 +277,9 @@ def make_score_inputs():
     return scores_df, financials_df, companies_df
 
 
-def make_candidates():
-    """Return select_candidates() on the example, with extra stocks F
-    ($4), G ($30) and I (first trade 2021-06-21)."""
+def make_full_prices():
+    """Return the example prices plus F ($4), G ($30) and I (first
+    trade 2021-06-21)."""
     extra = [
         stock("F", [(None, 4.0)]),
         stock("G", [(None, 30.0)]),
@@ -287,7 +287,12 @@ def make_candidates():
     ]
     extra[2] = extra[2][extra[2]["date"] >= "2021-06-21"]
     prices = pd.concat([make_prices()] + extra, ignore_index=True)
-    prices = prices.astype({"ticker": "string"})
+    return prices.astype({"ticker": "string"})
+
+
+def make_candidates():
+    """Return select_candidates() on the example."""
+    prices = make_full_prices()
     calendar = backtest.trading_calendar(prices)
     periods = backtest.holding_periods(calendar, FORMATION)
     return backtest.select_candidates(
@@ -358,3 +363,62 @@ def test_all_three_scores_variant_drops_partial_longs_only():
         return picks.loc[picks["leg"] == "short", "ticker"].tolist()
 
     assert shorts(loose) == shorts(strict)
+
+
+# ---------------------------------------------------------------------------
+# Benchmark, hit rates and the full run
+# ---------------------------------------------------------------------------
+def test_hit_rates():
+    """Longs vs SPY (0% in P1, +5% in P2): A +20% beats, B 0% ties (not
+    a beat), A +10% beats, B -10% does not: 2 of 4 = 50%.
+    Shorts lagging SPY: C -20% yes, D +50% no, C -25% yes, E 0% < 5%
+    yes: 3 of 4 = 75%."""
+    price_wide, periods = setup()
+    log = backtest.position_log(price_wide, make_picks(), periods)
+    assert log["spy_return"].unique().tolist() == pytest.approx([0, 0.05])
+    long_rate, short_rate = backtest.hit_rates(log)
+    assert long_rate == pytest.approx(0.5)
+    assert short_rate == pytest.approx(0.75)
+
+
+def test_spy_benchmark():
+    """100,000 in SPY: 400 -> 420 = 105,000 (+5%) over two years; the
+    path never falls, so drawdown is 0."""
+    price_wide, periods = setup()
+    path = backtest.benchmark_path(
+        price_wide,
+        periods["start"].iloc[0],
+        periods["end"].iloc[-1],
+        100_000.0,
+    )
+    summary = backtest.summarize(path, 100_000.0)
+    assert summary["end_value"] == pytest.approx(105_000.0)
+    assert summary["total_return"] == pytest.approx(0.05)
+    assert summary["max_drawdown"] == 0.0
+
+
+def test_run_backtest_tables(monkeypatch):
+    """2 variants x 3 portfolios x 2 cost levels x 2 periods = 24 rows,
+    plus 2 SPY rows. Picks: 2021 long A, B, G and short C, D; 2022 long
+    A and short B, C, E. The stricter variant drops G (only a Z'')."""
+    monkeypatch.setattr(backtest.config, "BACKTEST_FORMATION_DATES", FORMATION)
+    tables = backtest.run_backtest(*make_score_inputs(), make_full_prices())
+    results = tables["results"]
+    assert len(results) == 26
+    assert list(results.columns) == backtest.RESULT_COLUMNS
+    strategy = results[
+        (results["portfolio"] == "strategy") & (results["cost_bps"] == 0)
+    ]
+    strategy = strategy.assign(year=strategy["formation_date"].dt.year)
+    strategy = strategy.set_index(["variant", "year"])
+    assert strategy.loc[("as_specified", 2021), "n_long"] == 3
+    assert strategy.loc[("all_three_scores", 2021), "n_long"] == 2
+    assert strategy.loc[("as_specified", 2022), "n_short"] == 3
+    spy = tables["summary"].set_index("portfolio").loc["spy"]
+    assert spy["end_value"] == pytest.approx(105_000.0)
+    # D (short, 2021) is the only delisting, in both variants.
+    positions = tables["positions"]
+    assert positions.loc[positions["delisted"], "ticker"].tolist() == [
+        "D",
+        "D",
+    ]

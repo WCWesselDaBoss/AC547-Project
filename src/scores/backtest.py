@@ -392,3 +392,221 @@ def picks_for_variant(candidates_df, variant):
         traded &= ~is_long | candidates_df["all_three_scores"]
     picks = candidates_df.loc[traded, ["formation_date", "leg", "ticker"]]
     return picks.reset_index(drop=True)
+
+
+# ---------------------------------------------------------------------------
+# Benchmark, hit rates and summary metrics
+# ---------------------------------------------------------------------------
+PORTFOLIO_WEIGHTS = {
+    # (share of equity long, share short)
+    "strategy": (0.5, 0.5),
+    "long_only": (1.0, 0.0),
+    "short_only": (0.0, 1.0),
+}
+BENCHMARK = "spy"
+
+
+def benchmark_path(price_wide, start, end, capital):
+    """Return the daily value of capital in SPY, bought at start and
+    held to end (no costs: a buy-and-hold yardstick)."""
+    spy = price_window(price_wide, start, end)[config.MARKET_BENCHMARK_TICKER]
+    return capital * spy / spy.iloc[0]
+
+
+def period_benchmark_returns(price_wide, periods_df):
+    """Return SPY's return over each holding period."""
+    spy = price_wide[config.MARKET_BENCHMARK_TICKER]
+    return (
+        spy.loc[periods_df["end"]].to_numpy()
+        / spy.loc[periods_df["start"]].to_numpy()
+        - 1
+    )
+
+
+def position_log(price_wide, picks_df, periods_df):
+    """Return one row per pick with its return and SPY's.
+
+    stock_return runs from the start price to the exit price (the last
+    price for a delisted stock, after which the money is cash), so it
+    matches how the portfolio is valued. beat_spy: a long that returned
+    more than SPY; lagged_spy: a short that returned less than SPY.
+    """
+    spy_returns = period_benchmark_returns(price_wide, periods_df)
+    frames = []
+    for period, spy_return in zip(
+        periods_df.itertuples(index=False), spy_returns
+    ):
+        chosen = picks_df[picks_df["formation_date"] == period.formation_date]
+        for leg in ("long", "short"):
+            tickers = chosen.loc[chosen["leg"] == leg, "ticker"].tolist()
+            _, positions = position_paths(
+                price_wide, tickers, period.start, period.end, 1.0
+            )
+            positions["leg"] = leg
+            positions["formation_date"] = period.formation_date
+            positions["spy_return"] = spy_return
+            frames.append(positions)
+    log = pd.concat(frames, ignore_index=True)
+    log["beat_spy"] = log["stock_return"] > log["spy_return"]
+    log["lagged_spy"] = log["stock_return"] < log["spy_return"]
+    return log
+
+
+def hit_rates(positions_df):
+    """Return (share of longs that beat SPY, share of shorts that
+    lagged SPY), as decimals over all periods."""
+    longs = positions_df[positions_df["leg"] == "long"]
+    shorts = positions_df[positions_df["leg"] == "short"]
+    return float(longs["beat_spy"].mean()), float(shorts["lagged_spy"].mean())
+
+
+def summarize(daily_values, start_capital):
+    """Return ending value, total and annualized return and max drawdown
+    for one daily value path."""
+    start, end = daily_values.index[0], daily_values.index[-1]
+    end_value = float(daily_values.iloc[-1])
+    return {
+        "start": start,
+        "end": end,
+        "end_value": end_value,
+        "total_return": total_return(start_capital, end_value),
+        "annualized_return": annualized_return(
+            start_capital, end_value, start, end
+        ),
+        "max_drawdown": max_drawdown(daily_values),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Running everything
+# ---------------------------------------------------------------------------
+RESULT_COLUMNS = [
+    "variant",
+    "portfolio",
+    "cost_bps",
+    "formation_date",
+    "start",
+    "end",
+    "start_value",
+    "end_value",
+    "period_return",
+    "spy_return",
+    "n_long",
+    "n_short",
+    "trading_cost",
+    "borrow_cost",
+]
+
+
+def run_backtest(scores_df, financials_df, companies_df, prices_df):
+    """Run every long-leg variant, portfolio and cost level, plus SPY.
+
+    Returns a dict of tables:
+    - results: one row per variant, portfolio, cost level and period
+      (RESULT_COLUMNS); SPY rows have variant and portfolio "spy";
+    - summary: one row per variant, portfolio and cost level, plus SPY,
+      with ending value, total and annualized return and max drawdown;
+    - daily: the daily value of each of those portfolios;
+    - positions: one row per variant and pick, with returns vs SPY;
+    - candidates: every long or short candidate with its status.
+    The 1% borrowing fee applies at every cost level, because a short
+    seller always pays it; cost_bps varies only the trading cost.
+    """
+    calendar = trading_calendar(prices_df)
+    periods = holding_periods(calendar, config.BACKTEST_FORMATION_DATES)
+    price_wide = price_table(prices_df, calendar)
+    candidates = select_candidates(
+        scores_df, financials_df, companies_df, price_wide, calendar, periods
+    )
+    spy_returns = period_benchmark_returns(price_wide, periods)
+    capital = config.BACKTEST_START_CAPITAL
+
+    results, summaries, dailies, position_logs = [], [], [], []
+    for variant in LONG_VARIANTS:
+        picks = picks_for_variant(candidates, variant)
+        log = position_log(price_wide, picks, periods)
+        log["variant"] = variant
+        position_logs.append(log)
+        for portfolio, weights in PORTFOLIO_WEIGHTS.items():
+            for cost_bps in config.BACKTEST_COST_BPS:
+                labels = {
+                    "variant": variant,
+                    "portfolio": portfolio,
+                    "cost_bps": cost_bps,
+                }
+                period_df, daily = run_portfolio(
+                    price_wide,
+                    picks,
+                    periods,
+                    weights,
+                    cost_bps,
+                    config.BACKTEST_BORROW_RATE,
+                    capital,
+                )
+                results.append(
+                    period_df.assign(spy_return=spy_returns, **labels)
+                )
+                summaries.append({**labels, **summarize(daily, capital)})
+                dailies.append(daily_frame(daily, labels))
+
+    spy_daily = benchmark_path(
+        price_wide, periods["start"].iloc[0], periods["end"].iloc[-1], capital
+    )
+    spy_labels = {"variant": BENCHMARK, "portfolio": BENCHMARK, "cost_bps": 0}
+    results.append(
+        benchmark_periods(periods, spy_returns, capital, spy_labels)
+    )
+    summaries.append({**spy_labels, **summarize(spy_daily, capital)})
+    dailies.append(daily_frame(spy_daily, spy_labels))
+
+    results_df = pd.concat(results, ignore_index=True)[RESULT_COLUMNS]
+    results_df = results_df.astype(
+        {"variant": "string", "portfolio": "string", "cost_bps": "int64"}
+    )
+    return {
+        "results": results_df,
+        "summary": pd.DataFrame(summaries),
+        "daily": pd.concat(dailies, ignore_index=True),
+        "positions": pd.concat(position_logs, ignore_index=True),
+        "candidates": candidates,
+    }
+
+
+def benchmark_periods(periods_df, spy_returns, capital, labels):
+    """Return SPY's period rows, compounding capital through each period."""
+    end_values = capital * np.cumprod(1 + spy_returns)
+    start_values = np.concatenate([[capital], end_values[:-1]])
+    return periods_df.assign(
+        start_value=start_values,
+        end_value=end_values,
+        period_return=spy_returns,
+        spy_return=spy_returns,
+        n_long=0,
+        n_short=0,
+        trading_cost=0.0,
+        borrow_cost=0.0,
+        **labels,
+    )
+
+
+def daily_frame(daily_values, labels):
+    """Return a daily path as rows: labels, date, value."""
+    frame = daily_values.rename("value").rename_axis("date").reset_index()
+    return frame.assign(**labels)
+
+
+def coverage_table(candidates_df, positions_df):
+    """Return counts of candidates by year, leg and status, and of picks
+    that delisted mid-period, by variant, year and leg."""
+    by_status = (
+        candidates_df.assign(year=candidates_df["formation_date"].dt.year)
+        .groupby(["year", "leg", "status"])
+        .size()
+        .unstack(fill_value=0)
+    )
+    delisted = (
+        positions_df.assign(year=positions_df["formation_date"].dt.year)
+        .groupby(["variant", "year", "leg"])["delisted"]
+        .agg(picks="size", delisted_mid_period="sum")
+    )
+    return by_status, delisted
