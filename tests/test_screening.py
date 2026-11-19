@@ -197,3 +197,9 @@ def test_reasons_that_never_blank_a_score_are_skipped():
     assert list(reasons.index) == [
         "Accounts receivable not reported (prior year)"
     ]
+
+
+def test_verdict_columns_come_before_long_text_columns():
+    """Verdicts stay visible: they precede industry and size."""
+    headings = list(screening.TABLE_COLUMNS.values())
+    assert headings.index(labels.CHECK_NAMES["f"]) < headings.index("Industry")

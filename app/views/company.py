@@ -33,6 +33,13 @@ if not choices:
 # The pickers' keys are the same session keys the screener sets, so a row
 # clicked there opens here. A stale choice (e.g. after switching data
 # sources) falls back to the first company rather than raising an error.
+# A deep link (?cik=...&year=...) picks the company-year once.
+linked_cik = data.pop_int_param("cik")
+linked_year = data.pop_int_param("year")
+if linked_cik is not None:
+    st.session_state[data.SELECTED_CIK] = linked_cik
+if linked_year is not None:
+    st.session_state[data.SELECTED_YEAR] = linked_year
 if st.session_state.get(data.SELECTED_CIK) not in choices:
     st.session_state[data.SELECTED_CIK] = next(iter(choices))
 
@@ -71,7 +78,10 @@ st.caption(
 
 # ---- 1. Verdict ------------------------------------------------------------
 cards = company_view.verdict_cards(row, cutoff)
-st.subheader(company_view.verdict_summary(row, cards))
+st.subheader(company_view.verdict_summary(row))
+unscored_text = company_view.unscored_note(cards)
+if unscored_text:
+    st.caption(unscored_text)
 for column, card in zip(st.columns(len(cards)), cards):
     column.markdown(style.verdict_card_html(*card), unsafe_allow_html=True)
 
@@ -102,7 +112,7 @@ drivers_df = company_view.driver_sentences(
 if drivers_df.empty:
     st.markdown(company_view.no_driver_message(row))
 for driver in drivers_df.itertuples():
-    st.markdown(f"**{driver.driver_rank}. {driver.explanation}**")
+    st.markdown(f"**{driver.driver_rank}.** {driver.explanation}")
     st.caption(
         f"{labels.M_INDEX_LABELS[driver.component.lower()]}: "
         f"{driver.component_value:.2f}"
@@ -146,22 +156,41 @@ trends_tab, peers_tab, components_tab, trace_tab = st.tabs(
     ]
 )
 with trends_tab:
-    st.plotly_chart(
-        charts.m_trend(history_df, fiscal_year, cutoff), width="stretch"
-    )
-    st.plotly_chart(charts.z_trend(history_df, fiscal_year), width="stretch")
-    st.plotly_chart(
-        charts.f_trend(history_df, fiscal_year, company_view.F_SCORE_MAX),
-        width="stretch",
-    )
+    # A score with no value in any year gets a sentence, not an empty
+    # chart, so a blank plot is never mistaken for a loading problem.
+    trend_charts = {
+        "m_score": charts.m_trend(history_df, fiscal_year, cutoff),
+        "z_score": charts.z_trend(history_df, fiscal_year),
+        "f_score": charts.f_trend(
+            history_df, fiscal_year, company_view.F_SCORE_MAX
+        ),
+    }
+    for score, figure in trend_charts.items():
+        if history_df[score].isna().all():
+            st.info(
+                f"{labels.COLUMN_LABELS[score]}: not available in any year, "
+                "because an input it needs was not reported.",
+                icon=":material/info:",
+            )
+        else:
+            st.plotly_chart(figure, width="stretch")
     st.caption("Gaps mean the score could not be calculated that year.")
 with peers_tab:
-    st.plotly_chart(charts.percentile_figure(row), width="stretch")
-    st.caption(
-        "Each bar is the share of other companies in the peer group with "
-        "a lower value (ties count as half). Scores that are not ranked "
-        "are left off."
-    )
+    percentile_chart = charts.percentile_figure(row)
+    if len(percentile_chart.data[0].x) == 0:
+        st.info(
+            "No peer ranks this year: the scores are blank or no other "
+            "company in the peer group has them. The sentences above "
+            "explain each one.",
+            icon=":material/info:",
+        )
+    else:
+        st.plotly_chart(percentile_chart, width="stretch")
+        st.caption(
+            "Each bar is the share of other companies in the peer group "
+            "with a lower value (ties count as half). Scores that are not "
+            "ranked are left off."
+        )
 with components_tab:
     m_column, z_column = st.columns(2)
     m_text = labels.format_number(row["m_score"])
@@ -172,9 +201,8 @@ with components_tab:
         hide_index=True,
         column_config={"Value": st.column_config.NumberColumn(format="%.3f")},
     )
-    z_column.markdown(
-        f"**Financial distress score: {labels.format_number(row['z_score'])}**"
-    )
+    z_text = labels.format_number(row["z_score"])
+    z_column.markdown(f"**Financial distress score: {z_text}**")
     z_column.dataframe(
         company_view.z_ratio_table(row),
         hide_index=True,

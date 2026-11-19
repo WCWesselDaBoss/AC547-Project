@@ -65,7 +65,7 @@ def test_grey_and_middle_are_caution_not_concern():
     row = fixture_row(101, 2023)
     cards = company_view.verdict_cards(row, DEFAULT_CUTOFF)
     assert cards[2].status == "warning"
-    assert company_view.verdict_summary(row, cards) == (
+    assert company_view.verdict_summary(row) == (
         "None of the 3 checks raised concerns."
     )
 
@@ -83,13 +83,12 @@ def test_grey_and_middle_are_caution_not_concern():
             102,
             2022,
             "1 of 3 checks raised concerns: warning signs worth "
-            "investigating. (1 check could not be scored.)",
+            "investigating.",
         ),
         (
             103,
             2023,
-            "None of the 3 checks raised concerns. (2 checks could not "
-            "be scored.)",
+            "None of the 3 checks raised concerns.",
         ),
     ],
 )
@@ -97,7 +96,7 @@ def test_verdict_summary(cik, year, expected):
     """One line that counts concerns and admits unscored checks."""
     row = fixture_row(cik, year)
     cards = company_view.verdict_cards(row, DEFAULT_CUTOFF)
-    assert company_view.verdict_summary(row, cards) == expected
+    assert company_view.verdict_summary(row) == expected
 
 
 def test_summary_never_predicts_failure():
@@ -107,7 +106,7 @@ def test_summary_never_predicts_failure():
     for cik, year in zip(scores_df["cik"], scores_df["fiscal_year"]):
         row = fixture_row(cik, year)
         cards = company_view.verdict_cards(row, DEFAULT_CUTOFF)
-        text = company_view.verdict_summary(row, cards) + " ".join(
+        text = company_view.verdict_summary(row) + " ".join(
             card.verdict + card.detail for card in cards
         )
         assert not any(word in text.lower() for word in banned)
@@ -118,7 +117,7 @@ def test_stricter_cutoff_changes_card_and_summary():
     row = fixture_row(102, 2023, cutoff=-2.70)
     cards = company_view.verdict_cards(row, -2.70)
     assert cards[0].status == "critical"
-    assert company_view.verdict_summary(row, cards).startswith("3 of 3")
+    assert company_view.verdict_summary(row).startswith("3 of 3")
 
 
 def test_driver_sentences_are_shown_exactly_as_stored():
@@ -245,3 +244,14 @@ def test_card_html_escapes_text():
     card = style.verdict_card_html("A & B", "good", "<b>x</b>", "ok")
     assert "A &amp; B" in card
     assert "&lt;b&gt;" in card
+
+
+def test_unscored_note_sits_under_the_headline():
+    """Unscored checks get their own short note, not the headline."""
+    cards = company_view.verdict_cards(fixture_row(102, 2022), -1.78)
+    assert company_view.unscored_note(cards) == (
+        "1 check could not be scored, because an input was not reported; "
+        "see the cards below."
+    )
+    full = company_view.verdict_cards(fixture_row(102, 2023), -1.78)
+    assert company_view.unscored_note(full) is None

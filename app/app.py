@@ -10,11 +10,15 @@ draws finished tables (CLAUDE.md section 3).
 import sys
 from pathlib import Path
 
-# Streamlit puts app/ on the import path, not the project root, so add
-# the root first: config and the app package are imported from there.
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+# Streamlit puts app/ at the front of the import path. The project root
+# must come BEFORE it, or "import app" finds this file (app/app.py)
+# instead of the app package. Moving the root to the front, even when it
+# is already on the path further back (as with "python -m streamlit
+# run"), keeps the import right however the app is started.
+PROJECT_ROOT = str(Path(__file__).resolve().parents[1])
+while PROJECT_ROOT in sys.path:
+    sys.path.remove(PROJECT_ROOT)
+sys.path.insert(0, PROJECT_ROOT)
 
 import streamlit as st  # noqa: E402
 
@@ -79,6 +83,10 @@ with st.sidebar:
             "the tables with python run_pipeline.py."
         )
         st.stop()
-    st.info(labels.DATA_SOURCE_NOTES[source], icon=":material/database:")
+    company_count = data.scores()["cik"].nunique()
+    st.info(
+        labels.data_source_note(source, company_count),
+        icon=":material/database:",
+    )
 
 navigation.run()

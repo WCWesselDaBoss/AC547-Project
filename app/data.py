@@ -46,6 +46,25 @@ PERSISTENT_KEYS = SCREENER_KEYS + [SELECTED_CIK, SELECTED_YEAR, CASE_INDEX]
 CASE_STUDIES_FILE = "case_studies.csv"
 
 
+def pop_int_param(name):
+    """Return URL query parameter ``name`` as an int, then remove it.
+
+    Deep links such as /company?cik=320193&year=2024 open a page on a
+    chosen company (used for demo bookmarks and the screenshot script).
+    The parameter is removed once read, so it is applied a single time
+    and never overrides what the analyst picks afterwards. A missing or
+    non-numeric value returns None and is ignored.
+    """
+    value = st.query_params.get(name)
+    if value is None:
+        return None
+    del st.query_params[name]
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+
 def keep_widget_state():
     """Stop Streamlit from forgetting widget values on other pages.
 

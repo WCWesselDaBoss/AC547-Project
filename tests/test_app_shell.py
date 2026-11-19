@@ -52,7 +52,8 @@ def test_sidebar_names_the_data_source(fixture_source):
     """The analyst can always see which data the screens are built on."""
     app_test = run_app()
     sidebar_notes = [box.value for box in app_test.sidebar.info]
-    assert labels.DATA_SOURCE_NOTES["fixture"] in sidebar_notes
+    # The count is computed from the data: 3 scored fixture companies.
+    assert labels.data_source_note("fixture", 3) in sidebar_notes
 
 
 def screener_count_text(app_test):
@@ -200,6 +201,68 @@ def test_every_real_case_runs_on_the_sample(monkeypatch):
     st.cache_data.clear()
 
 
+def test_about_page_uses_live_counts_and_sources(fixture_source):
+    """About shows counts from the data and cites the three papers."""
+    app_test = run_app("views/about.py")
+    text = " ".join(md.value for md in app_test.markdown)
+    assert "3 companies and 9 scored company-years" in text
+    assert "February 20, 2024" in text
+    for citation in ["Beneish, M. D. (1999)", "Altman, E. I. (2000)"]:
+        assert citation in text
+    assert "Piotroski, J. D. (2000)" in text
+
+
+def test_company_page_explains_missing_charts(fixture_source):
+    """Service Co has no M or F in any year: a message, not a blank chart."""
+    app_test = open_company(103, 2023)
+    infos = " ".join(box.value for box in app_test.info)
+    assert "Earnings manipulation score (Beneish M-Score): not available" in (
+        infos
+    )
+    assert "Financial strength score (Piotroski F-Score): not available" in (
+        infos
+    )
+    assert "No peer ranks this year" in infos
+
+
+def test_deep_link_opens_company_year_once(fixture_source):
+    """?cik=102&year=2022 opens Stretch Co FY2022, then leaves the URL."""
+    app_test = AppTest.from_file(APP_SCRIPT, default_timeout=30)
+    app_test.run()
+    app_test.switch_page("views/company.py")
+    app_test.query_params["cik"] = "102"
+    app_test.query_params["year"] = "2022"
+    app_test.run()
+    assert app_test.selectbox(key=data.SELECTED_CIK).value == 102
+    assert app_test.selectbox(key=data.SELECTED_YEAR).value == 2022
+    assert "cik" not in app_test.query_params
+
+
+def test_bad_deep_links_are_ignored(fixture_source):
+    """A non-numeric or unknown link falls back instead of crashing."""
+    app_test = AppTest.from_file(APP_SCRIPT, default_timeout=30)
+    app_test.run()
+    app_test.switch_page("views/company.py")
+    app_test.query_params["cik"] = "not-a-number"
+    app_test.run()
+    assert not app_test.exception
+    app_test.switch_page("views/case_studies.py")
+    app_test.query_params["case"] = "99"
+    app_test.run()
+    assert not app_test.exception
+    assert app_test.selectbox(key=data.CASE_INDEX).value == 0
+
+
+def test_deep_link_opens_a_case_by_number(fixture_source):
+    """?case=2 opens the second case (counting from 1)."""
+    app_test = AppTest.from_file(APP_SCRIPT, default_timeout=30)
+    app_test.run()
+    app_test.switch_page("views/case_studies.py")
+    app_test.query_params["case"] = "2"
+    app_test.run()
+    assert app_test.selectbox(key=data.CASE_INDEX).value == 1
+
+
 def test_bad_data_source_shows_message_not_crash(monkeypatch):
     """A typo in EQR_DATA_SOURCE gives a readable error, not a traceback."""
     monkeypatch.setattr(config, "APP_DATA_SOURCE", "smaple")
@@ -242,3 +305,10 @@ def test_format_number_handles_missing_and_infinite():
     assert labels.format_number(-1.78) == "-1.78"
     assert labels.format_number(float("nan")) == "Not available"
     assert labels.format_number(float("inf")) == "Not available"
+
+
+def test_escape_markdown_stops_dollar_math():
+    """A note with two dollar amounts must not render as a formula."""
+    assert labels.escape_markdown("$408 million and $9 million") == (
+        r"\$408 million and \$9 million"
+    )

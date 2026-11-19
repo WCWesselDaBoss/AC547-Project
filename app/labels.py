@@ -23,22 +23,40 @@ SCOPE_NOTE = (
 )
 
 # What the analyst is looking at, shown in the sidebar on every page.
+# {companies} is filled in from the loaded scores table (never typed
+# here), because the sample's size changes when case studies are added.
 DATA_SOURCE_NOTES = {
     "fixture": (
-        "**Test data.** Five made-up companies used to build and test "
-        "the app. Not for analysis."
+        "**Test data.** {companies} made-up companies used to build and "
+        "test the app. Not for analysis."
     ),
     "sample": (
-        "**Sample data.** 50 real companies. Each company is ranked only "
-        "against other sample companies, so peer rankings are "
+        "**Sample data.** {companies} real companies. Each company is "
+        "ranked only against other sample companies, so peer rankings are "
         "illustrative."
     ),
     "full": (
-        "**Full data.** US companies filing 10-Ks, fiscal years "
-        f"{config.FIRST_FISCAL_YEAR} to {config.LAST_FISCAL_YEAR}, "
+        "**Full data.** {companies:,} US companies filing 10-Ks, fiscal "
+        f"years {config.FIRST_FISCAL_YEAR} to {config.LAST_FISCAL_YEAR}, "
         "excluding banks, insurers and REITs."
     ),
 }
+
+
+def data_source_note(source, company_count):
+    """Return the sidebar note for a data source and its company count."""
+    return DATA_SOURCE_NOTES[source].format(companies=company_count)
+
+
+def escape_markdown(text):
+    """Return text safe to show with st.markdown.
+
+    Streamlit reads a pair of "$" signs as a math formula, so a note like
+    "$408 million ... $9 million" would render as garbled math. Escaping
+    each "$" shows it as a plain dollar sign.
+    """
+    return str(text).replace("$", "\\$")
+
 
 # Column -> label. The model name follows in brackets so an expert can
 # still find the familiar term.

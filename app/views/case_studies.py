@@ -40,7 +40,11 @@ cases_df = case_view.read_case_studies(raw_cases)
 
 # ---- Choose a case: a list, plus Previous / Next to walk through them ----
 case_count = len(cases_df)
-if st.session_state.get(data.CASE_INDEX, 0) >= case_count:
+# A deep link (?case=2) opens a case by its number, counting from 1.
+linked_case = data.pop_int_param("case")
+if linked_case is not None:
+    st.session_state[data.CASE_INDEX] = linked_case - 1
+if not 0 <= st.session_state.get(data.CASE_INDEX, 0) < case_count:
     st.session_state[data.CASE_INDEX] = 0
 
 
@@ -70,10 +74,13 @@ next_column.button(
 case = cases_df.loc[case_index]
 
 # ---- The event -------------------------------------------------------------
-st.subheader(case["name"])
+# Escape text from the CSV: "$408 million ... $9 million" would
+# otherwise render as a math formula.
+st.subheader(labels.escape_markdown(case["name"]))
 st.markdown(
-    f"**{case['event_type']}**, "
-    f"{company_view.long_date(case['event_date'])}  \n{case['note']}"
+    f"**{labels.escape_markdown(case['event_type'])}**, "
+    f"{company_view.long_date(case['event_date'])}  \n"
+    f"{labels.escape_markdown(case['note'])}"
 )
 st.link_button(
     "Read the disclosure on EDGAR",

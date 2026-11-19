@@ -26,12 +26,12 @@ NO_SCORE_KEY = "no_score"
 # The F-Score is nine one-point signals, so it runs from 0 to 9.
 F_SCORE_RANGE = (0, 9)
 
-# Results-table headings, in display order.
+# Results-table headings, in display order. Verdicts come right after
+# the name, so they stay visible on a laptop screen; the long industry
+# and size labels go last.
 TABLE_COLUMNS = {
     "name": "Company",
     "ticker": "Ticker",
-    INDUSTRY: "Industry",
-    SIZE_BAND: "Size",
     CONCERNS_AT_CUTOFF: "Concerns",
     M_FLAG_AT_CUTOFF: labels.CHECK_NAMES["m"],
     "m_score": "M-Score",
@@ -39,6 +39,8 @@ TABLE_COLUMNS = {
     "z_score": "Z''-Score",
     "f_band": labels.CHECK_NAMES["f"],
     "f_score": "F-Score",
+    INDUSTRY: "Industry",
+    SIZE_BAND: "Size",
 }
 
 

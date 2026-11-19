@@ -154,30 +154,42 @@ def verdict_cards(row, cutoff):
     return [m_card(row, cutoff), z_card(row), f_card(row)]
 
 
-def verdict_summary(row, cards):
+def verdict_summary(row):
     """Return the one-line answer shown above the cards.
 
-    Uses the concern count at the analyst's cutoff. It never says a
-    company will fail or is a bad investment; concerns are "warning
-    signs worth investigating" (Phase 3 brief).
+    Kept to one short line so a non-expert gets the answer at a glance;
+    unscored checks are reported by unscored_note underneath. Uses the
+    concern count at the analyst's cutoff, and never says a company will
+    fail or is a bad investment: concerns are "warning signs worth
+    investigating" (Phase 3 brief).
     """
     concerns = row[screening.CONCERNS_AT_CUTOFF]
     if labels.is_missing(concerns):
         return "None of the three checks could be scored for this year."
     concerns = int(concerns)
     if concerns == 0:
-        summary = f"None of the {CHECK_COUNT} checks raised concerns."
-    else:
-        # "1 of 3 checks", not "1 of 3 check": the noun counts the 3.
-        summary = (
-            f"{concerns} of {CHECK_COUNT} checks raised concerns: "
-            "warning signs worth investigating."
-        )
+        return f"None of the {CHECK_COUNT} checks raised concerns."
+    # "1 of 3 checks", not "1 of 3 check": the noun counts the 3.
+    return (
+        f"{concerns} of {CHECK_COUNT} checks raised concerns: warning "
+        "signs worth investigating."
+    )
+
+
+def unscored_note(cards):
+    """Return a note on checks that could not be scored, or None.
+
+    None when every check was scored, and also when none was (the
+    headline already says so).
+    """
     unscored = sum(card.status == NOT_SCORED for card in cards)
-    if unscored:
-        could = "check" if unscored == 1 else "checks"
-        summary += f" ({unscored} {could} could not be scored.)"
-    return summary
+    if unscored in (0, len(cards)):
+        return None
+    noun = "check" if unscored == 1 else "checks"
+    return (
+        f"{unscored} {noun} could not be scored, because an input was not "
+        "reported; see the cards below."
+    )
 
 
 def driver_sentences(drivers_df, cik, fiscal_year):

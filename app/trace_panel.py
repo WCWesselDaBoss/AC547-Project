@@ -10,9 +10,24 @@ import streamlit as st
 
 from app import data, trace
 
+# The EDGAR link comes right after the status, so the source of each
+# input is visible without scrolling sideways.
+COLUMN_ORDER = [
+    "Input",
+    "Fiscal year",
+    "Value used",
+    "Source",
+    "Filing",
+    "XBRL tag",
+    "Period",
+    "10-K filed",
+    "Accession",
+    "Later filings",
+]
+
 TABLE_COLUMNS = {
     "Filing": st.column_config.LinkColumn(
-        "Filing", display_text="Open 10-K on EDGAR"
+        "Filing", display_text="Open on EDGAR"
     ),
     "Input": st.column_config.TextColumn("Input", width="medium"),
     "Source": st.column_config.TextColumn("Source", width="medium"),
@@ -44,15 +59,20 @@ def render_trace(score, row, key_prefix):
 
     cik = int(row["cik"])
     fiscal_year = int(row["fiscal_year"])
-    table, notes = trace.trace_inputs(
-        part.inputs,
-        fiscal_year,
-        data.company_financials(cik),
-        data.company_facts(cik),
-    )
+    with st.spinner("Matching each input to its 10-K filing..."):
+        table, notes = trace.trace_inputs(
+            part.inputs,
+            fiscal_year,
+            data.company_financials(cik),
+            data.company_facts(cik),
+        )
     st.markdown("**Inputs, as first reported in the company's 10-K filings**")
     st.dataframe(
-        table, hide_index=True, width="stretch", column_config=TABLE_COLUMNS
+        table,
+        hide_index=True,
+        width="stretch",
+        column_config=TABLE_COLUMNS,
+        column_order=COLUMN_ORDER,
     )
     for note in notes:
         st.caption(note)
