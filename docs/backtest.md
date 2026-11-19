@@ -215,6 +215,66 @@ What this shows:
   years cover mostly survivors, in both the selections and the
   comparison group (`data/logs/backtest_universe_status.csv`).
 
+## Test register
+
+Every additional test on the same years raises the chance that a
+"winning" version is luck. This register lists every test run, in
+order, and whether it was chosen before or after seeing earlier results.
+New tests are written here and committed **before** they are run, and
+every registered test is reported, whatever it shows.
+
+| # | Test | Chosen | Status |
+| --- | --- | --- | --- |
+| 1 | Long-short, 0 flags vs 3 flags, 2021-2025, as specified | Before any result | Reported above |
+| 2 | Long leg requiring all three scores | Before any result (planned with test 1) | Reported above |
+| 3 | Long only, best scores | After seeing test 1 | Reported above; exploratory |
+| 4 | Selling a long on a flag | After seeing test 1 | Reported above; exploratory |
+| 5 | Formation from 2013 (scratch run) | After seeing tests 1-4 | Dropped: FY2012 has no F-Score, so 2013 could not be tested; replaced by 2014 |
+| 6 | 2014-2025 window and the equal-weighted comparison group | After seeing tests 1-4 | Reported above |
+| 7 | Value tilt, tests V1 to V3 below | Registered 2026-11-19, before any value-portfolio return was computed | To run |
+
+Tests 3, 4 and 6 were chosen after seeing results, so they are
+exploratory: they suggest ideas but cannot confirm them.
+
+### Test 7: value tilt (registered before running)
+
+Background: Piotroski (2000) applied the F-Score to high book-to-market
+("value") companies and reported its strongest results there. Our
+portfolios ignore price, so this tests whether the checks add more
+within value stocks. Verify the paper's details against the original
+before citing them.
+
+- **Value measure.** Book-to-market = `stockholders_equity` from the
+  10-K behind the company's latest score (the `financials_annual` row)
+  divided by that same 10-K's cover-page public float
+  (`dei:EntityPublicFloat`: the market value of shares held by
+  non-insiders on the last day of the second fiscal quarter). The float
+  is read from `data/raw/companyfacts.zip` and matched by accession
+  number, so it is known when the 10-K is filed and traces to the
+  filing. Adjusted prices are not used, because they are scaled for
+  later splits and dividends and would use future information.
+  Companies with book equity of zero or less, or no public float in
+  that 10-K, get no value rank and are counted.
+- **Value group.** On each formation date, the fifth (quintile) of the
+  comparison group with the highest book-to-market, among companies
+  that have one.
+- **Portfolios** (long only, equal-weighted, held to the next June 30,
+  20 bps, same eligibility rules):
+  - V1 `value`: every company in the value group (the control);
+  - V2 `value_strong_f`: value group and F-Score strong (7 to 9; the
+    team's band, not Piotroski's 8 to 9, to avoid tuning a cutoff);
+  - V3 `value_best`: value group and best scores (M-Score not flagged,
+    Z'' safe, F-Score strong).
+- **Questions and pass mark.** (a) Does V2 beat V1? This is Piotroski's
+  question: does a strong F-Score pick better value stocks? (b) Do V2
+  and V3 beat the comparison group and SPY? Evidence window: 2014-2025
+  (12 years); 2021-2025 is reported but not used as evidence. A result
+  counts as evidence only if the yearly-difference t-statistic is at
+  least 2.2.
+- **No tuning afterwards.** The quintile, the F band, the value measure
+  and the window are fixed here. Any change after seeing results must be
+  added to this register as a new, exploratory test.
+
 ## Data coverage
 
 Candidates on each formation date and why they were not traded. Counts
