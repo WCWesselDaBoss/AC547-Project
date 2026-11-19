@@ -17,9 +17,40 @@ import streamlit as st
 import config
 
 # Session-state keys that carry the company chosen on one page (screener,
-# case studies) to the company detail page.
+# case studies) to the company detail page. They are also the keys of the
+# company page's own pickers, so choosing there updates them directly.
 SELECTED_CIK = "selected_cik"
 SELECTED_YEAR = "selected_fiscal_year"
+
+# Screener widget keys. The company page reads SCREENER_CUTOFF so its
+# M-Score card uses the same cutoff the analyst chose in the screener.
+SCREENER_CUTOFF = "screener_cutoff"
+SCREENER_KEYS = [
+    "screener_year",
+    "screener_industries",
+    "screener_sizes",
+    SCREENER_CUTOFF,
+    "screener_zones",
+    "screener_f_range",
+]
+
+# Every widget value that must survive moving between pages (see
+# keep_widget_state).
+PERSISTENT_KEYS = SCREENER_KEYS + [SELECTED_CIK, SELECTED_YEAR]
+
+
+def keep_widget_state():
+    """Stop Streamlit from forgetting widget values on other pages.
+
+    Streamlit deletes a widget's value at the end of any run in which
+    that widget is not drawn, so leaving the screener would reset its
+    filters. Re-saving each value as plain session state at the start of
+    every run (app/app.py calls this) keeps it. This is the workaround
+    Streamlit's documentation gives for multipage apps.
+    """
+    for key in PERSISTENT_KEYS:
+        if key in st.session_state:
+            st.session_state[key] = st.session_state[key]
 
 
 def resolve_data_source():
@@ -85,6 +116,15 @@ def financials_size():
     count. Reading the whole table would load data the app never shows.
     """
     columns = ("cik", "fiscal_year", "total_assets", "passes_size_floor")
+    return load_table(resolve_data_source()[1], "financials_annual", columns)
+
+
+def financials_filings():
+    """Return each company-year's period end, 10-K filing date and accession.
+
+    The company page header says which 10-K a year's numbers come from.
+    """
+    columns = ("cik", "fiscal_year", "period_end", "filed_date", "accession")
     return load_table(resolve_data_source()[1], "financials_annual", columns)
 
 

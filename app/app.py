@@ -26,6 +26,8 @@ st.set_page_config(
     layout="wide",
 )
 style.apply_style()
+# Before any page draws, so filters survive a trip between pages.
+data.keep_widget_state()
 
 # Pages are grouped by what the analyst is doing: analyzing companies, or
 # learning how the tool works and where it has been right or wrong.

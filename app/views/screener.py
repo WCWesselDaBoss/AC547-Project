@@ -11,21 +11,6 @@ import streamlit as st
 import config
 from app import data, labels, screening
 
-# Widget keys. Streamlit forgets a page's widget values when the analyst
-# moves to another page; re-saving them on each run keeps the filters in
-# place after a trip to the company page and back.
-FILTER_KEYS = [
-    "screener_year",
-    "screener_industries",
-    "screener_sizes",
-    "screener_cutoff",
-    "screener_zones",
-    "screener_f_range",
-]
-for key in FILTER_KEYS:
-    if key in st.session_state:
-        st.session_state[key] = st.session_state[key]
-
 st.title("Screener")
 st.markdown(
     "Find companies whose reported earnings show warning signs worth "
@@ -73,7 +58,7 @@ cutoff = cutoff_column.slider(
     value=config.BENEISH_FLAG_CUTOFF,
     step=config.APP_M_CUTOFF_STEP,
     format="%.2f",
-    key="screener_cutoff",
+    key=data.SCREENER_CUTOFF,
     help=(
         f"Beneish's published cutoff is {config.BENEISH_FLAG_CUTOFF}. "
         f"Many practitioners use {config.BENEISH_ALTERNATE_CUTOFF}, "

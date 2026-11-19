@@ -9,6 +9,8 @@ guidelines, not picked by eye:
   color when filters change.
 """
 
+import html
+
 import plotly.graph_objects as go
 import plotly.io as pio
 import streamlit as st
@@ -113,3 +115,20 @@ def register_plotly_template():
         }
     )
     pio.templates.default = f"plotly_white+{PLOTLY_TEMPLATE_NAME}"
+
+
+def verdict_card_html(title, status, verdict, detail):
+    """Return the HTML for one verdict card.
+
+    status is a STATUS_COLORS key; it colors only the card's left edge.
+    All text is escaped, so a company or label containing "&" or "<"
+    cannot break the page.
+    """
+    accent = STATUS_COLORS[status]
+    return (
+        f'<div class="radar-card" style="--card-accent: {accent}">'
+        f'<div class="card-title">{html.escape(title)}</div>'
+        f'<div class="card-verdict">{html.escape(verdict)}</div>'
+        f'<div class="card-detail">{html.escape(detail)}</div>'
+        "</div>"
+    )

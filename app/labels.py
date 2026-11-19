@@ -106,6 +106,44 @@ CHECK_NAMES = {
 }
 
 # ---------------------------------------------------------------------------
+# Score components (expert detail on the company page)
+# ---------------------------------------------------------------------------
+# The eight Beneish indexes. 1.00 means "no change from last year".
+M_INDEX_LABELS = {
+    "dsri": "Receivables growing faster than sales (DSRI)",
+    "gmi": "Gross margin shrinking (GMI)",
+    "aqi": "More costs being capitalized (AQI)",
+    "sgi": "Sales growth (SGI)",
+    "depi": "Depreciation slowing (DEPI)",
+    "sgai": "Overhead growing faster than sales (SGAI)",
+    "tata": "Profit not backed by cash (TATA)",
+    "lvgi": "Leverage increasing (LVGI)",
+}
+
+# The four Altman Z'' ratios (CLAUDE.md section 5).
+Z_RATIO_LABELS = {
+    "z_x1": "Working capital / total assets (X1)",
+    "z_x2": "Retained earnings / total assets (X2)",
+    "z_x3": "Operating income / total assets (X3)",
+    "z_x4": "Book equity / total liabilities (X4)",
+}
+
+# The nine Piotroski signals, phrased as the yes/no question each asks.
+F_SIGNAL_LABELS = {
+    "f_roa_positive": "1. Profitable (return on assets above zero)?",
+    "f_cfo_positive": "2. Operating cash flow above zero?",
+    "f_roa_improved": "3. Return on assets higher than last year?",
+    "f_cfo_exceeds_roa": "4. Cash flow return above profit return?",
+    "f_leverage_down": "5. Long-term debt lower relative to assets?",
+    "f_current_ratio_up": "6. Current ratio higher than last year?",
+    "f_no_new_shares": "7. No new shares issued?",
+    "f_gross_margin_up": "8. Gross margin higher than last year?",
+    "f_asset_turnover_up": "9. Asset turnover higher than last year?",
+}
+SIGNAL_RESULT_LABELS = {True: "✅ Yes (1 point)", False: "❌ No (0 points)"}
+SIGNAL_UNDETERMINED = "⚪ Cannot tell (input missing)"
+
+# ---------------------------------------------------------------------------
 # Why companies or scores are missing
 # ---------------------------------------------------------------------------
 # Keys are the exclusion_reason codes written by src/pipeline/companies.py.

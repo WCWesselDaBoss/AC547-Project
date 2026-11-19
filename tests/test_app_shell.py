@@ -91,6 +91,51 @@ def test_screener_empty_filter_shows_message(fixture_source):
     assert not app_test.dataframe
 
 
+def test_filters_survive_a_trip_to_another_page(fixture_source):
+    """Leaving the screener and coming back keeps the analyst's filters."""
+    app_test = run_app()
+    app_test.slider(key=data.SCREENER_CUTOFF).set_value(-2.70).run()
+    app_test.switch_page("views/about.py").run()
+    app_test.switch_page("views/screener.py").run()
+    assert app_test.slider(key=data.SCREENER_CUTOFF).value == -2.70
+
+
+def test_company_page_opens_on_screener_choice(fixture_source):
+    """A company chosen in the screener opens with its verdict."""
+    app_test = AppTest.from_file(APP_SCRIPT, default_timeout=30)
+    app_test.session_state[data.SELECTED_CIK] = 102
+    app_test.session_state[data.SELECTED_YEAR] = 2023
+    app_test.run()
+    app_test.switch_page("views/company.py").run()
+    assert not app_test.exception
+    assert app_test.selectbox(key=data.SELECTED_CIK).value == 102
+    subheaders = [header.value for header in app_test.subheader]
+    assert subheaders[0].startswith("2 of 3 checks raised concerns")
+    assert labels.SCOPE_NOTE in [caption.value for caption in app_test.caption]
+
+
+def test_company_page_uses_screener_cutoff(fixture_source):
+    """The card agrees with the screener when the cutoff is moved."""
+    app_test = run_app()
+    app_test.slider(key=data.SCREENER_CUTOFF).set_value(-2.70).run()
+    app_test.session_state[data.SELECTED_CIK] = 102
+    app_test.session_state[data.SELECTED_YEAR] = 2023
+    app_test.switch_page("views/company.py").run()
+    assert app_test.subheader[0].value.startswith("3 of 3")
+
+
+def test_company_page_runs_for_every_company_year(fixture_source):
+    """No company-year in the fixture crashes the page."""
+    scores_df = pd.read_parquet(config.APP_FIXTURE_DIR / "scores.parquet")
+    for cik, year in zip(scores_df["cik"], scores_df["fiscal_year"]):
+        app_test = AppTest.from_file(APP_SCRIPT, default_timeout=30)
+        app_test.session_state[data.SELECTED_CIK] = int(cik)
+        app_test.session_state[data.SELECTED_YEAR] = int(year)
+        app_test.run()
+        app_test.switch_page("views/company.py").run()
+        assert not app_test.exception, (cik, year)
+
+
 def test_bad_data_source_shows_message_not_crash(monkeypatch):
     """A typo in EQR_DATA_SOURCE gives a readable error, not a traceback."""
     monkeypatch.setattr(config, "APP_DATA_SOURCE", "smaple")
