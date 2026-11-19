@@ -12,6 +12,10 @@ Strategy (dollar neutral, stocks only):
 - A stock whose prices stop mid-period (delisted) is sold or covered at
   its last available price; the cash then earns nothing. No price is
   ever invented.
+- Comparison group: an equal-weighted portfolio of every eligible
+  scored company, whatever its flags, under the same rules. Beating it
+  means the checks picked better stocks than the pool they came from;
+  beating SPY alone could just reflect company size.
 - Long-only variants: the long leg alone, optionally restricted to the
   companies whose three checks are all at their best (best_scores), and
   optionally sold as soon as a newer 10-K raises any warning
@@ -643,6 +647,7 @@ def summarize(daily_values, start_capital):
 # Running everything
 # ---------------------------------------------------------------------------
 RESULT_COLUMNS = [
+    "window",
     "variant",
     "portfolio",
     "cost_bps",
@@ -662,8 +667,57 @@ RESULT_COLUMNS = [
 ]
 
 
-def run_backtest(scores_df, financials_df, companies_df, prices_df):
-    """Run every long-leg variant, portfolio and cost level, plus SPY.
+UNIVERSE = "universe"
+UNIVERSE_PORTFOLIO = "equal_weight"
+
+
+def universe_picks(
+    scores_df, financials_df, companies_df, price_wide, calendar, periods_df
+):
+    """Return (picks, status counts) for the equal-weighted comparison
+    group: every company whose latest score is usable on the trade date
+    (not stale) and that passes the same price checks, whatever its
+    flags (including companies with no flag count)."""
+    tickers = companies_df[["cik", "ticker"]]
+    picks, counts = [], []
+    for period in periods_df.itertuples(index=False):
+        latest = latest_scores(scores_df, financials_df, period.start)
+        latest = latest.merge(tickers, on="cik", how="left")
+        status = price_status(
+            latest["ticker"], price_wide, calendar, period.start
+        )
+        status[latest["is_stale"].to_numpy()] = "stale_score"
+        eligible = latest[(status == STATUS_ELIGIBLE).to_numpy()]
+        picks.append(
+            pd.DataFrame(
+                {
+                    "formation_date": period.formation_date,
+                    "leg": "long",
+                    "cik": eligible["cik"].to_numpy(),
+                    "ticker": eligible["ticker"].to_numpy(),
+                }
+            )
+        )
+        counts.append(
+            status.value_counts()
+            .rename_axis("status")
+            .reset_index(name="companies")
+            .assign(year=period.formation_date.year)
+        )
+    return (
+        pd.concat(picks, ignore_index=True),
+        pd.concat(counts, ignore_index=True)[["year", "status", "companies"]],
+    )
+
+
+def run_backtest(
+    scores_df, financials_df, companies_df, prices_df, formation_dates=None
+):
+    """Run every long-leg variant, portfolio and cost level, plus SPY
+    and the equal-weighted comparison group.
+
+    formation_dates defaults to config.BACKTEST_FORMATION_DATES. Every
+    table gets a window column ("<first year>_<last year>").
 
     Returns a dict of tables:
     - results: one row per variant, portfolio, cost level and period
@@ -673,12 +727,16 @@ def run_backtest(scores_df, financials_df, companies_df, prices_df):
     - daily: the daily value of each of those portfolios;
     - positions: one row per variant, rule (hold or sell_on_flag) and
       pick, with returns vs SPY (sell_on_flag rows are longs only);
-    - candidates: every long or short candidate with its status.
-    The 1% borrowing fee applies at every cost level, because a short
+    - candidates: every long or short candidate with its status;
+    - universe_status: comparison-group companies by year and status.
+    The comparison group has variant "universe" and portfolio
+    "equal_weight": long only, no borrowing fee. The 1% borrowing fee applies at every cost level, because a short
     seller always pays it; cost_bps varies only the trading cost.
     """
+    dates = formation_dates or config.BACKTEST_FORMATION_DATES
+    window = f"{dates[0][:4]}_{dates[-1][:4]}"
     calendar = trading_calendar(prices_df)
-    periods = holding_periods(calendar, config.BACKTEST_FORMATION_DATES)
+    periods = holding_periods(calendar, dates)
     price_wide = price_table(prices_df, calendar)
     candidates = select_candidates(
         scores_df, financials_df, companies_df, price_wide, calendar, periods
@@ -725,6 +783,22 @@ def run_backtest(scores_df, financials_df, companies_df, prices_df):
                 summaries.append({**labels, **summarize(daily, capital)})
                 dailies.append(daily_frame(daily, labels))
 
+    universe, universe_status = universe_picks(
+        scores_df, financials_df, companies_df, price_wide, calendar, periods
+    )
+    for cost_bps in config.BACKTEST_COST_BPS:
+        labels = {
+            "variant": UNIVERSE,
+            "portfolio": UNIVERSE_PORTFOLIO,
+            "cost_bps": cost_bps,
+        }
+        period_df, daily = run_portfolio(
+            price_wide, universe, periods, (1.0, 0.0), cost_bps, 0.0, capital
+        )
+        results.append(period_df.assign(spy_return=spy_returns, **labels))
+        summaries.append({**labels, **summarize(daily, capital)})
+        dailies.append(daily_frame(daily, labels))
+
     spy_daily = benchmark_path(
         price_wide, periods["start"].iloc[0], periods["end"].iloc[-1], capital
     )
@@ -735,22 +809,31 @@ def run_backtest(scores_df, financials_df, companies_df, prices_df):
     summaries.append({**spy_labels, **summarize(spy_daily, capital)})
     dailies.append(daily_frame(spy_daily, spy_labels))
 
-    results_df = pd.concat(results, ignore_index=True)[RESULT_COLUMNS]
-    results_df = results_df.astype(
+    results_df = pd.concat(results, ignore_index=True).assign(window=window)
+    results_df = results_df[RESULT_COLUMNS].astype(
         {
+            "window": "string",
             "variant": "string",
             "portfolio": "string",
             "cost_bps": "int64",
             "wiped_out": "bool",
         }
     )
-    return {
-        "results": results_df,
+    tables = {
         "summary": pd.DataFrame(summaries),
         "daily": pd.concat(dailies, ignore_index=True),
         "positions": pd.concat(position_logs, ignore_index=True),
         "candidates": candidates,
+        "universe_status": universe_status,
     }
+    # The window goes first in every table, as in results.
+    tables = {
+        name: frame.assign(window=window)[
+            ["window"] + [c for c in frame.columns if c != "window"]
+        ]
+        for name, frame in tables.items()
+    }
+    return {"results": results_df, **tables}
 
 
 def benchmark_periods(periods_df, spy_returns, capital, labels):
@@ -778,18 +861,70 @@ def daily_frame(daily_values, labels):
     return frame.assign(**labels)
 
 
+def t_statistic(differences):
+    """Return mean / (standard deviation / sqrt(n)) of yearly
+    differences: about 2.2 or more (12 years) is needed before a
+    difference is unlikely to be chance. NaN with fewer than 2 years or
+    no variation."""
+    values = pd.Series(differences).dropna()
+    spread = values.std(ddof=1)
+    # A spread this small is floating-point rounding, not variation; it
+    # would give a meaningless, enormous t.
+    if len(values) < 2 or not spread > 1e-12:
+        return np.nan
+    return float(values.mean() / (spread / np.sqrt(len(values))))
+
+
+def comparison_table(results_df):
+    """Return each portfolio's yearly returns compared with the
+    equal-weighted comparison group (same window and cost level) and
+    with SPY.
+
+    One row per window, variant, portfolio and cost level: years
+    compared, mean and median yearly difference, years ahead and the
+    t-statistic. Years after a wipe-out (period_return NaN) are left out.
+    """
+    is_universe = results_df["variant"] == UNIVERSE
+    is_spy = results_df["variant"] == BENCHMARK
+    keys = ["window", "cost_bps", "formation_date"]
+    universe = results_df.loc[is_universe, keys + ["period_return"]]
+    universe = universe.rename(columns={"period_return": "universe_return"})
+    tested = results_df[~is_universe & ~is_spy].merge(universe, on=keys)
+    rows = []
+    group_keys = ["window", "variant", "portfolio", "cost_bps"]
+    for labels, group in tested.groupby(group_keys, sort=False):
+        valid = group.dropna(subset=["period_return"])
+        vs_universe = valid["period_return"] - valid["universe_return"]
+        vs_spy = valid["period_return"] - valid["spy_return"]
+        rows.append(
+            {
+                **dict(zip(group_keys, labels)),
+                "years": len(valid),
+                "mean_vs_universe": vs_universe.mean(),
+                "median_vs_universe": vs_universe.median(),
+                "years_ahead_of_universe": int((vs_universe > 0).sum()),
+                "t_vs_universe": t_statistic(vs_universe),
+                "mean_vs_spy": vs_spy.mean(),
+                "years_ahead_of_spy": int((vs_spy > 0).sum()),
+                "t_vs_spy": t_statistic(vs_spy),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def coverage_table(candidates_df, positions_df):
-    """Return counts of candidates by year, leg and status, and of picks
-    that delisted mid-period, by variant, year and leg."""
+    """Return counts of candidates by window, year, leg and status, and
+    of picks that delisted mid-period, by window, variant, rule, year and
+    leg."""
     by_status = (
         candidates_df.assign(year=candidates_df["formation_date"].dt.year)
-        .groupby(["year", "leg", "status"])
+        .groupby(["window", "year", "leg", "status"])
         .size()
         .unstack(fill_value=0)
     )
     delisted = (
         positions_df.assign(year=positions_df["formation_date"].dt.year)
-        .groupby(["variant", "rule", "year", "leg"])
+        .groupby(["window", "variant", "rule", "year", "leg"])
         .agg(
             picks=("delisted", "size"),
             delisted_mid_period=("delisted", "sum"),
@@ -804,8 +939,10 @@ def hit_rate_table(positions_df):
     variant and rule: picks, share of longs that beat SPY, share of
     shorts that lagged SPY (NaN when a rule has no shorts)."""
     rows = []
-    groups_by_rule = positions_df.groupby(["variant", "rule"], sort=False)
-    for (variant, rule), picks in groups_by_rule:
+    keys = ["window", "variant", "rule"]
+    for (window, variant, rule), picks in positions_df.groupby(
+        keys, sort=False
+    ):
         years = picks["formation_date"].dt.year
         groups = [
             (str(year), picks[years == year])
@@ -815,6 +952,7 @@ def hit_rate_table(positions_df):
             long_rate, short_rate = hit_rates(group)
             rows.append(
                 {
+                    "window": window,
                     "variant": variant,
                     "rule": rule,
                     "year": label,
@@ -836,11 +974,13 @@ def write_outputs(tables):
     )
     logs = {
         "summary": tables["summary"],
+        "comparison": comparison_table(tables["results"]),
         "hit_rates": hit_rate_table(tables["positions"]),
         "coverage_status": by_status.reset_index(),
         "coverage_delisted": delisted.reset_index(),
         "positions": tables["positions"],
         "candidates": tables["candidates"],
+        "universe_status": tables["universe_status"],
         "daily": tables["daily"],
     }
     config.LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -852,26 +992,41 @@ def write_outputs(tables):
 
 
 def main():
-    """Run the backtest on data/processed/ and write the outputs.
+    """Run every window in config.BACKTEST_WINDOWS on data/processed/
+    and write the outputs (one results file; a window column tells the
+    runs apart).
 
     There is no --sample option: 50 sample companies give almost no
     3-flag shorts, so a sample backtest would mean nothing.
     """
-    tables = run_backtest(
+    inputs = [
         pd.read_parquet(config.SCORES_PATH),
         pd.read_parquet(config.FINANCIALS_PATH),
         pd.read_parquet(config.COMPANIES_PATH),
         pd.read_parquet(config.PRICES_PATH),
-    )
+    ]
+    runs = [
+        run_backtest(*inputs, formation_dates=dates)
+        for dates in config.BACKTEST_WINDOWS.values()
+    ]
+    tables = {
+        name: pd.concat([run[name] for run in runs], ignore_index=True)
+        for name in runs[0]
+    }
     paths = write_outputs(tables)
     summary = tables["summary"].drop(columns=["start"])
     summary["end"] = summary["end"].dt.date  # round() skips dates
     print(summary.round(4).to_string(index=False))
-    print()
-    print(pd.read_csv(paths["hit_rates"]).round(3).to_string(index=False))
+    print("\nYearly returns compared with the comparison group and SPY:")
+    comparison = pd.read_csv(paths["comparison"])
+    print(
+        comparison[comparison["cost_bps"] == 20]
+        .round(3)
+        .to_string(index=False)
+    )
     print(
         "\nCaution: companies that delisted have no current ticker and are"
-        " left out\n(survivorship and look-ahead bias); 5 periods and 7-11"
+        " left out\n(survivorship and look-ahead bias); few periods and 3-12"
         " shorts a year are a\nsmall sample; correlation, not cause. Not"
         " investment advice."
     )

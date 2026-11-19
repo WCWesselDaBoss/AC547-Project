@@ -6,8 +6,9 @@ lined up with later stock returns over 2021 to 2026. It does not show
 that the flags cause returns, and its biases (below) are large enough
 that the results should not be used to trade.
 
-Reproduce: `python -m src.scores.backtest` (about 20 seconds; reads
-`data/processed/`). Code: `src/scores/backtest.py`; tests with a
+Reproduce: `python -m src.scores.backtest` (about a minute; reads
+`data/processed/` and runs both windows in `config.BACKTEST_WINDOWS`,
+2021-2025 as specified and 2014-2025). Code: `src/scores/backtest.py`; tests with a
 hand-checked example: `tests/test_backtest.py`; settings:
 `config.py` ("Long-short backtest"). Results:
 `data/processed/backtest_results.parquet` (columns in
@@ -154,6 +155,65 @@ trading days, 10 under $5 and 1 with no prices
 - The best-scores strategy (best longs, 3-flag shorts) earned 16.2% a
   year, the highest of the long-short versions, but its edge over SPY
   still comes mainly from the short leg and its biases.
+
+## 12 years and a fairer comparison (2014-2025)
+
+Added 2026-11-19. Five periods cannot separate skill from luck, and SPY
+is a large-company index while every portfolio here weights companies
+equally, so beating or trailing SPY partly measures company size. Two
+changes address this:
+
+- **Window `2014_2025`:** the same rules on every June 30 from 2014 to
+  2025, 12 periods. 2013 is left out because FY2012 has no F-Score (it
+  needs a FY2010 row, which the pipeline does not keep), so a June 2013
+  portfolio could hold no best-score or 3-flag companies.
+- **Comparison group (`universe`, `equal_weight`):** every company whose
+  latest score is usable on the trade date and that passes the same
+  price checks, whatever its flags, equal-weighted and rebuilt each June
+  30 (1,177 to 1,992 companies a year). A selection that beats this
+  group picked better stocks than the pool it came from.
+
+`data/logs/backtest_comparison.csv` compares each portfolio's yearly
+returns with the group and with SPY. The t-statistic is the mean yearly
+difference divided by its standard error; with 12 years it needs to be
+about 2.2 or more before a difference is unlikely to be chance (about
+2.8 with 5 years).
+
+| Portfolio, 2014-06-30 to 2026-11-10, 20 bps | Per year | Worst drop | $100,000 becomes | Mean yearly edge over the group | Years ahead of the group | t |
+| --- | --- | --- | --- | --- | --- | --- |
+| SPY | 13.3% | -33.7% | $469,770 | | | |
+| Best scores, long only, held | 11.6% | -38.3% | $388,382 | +2.1 pts | 8 of 12 | 1.0 |
+| All three scores, long only | 11.3% | -38.2% | $374,881 | +1.9 pts | 8 of 12 | 1.8 |
+| Best scores, long only, sold on a flag | 11.0% | -35.8% | $362,308 | +1.3 pts | 8 of 12 | 0.5 |
+| 0 flags, long only | 9.3% | -40.0% | $299,249 | 0.0 pts | 8 of 12 | 0.0 |
+| **Comparison group** | 9.0% | -40.4% | $291,789 | | | |
+| Long-short strategy, as specified | 6.3% | -66.7% | $214,062 | -3.4 pts | 6 of 12 | -0.3 |
+| Short leg alone (every variant) | wiped out in 2020-21 | -100% | $0 | | | |
+
+What this shows:
+
+- **Most of the gap to SPY is the stock pool, not the checks.** The
+  comparison group trailed SPY by 3.2 points a year and beat it in 4 of
+  12 years.
+- **The checks may add about 2 points a year over comparable stocks,**
+  but the evidence is weak: requiring all three scores, or the best
+  readings, beat the group in 8 of 12 years, with t-statistics of 1.0
+  to 1.8. "0 flags" alone (which counts a missing score as no warning)
+  added nothing. In 2021-2025 alone the best-scores long leg beat the
+  group in all 5 years (t = 2.4), but over 12 years the edge is much
+  smaller, so the short window flattered it.
+- **No long-only version beat SPY.** The best-scores long leg trailed
+  it by 1.1 points a year (6 of 12 years ahead).
+- **Selling on a flag cost return over 12 years** (about 0.6 points a
+  year for best scores), while making the worst drop slightly smaller.
+- **Shorting failed.** In 2020-21, 9 of the 12 shorts rose (Senseonics
+  +885%), so the short-only portfolio lost everything and the long-short
+  strategy fell 67% from its peak. Accounts that reach zero are closed
+  at zero, not carried negative (see Method).
+- **The bias is worse in early years.** Among companies with a usable
+  score, 56% had no current ticker in 2014 against 13% in 2025, so early
+  years cover mostly survivors, in both the selections and the
+  comparison group (`data/logs/backtest_universe_status.csv`).
 
 ## Data coverage
 

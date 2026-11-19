@@ -214,6 +214,15 @@ BACKTEST_FORMATION_DATES = [
     "2024-06-30",
     "2025-06-30",
 ]
+# Windows run by `python -m src.scores.backtest`. "2021_2025" is the
+# strategy as specified. "2014_2025" tests the same rules over 12 years:
+# 2013 is left out because FY2012 has no F-Score (it needs a FY2010 row,
+# which the pipeline does not keep), so a June 2013 portfolio could have
+# no best-score or 3-flag companies.
+BACKTEST_WINDOWS = {
+    "2021_2025": BACKTEST_FORMATION_DATES,
+    "2014_2025": [f"{year}-06-30" for year in range(2014, 2026)],
+}
 BACKTEST_START_CAPITAL = 100_000.0
 BACKTEST_LONG_FLAGS = 0  # flags_raised for the long leg
 BACKTEST_SHORT_FLAGS = 3  # flags_raised for the short leg

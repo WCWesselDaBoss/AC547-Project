@@ -425,7 +425,8 @@ def test_run_backtest_tables(monkeypatch):
     monkeypatch.setattr(backtest.config, "BACKTEST_FORMATION_DATES", FORMATION)
     tables = backtest.run_backtest(*make_score_inputs(), make_full_prices())
     results = tables["results"]
-    assert len(results) == 3 * 4 * 2 * 2 + 2
+    # + comparison group (2 cost levels x 2 periods) + 2 SPY rows.
+    assert len(results) == 3 * 4 * 2 * 2 + 4 + 2
     assert list(results.columns) == backtest.RESULT_COLUMNS
     strategy = results[
         (results["portfolio"] == "strategy") & (results["cost_bps"] == 0)
@@ -452,7 +453,7 @@ def test_outputs_and_hit_rate_table(monkeypatch, tmp_path):
     monkeypatch.setattr(backtest.config, "BACKTEST_RESULTS_PATH", results_path)
     tables = backtest.run_backtest(*make_score_inputs(), make_full_prices())
     paths = backtest.write_outputs(tables)
-    assert pd.read_parquet(results_path).shape == (50, 16)
+    assert pd.read_parquet(results_path).shape == (54, 17)
     hits = pd.read_csv(paths["hit_rates"], dtype={"year": "string"})
     strict_all = hits[
         (hits["variant"] == "all_three_scores")
@@ -607,3 +608,72 @@ def test_short_that_quadruples_wipes_the_account_out():
     assert summary["end_value"].tolist() == [0.0, 0.0]
     assert pd.isna(summary["period_return"].iloc[1])
     assert backtest.max_drawdown(daily) == -1.0
+
+
+# ---------------------------------------------------------------------------
+# Comparison group and comparison table
+# ---------------------------------------------------------------------------
+def test_universe_takes_every_eligible_company_whatever_its_flags():
+    """2021: A, B (FY2019), C, D and G are eligible; H (1 flag) has no
+    prices, F is under $5, I is too new, ZZZ has no prices and cik 7 no
+    ticker. 2022: A, B, C and E (the rest are stale)."""
+    prices = make_full_prices()
+    calendar = backtest.trading_calendar(prices)
+    periods = backtest.holding_periods(calendar, FORMATION)
+    picks, counts = backtest.universe_picks(
+        *make_score_inputs(),
+        backtest.price_table(prices, calendar),
+        calendar,
+        periods,
+    )
+    by_year = picks.groupby(picks["formation_date"].dt.year)["ticker"]
+    assert sorted(by_year.get_group(2021)) == ["A", "B", "C", "D", "G"]
+    assert sorted(by_year.get_group(2022)) == ["A", "B", "C", "E"]
+    eligible = counts[counts["status"] == "eligible"]
+    assert eligible["companies"].tolist() == [5, 4]
+
+
+def test_t_statistic():
+    """Differences 1% and 3%: mean 2%, standard deviation 1.414%,
+    standard error 1.414% / sqrt(2) = 1% -> t = 2.0. One year: NaN."""
+    assert backtest.t_statistic([0.01, 0.03]) == pytest.approx(2.0)
+    assert np.isnan(backtest.t_statistic([0.01]))
+
+
+def test_comparison_table():
+    """A portfolio returning 10% and 0% against a comparison group at 5%
+    and 5% and SPY at 8% and -2%: vs group +5 and -5 points (mean 0, one
+    year ahead); vs SPY +2 and +2 points (two years ahead, no spread so
+    t is NaN). A wiped-out year (NaN) is left out."""
+    years = pd.to_datetime(["2021-06-30", "2022-06-30", "2023-06-30"])
+
+    def rows(variant, returns, spy):
+        return pd.DataFrame(
+            {
+                "window": "2021_2023",
+                "variant": variant,
+                "portfolio": "long_only",
+                "cost_bps": 20,
+                "formation_date": years,
+                "period_return": returns,
+                "spy_return": spy,
+            }
+        )
+
+    results = pd.concat(
+        [
+            rows("best_scores", [0.10, 0.0, np.nan], [0.08, -0.02, 0.0]),
+            rows("universe", [0.05, 0.05, 0.05], [0.08, -0.02, 0.0]),
+            rows("spy", [0.08, -0.02, 0.0], [0.08, -0.02, 0.0]),
+        ],
+        ignore_index=True,
+    )
+    table = backtest.comparison_table(results)
+    assert table["variant"].tolist() == ["best_scores"]
+    row = table.iloc[0]
+    assert row["years"] == 2
+    assert row["mean_vs_universe"] == pytest.approx(0.0)
+    assert row["years_ahead_of_universe"] == 1
+    assert row["mean_vs_spy"] == pytest.approx(0.02)
+    assert row["years_ahead_of_spy"] == 2
+    assert np.isnan(row["t_vs_spy"])
