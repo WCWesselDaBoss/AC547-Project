@@ -231,7 +231,8 @@ every registered test is reported, whatever it shows.
 | 4 | Selling a long on a flag | After seeing test 1 | Reported above; exploratory |
 | 5 | Formation from 2013 (scratch run) | After seeing tests 1-4 | Dropped: FY2012 has no F-Score, so 2013 could not be tested; replaced by 2014 |
 | 6 | 2014-2025 window and the equal-weighted comparison group | After seeing tests 1-4 | Reported above |
-| 7 | Value tilt, tests V1 to V3 below | Registered 2026-11-19, before any value-portfolio return was computed | To run |
+| 7 | Value tilt, tests V1 to V3 below | Registered 2026-11-19, before any value-portfolio return was computed | Run 2026-11-19; no registered test passed (results below) |
+| 8 | Best-score value stocks (V3) against the whole value group (V1) | After seeing test 7 | Exploratory: t = 2.20, at the pass mark, but not registered |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -274,6 +275,58 @@ before citing them.
 - **No tuning afterwards.** The quintile, the F band, the value measure
   and the window are fixed here. Any change after seeing results must be
   added to this register as a new, exploratory test.
+
+### Test 7 results
+
+Data check, made before any value-portfolio return was computed: 98.5%
+of scored company-years from FY2013 on have a public float. About 4% of
+floats are dated outside the usual window (about 6 months before fiscal
+year-end; some look like tagging errors in the date, such as AMD's FY2025
+10-K, which dates its float 2024-06-28). They are used as reported,
+because each comes from the 10-K itself, so none uses later information.
+In the 2014-2025 comparison group, 16,530 company-years were ranked;
+2,117 had book equity of zero or less, 318 a zero float and 258 no float
+(`data/logs/backtest_value_ranks.csv`). The value group held 210 to 339
+companies a year.
+
+| 2014-06-30 to 2026-11-10, 20 bps | Stocks a year | Per year | Worst drop | $100,000 becomes |
+| --- | --- | --- | --- | --- |
+| SPY | | 13.3% | -33.7% | $469,770 |
+| V3 value and best scores | 3 to 15 | 13.5% | -42.5% | $477,674 |
+| V2 value and strong F-Score | 8 to 37 | 8.9% | -49.1% | $288,617 |
+| V1 value group | 210 to 339 | 7.1% | -53.9% | $233,572 |
+| Comparison group | 1,177 to 1,992 | 9.0% | -40.4% | $291,789 |
+
+| Registered question (2014-2025, yearly differences) | Mean | Median | Years ahead | t | Passes (t >= 2.2)? |
+| --- | --- | --- | --- | --- | --- |
+| (a) V2 beats V1 | +5.2 pts | -0.6 pts | 6 of 12 | 0.73 | No |
+| (b) V2 beats the comparison group | +4.2 pts | | 5 of 12 | 0.46 | No |
+| (b) V2 beats SPY | +1.0 pts | | 2 of 12 | 0.09 | No |
+| (b) V3 beats the comparison group | +5.8 pts | | 9 of 12 | 1.44 | No |
+| (b) V3 beats SPY | +2.6 pts | | 5 of 12 | 0.39 | No |
+
+What this shows:
+
+- **No registered test passed.** A strong F-Score did not reliably pick
+  better value stocks here, so this backtest does not reproduce
+  Piotroski's (2000) main result. Our sample differs from his (recent
+  years, current tickers only, the team's 7-to-9 band, public float
+  instead of full market value), so this is not evidence against the
+  paper.
+- **One year drives the averages.** In 2020-21 the value portfolios rose
+  91% (V1), 169% (V2) and 110% (V3). Without that year, V2 trailed the
+  comparison group by 4.6 points a year (t = -1.95) and V3 led it by 2.5
+  (t = 0.99). This is why the mean differences are large while the
+  medians and years-ahead counts are not.
+- **V3 matched SPY's return with much more risk.** It ended slightly
+  ahead of SPY ($477,674 against $469,770) with a deeper worst drop
+  (-42.5% against -33.7%), beat SPY in only 5 of 12 years, and held
+  just 3 to 15 stocks a year, so a few companies decided each year.
+- **Exploratory only (test 8):** V3 beat the whole value group in 9 of
+  12 years (t = 2.20, mean +6.8 points). This comparison was not
+  registered, and test 7 ran five comparisons, so one reaching the pass
+  mark by chance is not surprising. Treat it as an idea for a new test
+  on new data, not a finding.
 
 ## Data coverage
 

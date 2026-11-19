@@ -224,6 +224,9 @@ BACKTEST_WINDOWS = {
     "2014_2025": [f"{year}-06-30" for year in range(2014, 2026)],
 }
 BACKTEST_START_CAPITAL = 100_000.0
+# Value tilt (test 7 in docs/backtest.md, registered before running): the
+# value group is this top share of the comparison group by book-to-market.
+BACKTEST_VALUE_TOP_SHARE = 0.2
 BACKTEST_LONG_FLAGS = 0  # flags_raised for the long leg
 BACKTEST_SHORT_FLAGS = 3  # flags_raised for the short leg
 # A score is used only if its 10-K was filed within this many months

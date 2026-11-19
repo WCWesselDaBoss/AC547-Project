@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.scores import backtest
+from src.scores import backtest, public_float
 
 DAYS = pd.bdate_range("2021-06-01", "2023-06-30").astype("datetime64[ns]")
 FORMATION = ["2021-06-30", "2022-06-30"]
@@ -247,6 +247,20 @@ SCORE_ROWS = [
 # 0-flag rows with all three scores are "best" (M not flagged, Z'' safe,
 # F strong) except B's FY2019 10-K, whose F-Score is only middle.
 NOT_BEST = {(2, 2019)}
+# Book equity for the value tests (100 unless listed): A's FY2021 is
+# 300; G's FY2020 is negative.
+EQUITY = {(1, 2021): 300.0, (9, 2020): -10.0}
+# Public float per 10-K (cik, fiscal year): D's FY2020 has none.
+FLOATS = {
+    (1, 2020): 100.0,
+    (1, 2021): 100.0,
+    (2, 2019): 50.0,
+    (2, 2020): 100.0,
+    (3, 2020): 200.0,
+    (3, 2021): 400.0,
+    (5, 2021): 200.0,
+    (9, 2020): 100.0,
+}
 
 
 def make_score_inputs():
@@ -290,6 +304,14 @@ def make_score_inputs():
             "cik": rows["cik"],
             "fiscal_year": rows["fiscal_year"],
             "filed_date": pd.to_datetime(rows["filed"]),
+            "accession": pd.array(
+                [f"acc-{c}-{y}" for c, y in zip(rows.cik, rows.fiscal_year)],
+                dtype="string",
+            ),
+            "stockholders_equity": [
+                EQUITY.get((c, y), 100.0)
+                for c, y in zip(rows.cik, rows.fiscal_year)
+            ],
         }
     )
     companies_df = rows.drop_duplicates("cik")[["cik", "ticker"]].astype(
@@ -677,3 +699,136 @@ def test_comparison_table():
     assert row["mean_vs_spy"] == pytest.approx(0.02)
     assert row["years_ahead_of_spy"] == 2
     assert np.isnan(row["t_vs_spy"])
+
+
+# ---------------------------------------------------------------------------
+# Value tilt (test 7)
+# ---------------------------------------------------------------------------
+
+
+def make_floats():
+    """Return float_per_filing-style rows for FLOATS."""
+    return pd.DataFrame(
+        {
+            "cik": [c for c, _ in FLOATS],
+            "accession": pd.array(
+                [f"acc-{c}-{y}" for c, y in FLOATS], dtype="string"
+            ),
+            "float_date": pd.Timestamp("2020-06-30"),
+            "public_float": list(FLOATS.values()),
+        }
+    )
+
+
+def test_float_rows_keep_10k_dollar_facts_only():
+    """Only USD facts from 10-K or 10-K/A forms are kept."""
+    facts = {
+        "facts": {
+            "dei": {
+                "EntityPublicFloat": {
+                    "units": {
+                        "USD": [
+                            {
+                                "accn": "a1",
+                                "end": "2021-06-30",
+                                "val": 5e8,
+                                "form": "10-K",
+                            },
+                            {
+                                "accn": "a2",
+                                "end": "2021-06-30",
+                                "val": 6e8,
+                                "form": "S-1",
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+    }
+    rows = public_float.float_rows(facts, 42)
+    assert rows[["cik", "accession", "public_float"]].values.tolist() == [
+        [42, "a1", 5e8]
+    ]
+
+
+def test_float_per_filing_uses_the_filing_own_date_and_adds_classes():
+    """Filing a1 repeats last year's float (2020) and reports two share
+    classes on its own date (2021): 300 + 200 = 500."""
+    floats = pd.DataFrame(
+        {
+            "cik": [1, 1, 1],
+            "accession": ["a1", "a1", "a1"],
+            "period_end": pd.to_datetime(
+                ["2020-06-30", "2021-06-30", "2021-06-30"]
+            ),
+            "public_float": [900.0, 300.0, 200.0],
+        }
+    )
+    result = public_float.float_per_filing(floats)
+    assert result["public_float"].tolist() == [500.0]
+    assert result["float_date"].tolist() == [pd.Timestamp("2021-06-30")]
+
+
+def make_value_ranks():
+    """Return book_to_market() on the example comparison group."""
+    prices = make_full_prices()
+    calendar = backtest.trading_calendar(prices)
+    periods = backtest.holding_periods(calendar, FORMATION)
+    scores_df, financials_df, companies_df = make_score_inputs()
+    universe, _ = backtest.universe_picks(
+        scores_df,
+        financials_df,
+        companies_df,
+        backtest.price_table(prices, calendar),
+        calendar,
+        periods,
+    )
+    return backtest.book_to_market(universe, financials_df, make_floats())
+
+
+def test_book_to_market_and_value_group():
+    """2021: B 100/50 = 2.0, A 100/100 = 1.0, C 100/200 = 0.5; D has no
+    float; G's equity is negative. Ranked: C 1/3, A 2/3, B 1 -> only B
+    is in the top fifth. 2022: A 300/100 = 3.0, B 1.0, E 0.5, C 0.25 ->
+    only A (rank 1.0; B's 0.75 is not above 0.8)."""
+    ranks = make_value_ranks().set_index(
+        [make_value_ranks()["formation_date"].dt.year, "ticker"]
+    )
+    assert ranks.loc[(2021, "B"), "book_to_market"] == pytest.approx(2.0)
+    assert ranks.loc[(2021, "D"), "value_status"] == "no_float"
+    assert ranks.loc[(2021, "G"), "value_status"] == "equity_not_positive"
+    assert ranks.loc[(2022, "A"), "book_to_market"] == pytest.approx(3.0)
+    value = ranks[ranks["is_value"]].index.tolist()
+    assert value == [(2021, "B"), (2022, "A")]
+
+
+def test_value_variants_filter_on_the_scores():
+    """B (2021) is in the value group but its F-Score is only middle, so
+    the strong-F and best-score versions hold nothing in 2021; A (2022)
+    is best on every check, so all three versions hold it."""
+    ranks = make_value_ranks()
+
+    def held(variant):
+        picks = backtest.value_picks(ranks, variant)
+        return list(zip(picks["formation_date"].dt.year, picks["ticker"]))
+
+    assert held("value") == [(2021, "B"), (2022, "A")]
+    assert held("value_strong_f") == [(2022, "A")]
+    assert held("value_best") == [(2022, "A")]
+
+
+def test_run_backtest_adds_value_portfolios(monkeypatch):
+    """With floats, 3 value portfolios x 2 cost levels x 2 periods = 12
+    more rows; the strong-F version is cash in 2021 (no stocks)."""
+    monkeypatch.setattr(backtest.config, "BACKTEST_FORMATION_DATES", FORMATION)
+    tables = backtest.run_backtest(
+        *make_score_inputs(), make_full_prices(), floats_df=make_floats()
+    )
+    results = tables["results"]
+    assert len(results) == 3 * 4 * 2 * 2 + 4 + 12 + 2
+    strong = results[
+        (results["variant"] == "value_strong_f") & (results["cost_bps"] == 20)
+    ]
+    assert strong["n_long"].tolist() == [0, 1]
+    assert strong["period_return"].iloc[0] == pytest.approx(0.0)

@@ -16,6 +16,9 @@ Strategy (dollar neutral, stocks only):
   scored company, whatever its flags, under the same rules. Beating it
   means the checks picked better stocks than the pool they came from;
   beating SPY alone could just reflect company size.
+- Value tilt (test 7 in docs/backtest.md): long-only portfolios drawn
+  from the comparison group's top fifth by book-to-market, where market
+  value is each 10-K's cover-page public float.
 - Long-only variants: the long leg alone, optionally restricted to the
   companies whose three checks are all at their best (best_scores), and
   optionally sold as soon as a newer 10-K raises any warning
@@ -29,6 +32,7 @@ import numpy as np
 import pandas as pd
 
 import config
+from src.scores import public_float
 
 DAYS_PER_YEAR = 365.0
 
@@ -688,6 +692,8 @@ def universe_picks(
         )
         status[latest["is_stale"].to_numpy()] = "stale_score"
         eligible = latest[(status == STATUS_ELIGIBLE).to_numpy()]
+        # The score's fiscal year and verdicts ride along for the value
+        # tilt, which filters this group.
         picks.append(
             pd.DataFrame(
                 {
@@ -695,6 +701,10 @@ def universe_picks(
                     "leg": "long",
                     "cik": eligible["cik"].to_numpy(),
                     "ticker": eligible["ticker"].to_numpy(),
+                    "fiscal_year": eligible["fiscal_year"].to_numpy(),
+                    "m_flag": eligible["m_flag"].to_numpy(),
+                    "z_zone": eligible["z_zone"].to_numpy(),
+                    "f_band": eligible["f_band"].to_numpy(),
                 }
             )
         )
@@ -710,14 +720,99 @@ def universe_picks(
     )
 
 
+VALUE_VARIANTS = {
+    # Test 7, registered in docs/backtest.md before it was run.
+    "value": "top fifth of the comparison group by book-to-market",
+    "value_strong_f": "value group and F-Score strong (7 to 9)",
+    "value_best": "value group and best scores (M not flagged, Z'' safe, "
+    "F strong)",
+}
+
+
+def book_to_market(universe_df, financials_df, floats_df):
+    """Return the comparison group with book-to-market and value flags.
+
+    book_to_market = stockholders_equity / public_float, both from the
+    10-K behind the company's latest score (matched on fiscal year, then
+    on accession). value_status is "ranked", "no_float" (no float in
+    that 10-K), "float_not_positive" or "equity_not_positive" (zero,
+    negative or missing book equity); only ranked companies get a value
+    rank. is_value marks the top config.BACKTEST_VALUE_TOP_SHARE of
+    ranked companies on each formation date.
+    """
+    filing = financials_df[
+        ["cik", "fiscal_year", "accession", "stockholders_equity"]
+    ]
+    frame = universe_df.merge(filing, on=["cik", "fiscal_year"], how="left")
+    frame = frame.merge(
+        floats_df[["cik", "accession", "public_float"]].astype(
+            {"accession": "string"}
+        ),
+        on=["cik", "accession"],
+        how="left",
+    )
+    equity_ok = frame["stockholders_equity"] > 0
+    float_ok = frame["public_float"] > 0
+    frame["value_status"] = np.select(
+        [
+            frame["public_float"].isna(),
+            ~float_ok,
+            ~equity_ok,
+        ],
+        ["no_float", "float_not_positive", "equity_not_positive"],
+        default="ranked",
+    )
+    ranked = frame["value_status"] == "ranked"
+    frame["book_to_market"] = np.where(
+        ranked, frame["stockholders_equity"] / frame["public_float"], np.nan
+    )
+    # Percentile rank within each formation date among ranked companies;
+    # above 1 - top share is the value group.
+    pct = (
+        frame.loc[ranked]
+        .groupby("formation_date")["book_to_market"]
+        .rank(pct=True)
+    )
+    frame["value_rank_pct"] = pct.reindex(frame.index)
+    frame["is_value"] = frame["value_rank_pct"] > (
+        1 - config.BACKTEST_VALUE_TOP_SHARE
+    )
+    return frame
+
+
+def value_picks(value_df, variant):
+    """Return the picks for a VALUE_VARIANTS portfolio."""
+    if variant not in VALUE_VARIANTS:
+        raise ValueError(f"unknown value variant {variant}")
+    chosen = value_df["is_value"]
+    strong_f = value_df["f_band"].eq(BEST_F_BAND).fillna(False).astype(bool)
+    if variant == "value_strong_f":
+        chosen &= strong_f
+    if variant == "value_best":
+        chosen &= (
+            strong_f
+            & value_df["m_flag"].eq(False).fillna(False).astype(bool)
+            & value_df["z_zone"].eq(BEST_Z_ZONE).fillna(False).astype(bool)
+        )
+    columns = ["formation_date", "leg", "cik", "ticker"]
+    return value_df.loc[chosen, columns].reset_index(drop=True)
+
+
 def run_backtest(
-    scores_df, financials_df, companies_df, prices_df, formation_dates=None
+    scores_df,
+    financials_df,
+    companies_df,
+    prices_df,
+    formation_dates=None,
+    floats_df=None,
 ):
     """Run every long-leg variant, portfolio and cost level, plus SPY
     and the equal-weighted comparison group.
 
     formation_dates defaults to config.BACKTEST_FORMATION_DATES. Every
-    table gets a window column ("<first year>_<last year>").
+    table gets a window column ("<first year>_<last year>"). With
+    floats_df (public_float.load_public_float), the value-tilt
+    portfolios in VALUE_VARIANTS are added (long only).
 
     Returns a dict of tables:
     - results: one row per variant, portfolio, cost level and period
@@ -728,7 +823,9 @@ def run_backtest(
     - positions: one row per variant, rule (hold or sell_on_flag) and
       pick, with returns vs SPY (sell_on_flag rows are longs only);
     - candidates: every long or short candidate with its status;
-    - universe_status: comparison-group companies by year and status.
+    - universe_status: comparison-group companies by year and status;
+    - value_ranks: with floats_df, each comparison-group company's
+      book-to-market, value status and value flag.
     The comparison group has variant "universe" and portfolio
     "equal_weight": long only, no borrowing fee. The 1% borrowing fee applies at every cost level, because a short
     seller always pays it; cost_bps varies only the trading cost.
@@ -799,6 +896,34 @@ def run_backtest(
         summaries.append({**labels, **summarize(daily, capital)})
         dailies.append(daily_frame(daily, labels))
 
+    value_ranks = pd.DataFrame()
+    if floats_df is not None:
+        value_ranks = book_to_market(universe, financials_df, floats_df)
+        for variant in VALUE_VARIANTS:
+            picks = value_picks(value_ranks, variant)
+            log = position_log(price_wide, picks, periods)
+            position_logs.append(log.assign(variant=variant, rule="hold"))
+            for cost_bps in config.BACKTEST_COST_BPS:
+                labels = {
+                    "variant": variant,
+                    "portfolio": "long_only",
+                    "cost_bps": cost_bps,
+                }
+                period_df, daily = run_portfolio(
+                    price_wide,
+                    picks,
+                    periods,
+                    (1.0, 0.0),
+                    cost_bps,
+                    0.0,
+                    capital,
+                )
+                results.append(
+                    period_df.assign(spy_return=spy_returns, **labels)
+                )
+                summaries.append({**labels, **summarize(daily, capital)})
+                dailies.append(daily_frame(daily, labels))
+
     spy_daily = benchmark_path(
         price_wide, periods["start"].iloc[0], periods["end"].iloc[-1], capital
     )
@@ -825,6 +950,7 @@ def run_backtest(
         "positions": pd.concat(position_logs, ignore_index=True),
         "candidates": candidates,
         "universe_status": universe_status,
+        "value_ranks": value_ranks,
     }
     # The window goes first in every table, as in results.
     tables = {
@@ -981,6 +1107,7 @@ def write_outputs(tables):
         "positions": tables["positions"],
         "candidates": tables["candidates"],
         "universe_status": tables["universe_status"],
+        "value_ranks": tables["value_ranks"],
         "daily": tables["daily"],
     }
     config.LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -999,14 +1126,19 @@ def main():
     There is no --sample option: 50 sample companies give almost no
     3-flag shorts, so a sample backtest would mean nothing.
     """
+    companies_df = pd.read_parquet(config.COMPANIES_PATH)
     inputs = [
         pd.read_parquet(config.SCORES_PATH),
         pd.read_parquet(config.FINANCIALS_PATH),
-        pd.read_parquet(config.COMPANIES_PATH),
+        companies_df,
         pd.read_parquet(config.PRICES_PATH),
     ]
+    # Cached after the first run (reading the SEC zip takes minutes).
+    floats_df = public_float.load_public_float(
+        companies_df.loc[~companies_df["is_excluded"], "cik"].tolist()
+    )
     runs = [
-        run_backtest(*inputs, formation_dates=dates)
+        run_backtest(*inputs, formation_dates=dates, floats_df=floats_df)
         for dates in config.BACKTEST_WINDOWS.values()
     ]
     tables = {

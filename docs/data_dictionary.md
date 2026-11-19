@@ -171,7 +171,7 @@ results and limitations: docs/backtest.md. Not investment advice.
 | Column | Type | Meaning | Computed by |
 | --- | --- | --- | --- |
 | window | string | Formation years run, e.g. `2021_2025` (as specified) or `2014_2025` | `config.BACKTEST_WINDOWS` |
-| variant | string | Long leg: `as_specified` (flags_raised = 0), `all_three_scores` (also requires M, Z'' and F scores), `best_scores` (M not flagged, Z'' safe, F strong), `universe` (the equal-weighted comparison group: every eligible scored company), or `spy` | `backtest.picks_for_variant` |
+| variant | string | Long leg: `as_specified` (flags_raised = 0), `all_three_scores` (also requires M, Z'' and F scores), `best_scores` (M not flagged, Z'' safe, F strong), `value`, `value_strong_f`, `value_best` (value tilt, test 7 in docs/backtest.md; long only), `universe` (the equal-weighted comparison group: every eligible scored company), or `spy` | `backtest.picks_for_variant` |
 | portfolio | string | `strategy` (50% long, 50% short), `long_only`, `long_only_sell_on_flag` (longs sold the trading day after a 10-K raises a flag), `short_only`, `equal_weight` (comparison group), or `spy` | `backtest.PORTFOLIOS` |
 | cost_bps | int64 | Trading cost per dollar traded, in basis points (0 or 20); the 1% a year borrowing fee applies at both | `config.BACKTEST_COST_BPS` |
 | formation_date | datetime64[ns] | June 30 the portfolio was formed for | `config.BACKTEST_FORMATION_DATES` |
@@ -193,7 +193,11 @@ total and annualized return, max drawdown per portfolio),
 `backtest_comparison.csv` (each portfolio's yearly returns against the
 comparison group and SPY: mean and median difference, years ahead,
 t-statistic), `backtest_universe_status.csv` (comparison-group
-companies by year and status),
+companies by year and status), `backtest_value_ranks.csv` (each
+comparison-group company's book equity, public float, book-to-market,
+value status and value flag; the public float comes from the 10-K cover
+via `src/scores/public_float.py`, cached in
+`data/interim/public_float.parquet`),
 `backtest_hit_rates.csv`, `backtest_coverage_status.csv` (candidates by
 year, leg and drop reason), `backtest_coverage_delisted.csv` (also counts sales on a flag),
 `backtest_positions.csv` (every pick with entry, exit, return vs SPY,

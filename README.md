@@ -90,7 +90,7 @@ Then:
 | `python -m src.scores.build_scores` | Rebuild `scores.parquet` (add `--sample` for `data/sample/`) |
 | `python -m src.scores.drivers` | Rebuild `score_drivers.parquet` (add `--sample` for `data/sample/`) |
 | `python -m src.scores.returns` | Rebuild `returns.parquet` and print the flagged vs. not-flagged comparison |
-| `python -m src.scores.backtest` | Run the long-short backtest (stretch goal); writes `backtest_results.parquet` and `data/logs/backtest_*.csv`; see `docs/backtest.md` |
+| `python -m src.scores.backtest` | Run the backtests (stretch goal: 2021-2025 and 2014-2025, with a comparison group and a value tilt); writes `backtest_results.parquet` and `data/logs/backtest_*.csv`; the first run also reads public floats from `data/raw/companyfacts.zip` (about 4 minutes, then cached); see `docs/backtest.md` |
 | `python -m src.scores.tieout` | Rebuild `verification/tieout.xlsx` (Excel recomputes every score) |
 
 Sources: SEC `companyfacts.zip` and `submissions.zip` (rebuilt nightly
@@ -352,7 +352,9 @@ on screen; full detail is in `docs/methodology.md`.
 - **Backtest** (stretch goal, `docs/backtest.md`): a long-short test of
   0-flag vs 3-flag companies, 2021-2026. It uses today's tickers, so
   companies that later delisted are left out (look-ahead bias), and it
-  rests on 7 to 11 shorts a year. Not investment advice.
+  rests on 7 to 11 shorts a year. Over 2014-2025 no long-only version
+  reliably beat SPY or an equal-weighted group of all scored companies.
+  Not investment advice.
 
 ## Keeping the data current
 
