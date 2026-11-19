@@ -202,6 +202,35 @@ PRICE_PAUSE_SECONDS = 2
 # days of the first needed date and end within this many of the last.
 PRICE_COVERAGE_TOLERANCE_DAYS = 7
 
+# ---------------------------------------------------------------------------
+# Long-short backtest (stretch goal; src/scores/backtest.py)
+# ---------------------------------------------------------------------------
+# Portfolios form on June 30 each year (the last trading day on or before
+# it), after nearly all December fiscal-year 10-Ks are public.
+BACKTEST_FORMATION_DATES = [
+    "2021-06-30",
+    "2022-06-30",
+    "2023-06-30",
+    "2024-06-30",
+    "2025-06-30",
+]
+BACKTEST_START_CAPITAL = 100_000.0
+BACKTEST_LONG_FLAGS = 0  # flags_raised for the long leg
+BACKTEST_SHORT_FLAGS = 3  # flags_raised for the short leg
+# A score is used only if its 10-K was filed within this many months
+# before formation, so a company that stopped filing is not picked on an
+# old score.
+BACKTEST_MAX_SCORE_AGE_MONTHS = 15
+# Eligibility: a price on each of the last 20 trading days, and an
+# adjusted close of at least $5 (penny stocks are hard to short).
+BACKTEST_HISTORY_DAYS = 20
+BACKTEST_MIN_PRICE = 5.0
+# Costs: basis points charged on every dollar traded, and an annual fee
+# on the short leg's starting value, pro-rated by calendar days held.
+BACKTEST_COST_BPS = [0, 20]
+BACKTEST_BORROW_RATE = 0.01
+BACKTEST_RESULTS_PATH = PROCESSED_DIR / "backtest_results.parquet"
+
 PRICES_RAW_DIR = RAW_DIR / "prices"  # one Parquet file per ticker
 PRICES_MANIFEST = PRICES_RAW_DIR / "manifest.json"
 
