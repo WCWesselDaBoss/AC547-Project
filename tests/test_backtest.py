@@ -422,3 +422,22 @@ def test_run_backtest_tables(monkeypatch):
         "D",
         "D",
     ]
+
+
+def test_outputs_and_hit_rate_table(monkeypatch, tmp_path):
+    """Outputs land at the configured paths; the "all" hit-rate row for
+    the stricter variant counts 2021 longs A, B and 2022 long A (G is
+    dropped) and shorts C, D (2021) and B, C, E (2022)."""
+    monkeypatch.setattr(backtest.config, "BACKTEST_FORMATION_DATES", FORMATION)
+    monkeypatch.setattr(backtest.config, "LOG_DIR", tmp_path)
+    results_path = tmp_path / "backtest_results.parquet"
+    monkeypatch.setattr(backtest.config, "BACKTEST_RESULTS_PATH", results_path)
+    tables = backtest.run_backtest(*make_score_inputs(), make_full_prices())
+    paths = backtest.write_outputs(tables)
+    assert pd.read_parquet(results_path).shape == (26, 14)
+    hits = pd.read_csv(paths["hit_rates"], dtype={"year": "string"})
+    strict_all = hits[
+        (hits["variant"] == "all_three_scores") & (hits["year"] == "all")
+    ].iloc[0]
+    assert strict_all["n_long"] == 3
+    assert strict_all["n_short"] == 5

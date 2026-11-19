@@ -610,3 +610,87 @@ def coverage_table(candidates_df, positions_df):
         .agg(picks="size", delisted_mid_period="sum")
     )
     return by_status, delisted
+
+
+def hit_rate_table(positions_df):
+    """Return hit rates by variant and year, plus an "all" row per
+    variant: picks, share of longs that beat SPY, share of shorts that
+    lagged SPY."""
+    rows = []
+    for variant, picks in positions_df.groupby("variant", sort=False):
+        years = picks["formation_date"].dt.year
+        groups = [
+            (str(year), picks[years == year])
+            for year in sorted(years.unique())
+        ]
+        for label, group in groups + [("all", picks)]:
+            long_rate, short_rate = hit_rates(group)
+            rows.append(
+                {
+                    "variant": variant,
+                    "year": label,
+                    "n_long": int((group["leg"] == "long").sum()),
+                    "long_beat_spy": long_rate,
+                    "n_short": int((group["leg"] == "short").sum()),
+                    "short_lagged_spy": short_rate,
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def write_outputs(tables):
+    """Write the results Parquet file and the CSV logs; return the log
+    paths by name."""
+    tables["results"].to_parquet(config.BACKTEST_RESULTS_PATH, index=False)
+    by_status, delisted = coverage_table(
+        tables["candidates"], tables["positions"]
+    )
+    logs = {
+        "summary": tables["summary"],
+        "hit_rates": hit_rate_table(tables["positions"]),
+        "coverage_status": by_status.reset_index(),
+        "coverage_delisted": delisted.reset_index(),
+        "positions": tables["positions"],
+        "candidates": tables["candidates"],
+        "daily": tables["daily"],
+    }
+    config.LOG_DIR.mkdir(parents=True, exist_ok=True)
+    paths = {}
+    for name, frame in logs.items():
+        paths[name] = config.LOG_DIR / f"backtest_{name}.csv"
+        frame.to_csv(paths[name], index=False)
+    return paths
+
+
+def main():
+    """Run the backtest on data/processed/ and write the outputs.
+
+    There is no --sample option: 50 sample companies give almost no
+    3-flag shorts, so a sample backtest would mean nothing.
+    """
+    tables = run_backtest(
+        pd.read_parquet(config.SCORES_PATH),
+        pd.read_parquet(config.FINANCIALS_PATH),
+        pd.read_parquet(config.COMPANIES_PATH),
+        pd.read_parquet(config.PRICES_PATH),
+    )
+    paths = write_outputs(tables)
+    summary = tables["summary"].drop(columns=["start"])
+    summary["end"] = summary["end"].dt.date  # round() skips dates
+    print(summary.round(4).to_string(index=False))
+    print()
+    print(pd.read_csv(paths["hit_rates"]).round(3).to_string(index=False))
+    print(
+        "\nCaution: companies that delisted have no current ticker and are"
+        " left out\n(survivorship and look-ahead bias); 5 periods and 7-11"
+        " shorts a year are a\nsmall sample; correlation, not cause. Not"
+        " investment advice."
+    )
+    print(
+        f"Wrote {len(tables['results'])} rows to {config.BACKTEST_RESULTS_PATH}"
+    )
+    print(f"Logs: {', '.join(p.name for p in paths.values())}")
+
+
+if __name__ == "__main__":
+    main()

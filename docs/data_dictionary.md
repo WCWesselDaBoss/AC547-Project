@@ -159,6 +159,39 @@ cause.
 | excess_ret_12m | float64 | ret_12m - mkt_ret_12m | `returns.compute_returns` |
 | has_full_price_history | bool | Stock has a price within 7 days of both window dates | `returns.compute_returns` |
 
+## backtest_results (stretch goal)
+
+`data/processed/backtest_results.parquet`: one row per long-leg variant,
+portfolio, cost level and holding period, plus SPY. Built by
+`src/scores/backtest.py` (`python -m src.scores.backtest`) from `scores`,
+`financials_annual` (filed_date), `companies` (ticker) and `prices`. It
+is an analysis output, not a hand-off table between phases. Method,
+results and limitations: docs/backtest.md. Not investment advice.
+
+| Column | Type | Meaning | Computed by |
+| --- | --- | --- | --- |
+| variant | string | Long leg: `as_specified` (flags_raised = 0), `all_three_scores` (also requires M, Z'' and F scores), or `spy` | `backtest.run_backtest` |
+| portfolio | string | `strategy` (50% long, 50% short), `long_only`, `short_only`, or `spy` | `backtest.run_backtest` |
+| cost_bps | int64 | Trading cost per dollar traded, in basis points (0 or 20); the 1% a year borrowing fee applies at both | `config.BACKTEST_COST_BPS` |
+| formation_date | datetime64[ns] | June 30 the portfolio was formed for | `config.BACKTEST_FORMATION_DATES` |
+| start | datetime64[ns] | Trade date: last trading day on or before formation_date | `backtest.holding_periods` |
+| end | datetime64[ns] | Next period's start, or the last SPY price date | `backtest.holding_periods` |
+| start_value | float64 | Equity at start, in dollars ($100,000 in the first period) | `backtest.run_portfolio` |
+| end_value | float64 | Equity at end after costs, in dollars | `backtest.simulate_period` |
+| period_return | float64 | end_value / start_value - 1 | `backtest.run_portfolio` |
+| spy_return | float64 | SPY's return over the same dates | `backtest.period_benchmark_returns` |
+| n_long | int64 | Stocks held long (0 for short_only and spy) | `backtest.run_portfolio` |
+| n_short | int64 | Stocks held short (0 for long_only and spy) | `backtest.run_portfolio` |
+| trading_cost | float64 | Entry plus exit trading cost, in dollars | `backtest.simulate_period` |
+| borrow_cost | float64 | Borrowing fee on the short leg, in dollars | `backtest.simulate_period` |
+
+Logs in `data/logs/` (gitignored): `backtest_summary.csv` (ending value,
+total and annualized return, max drawdown per portfolio),
+`backtest_hit_rates.csv`, `backtest_coverage_status.csv` (candidates by
+year, leg and drop reason), `backtest_coverage_delisted.csv`,
+`backtest_positions.csv` (every pick with entry, exit and return vs
+SPY), `backtest_candidates.csv` and `backtest_daily.csv` (daily values).
+
 ## case_studies.csv (data/case_studies.csv)
 
 One row per case study. Hand-curated and committed by Phase 3; every
