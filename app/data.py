@@ -94,6 +94,18 @@ def load_company_facts(data_dir, cik):
     return pd.read_parquet(path, filters=[("cik", "==", int(cik))])
 
 
+@st.cache_data(show_spinner="Loading filing details...", max_entries=64)
+def load_company_financials(data_dir, cik):
+    """Return every financials_annual row (all columns) for one company.
+
+    Click-to-trace needs each input's value, period end and derived_items
+    for one company only, so it reads that company rather than the
+    whole table.
+    """
+    path = Path(data_dir) / "financials_annual.parquet"
+    return pd.read_parquet(path, filters=[("cik", "==", int(cik))])
+
+
 def companies():
     """Return the companies table for the current data source."""
     return load_table(resolve_data_source()[1], "companies")
@@ -131,3 +143,8 @@ def financials_filings():
 def company_facts(cik):
     """Return facts_long rows for one company in the current source."""
     return load_company_facts(resolve_data_source()[1], cik)
+
+
+def company_financials(cik):
+    """Return financials_annual rows for one company in the source."""
+    return load_company_financials(resolve_data_source()[1], cik)

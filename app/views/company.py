@@ -6,13 +6,18 @@ five seconds and an expert can keep digging:
 2. Why: the stored score_drivers sentences, shown exactly as stored.
 3. Peers: one sentence per score from the stored percentile ranks.
 4. Detail: trend charts, peer-rank bars and every score component.
-Click-to-trace (the SEC source of every input) is added in step 5.
+5. Trace: every number back to its SEC filing, from a button under each
+   card (pop-up) or the "Trace to SEC filing" tab (app/trace_panel.py).
 """
 
 import streamlit as st
 
 import config
 from app import charts, company_view, data, labels, screening, style
+from app import trace, trace_panel
+
+# The score behind each verdict card, in card order (M, Z'', F).
+CARD_SCORES = ["m_score", "z_score", "f_score"]
 
 st.title("Company detail")
 
@@ -69,6 +74,18 @@ cards = company_view.verdict_cards(row, cutoff)
 st.subheader(company_view.verdict_summary(row, cards))
 for column, card in zip(st.columns(len(cards)), cards):
     column.markdown(style.verdict_card_html(*card), unsafe_allow_html=True)
+
+# One trace button per card, right under it, so the source of every
+# verdict is one click away (the headline traceability feature).
+for column, score in zip(st.columns(len(cards)), CARD_SCORES):
+    if column.button(
+        "🔎 Trace to the 10-K",
+        key=f"trace_button_{score}",
+        help="Show the formula, every input, its XBRL tag and a link to "
+        "the SEC filing it came from.",
+        width="stretch",
+    ):
+        trace_panel.trace_dialog(score, row)
 # Shown on every company page (Phase 3 brief).
 st.caption(labels.SCOPE_NOTE)
 if cutoff != config.BENEISH_FLAG_CUTOFF:
@@ -120,8 +137,13 @@ if source != "full":
 
 # ---- 4. Detail -------------------------------------------------------------
 st.subheader("Detail")
-trends_tab, peers_tab, components_tab = st.tabs(
-    ["Trends over time", "Peer ranks", "All score components"]
+trends_tab, peers_tab, components_tab, trace_tab = st.tabs(
+    [
+        "Trends over time",
+        "Peer ranks",
+        "All score components",
+        "🔎 Trace to SEC filing",
+    ]
 )
 with trends_tab:
     st.plotly_chart(
@@ -163,8 +185,11 @@ with components_tab:
     st.markdown(f"**Financial strength score: {f_text}**")
     st.dataframe(company_view.f_signal_table(row), hide_index=True)
 
-st.info(
-    "Click-to-trace (the SEC filing behind every input) arrives in the "
-    "next build step.",
-    icon=":material/construction:",
-)
+with trace_tab:
+    trace_score = st.selectbox(
+        "Which score?",
+        list(trace.SCORE_LABELS),
+        format_func=trace.SCORE_LABELS.get,
+        key="trace_tab_score",
+    )
+    trace_panel.render_trace(trace_score, row, key_prefix="tab")

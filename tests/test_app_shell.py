@@ -136,6 +136,41 @@ def test_company_page_runs_for_every_company_year(fixture_source):
         assert not app_test.exception, (cik, year)
 
 
+def open_company(cik, fiscal_year):
+    """Return the app showing one fixture company-year's detail page."""
+    app_test = AppTest.from_file(APP_SCRIPT, default_timeout=30)
+    app_test.session_state[data.SELECTED_CIK] = cik
+    app_test.session_state[data.SELECTED_YEAR] = fiscal_year
+    app_test.run()
+    app_test.switch_page("views/company.py").run()
+    return app_test
+
+
+def test_trace_tab_shows_inputs_and_filing_links(fixture_source):
+    """The trace tab lists the M-Score inputs with EDGAR links."""
+    app_test = open_company(102, 2023)
+    trace_table = next(
+        frame.value
+        for frame in app_test.dataframe
+        if "XBRL tag" in frame.value.columns
+    )
+    assert (
+        trace_table["Filing"]
+        .str.startswith("https://www.sec.gov/Archives/edgar/data/102/")
+        .all()
+    )
+    assert "Restated to $700,000,000" in " ".join(trace_table["Later filings"])
+
+
+def test_trace_button_opens_the_panel(fixture_source):
+    """Each card has a trace button, and clicking it opens the trace."""
+    app_test = open_company(102, 2023)
+    before = len(app_test.dataframe)
+    app_test.button(key="trace_button_z_score").click().run()
+    assert not app_test.exception
+    assert len(app_test.dataframe) == before + 1
+
+
 def test_bad_data_source_shows_message_not_crash(monkeypatch):
     """A typo in EQR_DATA_SOURCE gives a readable error, not a traceback."""
     monkeypatch.setattr(config, "APP_DATA_SOURCE", "smaple")
