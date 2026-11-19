@@ -10,6 +10,7 @@ import streamlit as st
 
 import config
 from app import case_view, charts, company_view, data, labels
+from app.components import price_chart
 
 st.title("Case studies")
 st.markdown(
@@ -126,6 +127,15 @@ st.dataframe(
     },
 )
 st.caption(labels.SCOPE_NOTE)
+
+# The stock price around the case, with the 10-K markers and a dashed
+# line on the date the problem first became public.
+st.markdown("**Stock price and 10-K warnings**")
+price_chart.render_price_chart(
+    cik,
+    key="case",
+    event=(case["event_date"], case["event_type"]),
+)
 
 # Open the last year an analyst could have read, with its trace buttons.
 last_year = case_view.last_year_before_event(history)

@@ -117,3 +117,25 @@ def test_skipped_note():
     )
     assert "FY2012" in price_chart.skipped_note(skipped)
     assert price_chart.skipped_note(price_markers.empty_skipped()) is None
+
+
+def test_event_line_only_when_given():
+    """A case event adds one dashed vertical line spanning the chart
+    (yref "paper", 0 to 1) and its label, wrapped at 40 characters."""
+    label = (
+        "First public disclosure: SEC and DOJ investigation of "
+        "accounting practices"
+    )
+    figure = price_chart.price_figure(
+        make_result(), event=("2024-06-03", label)
+    )
+    assert len(figure.layout.shapes) == 1
+    line = figure.layout.shapes[0]
+    assert line.line.dash == "dash"
+    assert pd.Timestamp(line.x0) == pd.Timestamp("2024-06-03")
+    assert (line.y0, line.y1, line.yref) == (0, 1, "paper")
+    text = figure.layout.annotations[0].text
+    assert text.replace("<br>", " ") == label
+    assert all(len(part) <= 40 for part in text.split("<br>"))
+    plain = price_chart.price_figure(make_result())
+    assert len(plain.layout.shapes) == 0

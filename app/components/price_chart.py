@@ -9,6 +9,8 @@ Pages call render_price_chart(cik, key). price_figure() builds the
 Plotly figure without Streamlit, so it can be tested on its own.
 """
 
+import textwrap
+
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -44,6 +46,7 @@ NO_DATA_MESSAGE = (
     "no price data)."
 )
 MARKET_TOGGLE_LABEL = "Compare with SPY (both rebased to 100)"
+EVENT_LABEL_WIDTH = 40  # characters per line of the event label
 PRICE_AXIS_TITLE = "Adjusted close ($)"
 REBASED_AXIS_TITLE = "Value (first date shown = 100)"
 
@@ -109,12 +112,14 @@ def marker_hover(marker):
     )
 
 
-def price_figure(result, market_df=None):
+def price_figure(result, market_df=None, event=None):
     """Return the price chart for a PriceMarkers result with status "ok".
 
     market_df (SPY prices) is given only when the comparison toggle is
     on; then both lines are rebased to 100 at the first date shown
-    (price_markers.rebase_to_100) and the y-axis says so.
+    (price_markers.rebase_to_100) and the y-axis says so. event is an
+    optional (date, label) pair, drawn as a dashed vertical line (case
+    study mode: the date the problem first became public).
     """
     prices, markers = result.prices, result.markers
     y_column, axis_title = "adj_close", PRICE_AXIS_TITLE
@@ -168,6 +173,8 @@ def price_figure(result, market_df=None):
                 hoverinfo="text",
             )
         )
+    if event is not None:
+        _add_event_line(figure, *event)
     figure.update_layout(
         height=CHART_HEIGHT,
         margin={"l": 10, "r": 10, "t": 30, "b": 10},
@@ -176,6 +183,37 @@ def price_figure(result, market_df=None):
         hovermode="closest",
     )
     return figure
+
+
+def _add_event_line(figure, event_date, label):
+    """Draw a dashed vertical line at event_date with a wrapped label.
+
+    A shape plus a separate annotation rather than add_vline, whose
+    built-in label fails on date axes in some Plotly versions. yref
+    "paper" spans the full height whatever the price scale.
+    """
+    when = pd.Timestamp(event_date)
+    figure.add_shape(
+        type="line",
+        x0=when,
+        x1=when,
+        y0=0,
+        y1=1,
+        yref="paper",
+        line={"color": style.INK_SECONDARY, "width": 1.5, "dash": "dash"},
+    )
+    figure.add_annotation(
+        x=when,
+        y=1,
+        yref="paper",
+        text="<br>".join(textwrap.wrap(str(label), EVENT_LABEL_WIDTH)),
+        showarrow=False,
+        xanchor="left",
+        yanchor="top",
+        align="left",
+        font={"size": 10, "color": style.INK_SECONDARY},
+        bgcolor=style.SURFACE,
+    )
 
 
 def _label_order(label):
@@ -194,11 +232,12 @@ def skipped_note(skipped):
     )
 
 
-def render_price_chart(cik, key):
+def render_price_chart(cik, key, event=None):
     """Draw the chart for one company, or the no-data message.
 
     key keeps each page's comparison toggle separate (Streamlit needs a
-    unique key per widget).
+    unique key per widget). event: optional (date, label) for a dashed
+    vertical line (see price_figure).
     """
     data_dir = data.resolve_data_source()[1]
     result = load_chart_data(data_dir, int(cik))
@@ -209,7 +248,7 @@ def render_price_chart(cik, key):
         MARKET_TOGGLE_LABEL, value=False, key=f"price_chart_spy_{key}"
     )
     market_df = load_market(data_dir) if compare else None
-    st.plotly_chart(price_figure(result, market_df), width="stretch")
+    st.plotly_chart(price_figure(result, market_df, event), width="stretch")
     st.caption(CAPTION)
     note = skipped_note(result.skipped)
     if note:

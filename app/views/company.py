@@ -15,6 +15,7 @@ import streamlit as st
 import config
 from app import charts, company_view, data, labels, screening, style
 from app import trace, trace_panel
+from app.components import price_chart
 
 # The score behind each verdict card, in card order (M, Z'', F).
 CARD_SCORES = ["m_score", "z_score", "f_score"]
@@ -147,6 +148,10 @@ if source != "full":
 
 # ---- 4. Detail -------------------------------------------------------------
 st.subheader("Detail")
+# The stock price with a marker on each 10-K's filing date, colored by
+# the warnings that 10-K raised (app/components/price_chart.py).
+st.markdown("**Stock price and 10-K warnings**")
+price_chart.render_price_chart(cik, key="company")
 trends_tab, peers_tab, components_tab, trace_tab = st.tabs(
     [
         "Trends over time",

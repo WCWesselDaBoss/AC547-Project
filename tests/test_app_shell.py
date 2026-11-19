@@ -11,6 +11,7 @@ from streamlit.testing.v1 import AppTest
 
 import config
 from app import data, labels
+from app.components import price_chart
 
 APP_SCRIPT = str(config.PROJECT_ROOT / "app" / "app.py")
 VIEW_PAGES = [
@@ -312,3 +313,34 @@ def test_escape_markdown_stops_dollar_math():
     assert labels.escape_markdown("$408 million and $9 million") == (
         r"\$408 million and \$9 million"
     )
+
+
+def test_price_chart_message_without_prices(fixture_source):
+    """The fixture data has no prices file: the company page and the
+    case page show the plain message, never a blank chart or an error."""
+    for app_test in [
+        open_company(103, 2023),
+        run_app("views/case_studies.py"),
+    ]:
+        assert not app_test.exception
+        infos = " ".join(box.value for box in app_test.info)
+        assert price_chart.NO_DATA_MESSAGE in infos
+
+
+def test_price_chart_draws_on_the_sample(monkeypatch):
+    """On the sample (which has prices), Apple's company page shows the
+    chart with its caption and the SPY toggle, off by default."""
+    monkeypatch.setattr(config, "APP_DATA_SOURCE", "sample")
+    st.cache_data.clear()
+    app_test = AppTest.from_file(APP_SCRIPT, default_timeout=30)
+    app_test.session_state[data.SELECTED_CIK] = 320193
+    app_test.run()
+    app_test.switch_page("views/company.py").run()
+    assert not app_test.exception
+    captions = " ".join(caption.value for caption in app_test.caption)
+    assert price_chart.CAPTION in captions
+    toggle = app_test.toggle(key="price_chart_spy_company")
+    assert toggle.value is False
+    toggle.set_value(True).run()
+    assert not app_test.exception
+    st.cache_data.clear()
