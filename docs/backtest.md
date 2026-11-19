@@ -236,6 +236,7 @@ every registered test is reported, whatever it shows.
 | 9 | Large companies minus red flags, tests L1 and L2 below | Registered 2026-11-19 after tests 1-8 (all years already seen), before any test-9 return was computed | Final run after data fixes 9a and 9b; no registered test passed |
 | 9a | Data fix: public-float plausibility check (below), applied to tests 7 and 9 | Found while running test 9; set from the spread of float-to-price-x-shares and float-to-assets ratios, without looking at returns | Test 7 re-run and both versions reported; the first test-9 run is discarded (below) |
 | 9b | Data fix: assets limit tightened from 1,000 to 100 times (below) | Found in the second test-9 run: SeaWorld's FY2019-22 floats, about 1,000 times too large, still passed and took 7.3% of the 2020 pool; set from the float-to-assets spread, without looking at returns | Tests 7 and 9 re-run with it; only this final run is reported |
+| 10 | Do flagged companies blow up more often? Questions (a) and (b) below | Registered 2026-11-19 before any test-10 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | To run |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -454,6 +455,62 @@ version held 366 to 435 of the 500 companies.
 - **So the most SPY-like use of the checks did not beat SPY.** It
   trailed by 0.1 points a year and was ahead in 5 of 12 years, which is
   what holding SPY with some noise looks like.
+
+### Test 10: do flagged companies blow up more often? (registered before running)
+
+Registered before any test-10 result was computed; all years already
+seen in earlier tests, so this is supporting evidence, not confirmation.
+The definitions below are fixed.
+
+- **Windows.** Formation dates every June 30 from 2014 to 2025, with
+  the existing trade-date rule (the last trading day on or before June
+  30). Each holding window runs from that trade date to the next one;
+  the 2025 window ends on the last trading day on or before 2026-06-30
+  (not at the end of the price data, as in earlier tests).
+- **Pool.** The existing comparison group: latest score usable and at
+  most 15 months old, a current ticker, a price on each of the last 20
+  trading days, and an adjusted close of at least $5 on the trade date.
+- **Blowup.** The stock's adjusted close falls to 50% or less of its
+  trade-date close on any trading day in the holding window.
+- **Prices that stop mid-window** (no price anywhere in the data after
+  the stock's last price in the window, which is before the window's
+  end): a blowup if any real price in the window, including the last,
+  was at or below 50%; otherwise "unknown". Unknowns are reported
+  separately and left out of the main rate, never counted as
+  non-blowups.
+- **Groups.** Only companies whose latest score has an M-Score, a Z''
+  and an F-Score, so a missing score never counts as "no warning":
+  - Clean: `flags_raised` = 0;
+  - Flagged: `flags_raised` of 1 or more;
+  - also 0, 1, 2 and 3 flags separately, as a descriptive check of
+    whether the rate rises with each flag (not a pass/fail test).
+- **Blowup rate** for a group and year = blowups / (stocks - unknowns).
+- **Registered questions** (yearly differences over 12 years, pass mark
+  t >= 2.2; t = mean difference / its standard error, as in earlier
+  tests):
+  - (a) Comparison group: is Flagged's yearly blowup rate higher than
+    Clean's? Report the mean and median of (Flagged rate - Clean rate),
+    the years Flagged was higher, and t.
+  - (b) Large companies: the same question inside the test-9
+    `large_500` pool (the 500 largest by public float, with data fixes
+    9a and 9b), to check that the result is not just small-company
+    volatility.
+- **Also reported (descriptive, not tests):** for each year and group,
+  stocks, blowups, unknowns and the rate; the pooled 12-year rate for
+  each group and the ratio of Flagged to Clean; and the whole pool's
+  blowup share each year, as market context (the 2019-20 window
+  includes the March 2020 crash, which raises every group's rate).
+- **Limitations, stated in advance.**
+  - Survivorship: tickers are current ones, so companies that blew up
+    and then delisted are likely missing. Flagged companies are
+    probably missing more often, which would make the test understate
+    the difference.
+  - Flagged companies are weaker and likely more volatile by
+    construction; question (b) only partly controls for size.
+  - Correlation, not cause. This is test 10 on years already studied,
+    so even a pass is weaker evidence than a test on new years.
+- **Outputs:** a "Test 10 results" section here, whatever the results;
+  details in `data/logs/backtest_blowups.csv`.
 
 ## Data coverage
 
