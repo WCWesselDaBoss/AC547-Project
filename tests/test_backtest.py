@@ -913,11 +913,11 @@ def test_plausible_float():
     - 20,000: within 100x of 10,000 and 1,000x of assets -> kept;
     - 2e9 (200,000x the rough value) -> rejected;
     - 50 (1/200 of the rough value) -> rejected;
-    - 2e7 with no shares (price check skipped) but 4,000x assets ->
-      rejected; 2e6 with no shares and 400x assets -> kept."""
+    - 2e6 with no shares (price check skipped) but 400x assets ->
+      rejected; 2e5 with no shares and 40x assets -> kept."""
     frame = pd.DataFrame(
         {
-            "public_float": [2e4, 2e9, 50.0, 2e7, 2e6],
+            "public_float": [2e4, 2e9, 50.0, 2e6, 2e5],
             "entry_price": 10.0,
             "shares_outstanding": [1e3, 1e3, 1e3, np.nan, np.nan],
             "total_assets": 5e3,

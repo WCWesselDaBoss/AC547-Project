@@ -235,6 +235,7 @@ every registered test is reported, whatever it shows.
 | 8 | Best-score value stocks (V3) against the whole value group (V1) | After seeing test 7 | Exploratory: t = 2.20, at the pass mark, but not registered |
 | 9 | Large companies minus red flags, tests L1 and L2 below | Registered 2026-11-19 after tests 1-8 (all years already seen), before any test-9 return was computed | To run |
 | 9a | Data fix: public-float plausibility check (below), applied to tests 7 and 9 | Found while running test 9; set from the spread of float-to-price-x-shares and float-to-assets ratios, without looking at returns | Test 7 re-run and both versions reported; the first test-9 run is discarded (below) |
+| 9b | Data fix: assets limit tightened from 1,000 to 100 times (below) | Found in the second test-9 run: SeaWorld's FY2019-22 floats, about 1,000 times too large, still passed and took 7.3% of the 2020 pool; set from the float-to-assets spread, without looking at returns | Tests 7 and 9 re-run with it; only this final run is reported |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -375,10 +376,20 @@ took 99.8% of the 2018 portfolio; Advanced Energy's FY2020 is $2.6 x
 10^18; SolarEdge's FY2022 is $15.1. That run is discarded. From now on a
 float is used only if it is within 100 times adjusted price x shares
 outstanding (where both exist; wide because adjusted prices carry later
-splits) and within 1,000 times total assets. Failing floats are not
+splits) and within 100 times total assets (1,000 times before fix 9b). Failing floats are not
 corrected, only left out (status `float_implausible`). The same errors
 can push a company into or out of test 7's value group, so test 7 is
 re-run with the check, and both versions are reported.
+
+**Data fix 9b (2026-11-19).** The second run still let through floats
+tagged in thousands as if they were dollars: SeaWorld's FY2019-FY2022
+floats ($0.7 to $2.6 trillion, against about $1-2 billion in other
+years) sat just under the 1,000-times-assets limit and took 7.3% of the
+2020 pool. Every float above 100 times total assets in the data is an
+error of this kind (FuelCell FY2020 $426 billion, Accuray FY2024 $194
+billion, Universal Display FY2023 $320 billion), and no genuine one
+comes close, so the limit is now 100 times. The second run is discarded
+like the first; the results below are from the final run.
 
 ## Data coverage
 

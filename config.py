@@ -237,7 +237,10 @@ BACKTEST_LARGE_CAP_COUNT = 500
 # and (b) total assets. Chosen from the spread of these ratios across
 # all companies, without looking at any returns.
 BACKTEST_FLOAT_MAX_FACTOR_TO_PRICE_X_SHARES = 100
-BACKTEST_FLOAT_MAX_FACTOR_TO_ASSETS = 1000
+# 100 (data fix 9b): 1,000 let through floats tagged in thousands as
+# dollars (SeaWorld FY2019-22, FuelCell FY2020), while no genuine float
+# in the data exceeds 100 times total assets.
+BACKTEST_FLOAT_MAX_FACTOR_TO_ASSETS = 100
 BACKTEST_LONG_FLAGS = 0  # flags_raised for the long leg
 BACKTEST_SHORT_FLAGS = 3  # flags_raised for the short leg
 # A score is used only if its 10-K was filed within this many months
