@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.scores import backtest, public_float
+from src.scores import backtest, blowups, public_float
 
 DAYS = pd.bdate_range("2021-06-01", "2023-06-30").astype("datetime64[ns]")
 FORMATION = ["2021-06-30", "2022-06-30"]
@@ -930,3 +930,182 @@ def test_plausible_float():
         False,
         True,
     ]
+
+
+# ---------------------------------------------------------------------------
+# Test 10: blowup rates (src/scores/blowups.py)
+# ---------------------------------------------------------------------------
+# Two windows: 2021-06-30 -> 2022-06-30 and 2022-06-30 -> 2023-06-30.
+#   HALF: 10, exactly 5.00 on 2021-12-01 only, then 8 -> 50%: blowup.
+#         Window 2 starts at 8 and stays: no blowup.
+#   DROP: 10, then 4 from 2022-01-03, last price 2022-02-01 (delisted
+#         after falling) -> blowup.
+#   EARLY: 10, then 8 from 2021-09-01, last price 2021-10-01 (delisted
+#         before falling) -> unknown.
+#   OK: 10, then 6 from 2022-01-03 (60%) -> no blowup. Window 2 starts
+#       at 6, then 2.4 from 2023-01-03 (40%) -> blowup.
+#   PART: 10 flat, only a Z'' score -> not grouped (whole pool only).
+BLOWUP_FORMATION = ["2021-06-30", "2022-06-30"]
+
+
+def make_blowup_prices():
+    """Return the test-10 example prices."""
+    frames = [
+        stock("SPY", [(None, 100.0)]),
+        stock(
+            "HALF",
+            [
+                (None, 10.0),
+                (pd.Timestamp("2021-12-01"), 5.0),
+                (pd.Timestamp("2021-12-02"), 8.0),
+            ],
+        ),
+        stock("DROP", [(None, 10.0), (JAN_2022, 4.0)], last_day="2022-02-01"),
+        stock(
+            "EARLY",
+            [(None, 10.0), (pd.Timestamp("2021-09-01"), 8.0)],
+            last_day="2021-10-01",
+        ),
+        stock("OK", [(None, 10.0), (JAN_2022, 6.0), (JAN_2023, 2.4)]),
+        stock("PART", [(None, 10.0)]),
+    ]
+    prices = pd.concat(frames, ignore_index=True)
+    return prices.astype({"ticker": "string"})
+
+
+def make_blowup_pool():
+    """Return the pool: (formation, ticker, flags_raised, all three)."""
+    rows = [
+        ("2021-06-30", "HALF", 0, True),
+        ("2021-06-30", "DROP", 3, True),
+        ("2021-06-30", "EARLY", 1, True),
+        ("2021-06-30", "OK", 0, True),
+        ("2021-06-30", "PART", 0, False),
+        ("2022-06-30", "HALF", 0, True),
+        ("2022-06-30", "OK", 2, True),
+    ]
+    pool = pd.DataFrame(
+        rows,
+        columns=[
+            "formation_date",
+            "ticker",
+            "flags_raised",
+            "all_three_scores",
+        ],
+    )
+    pool["formation_date"] = pd.to_datetime(pool["formation_date"])
+    pool["flags_raised"] = pool["flags_raised"].astype("Int64")
+    pool["cik"] = pool["ticker"].map(
+        {"HALF": 1, "DROP": 2, "EARLY": 3, "OK": 4, "PART": 5}
+    )
+    return pool.assign(pool="comparison")
+
+
+def run_blowup_example(monkeypatch):
+    """Return (details, rates) for the example."""
+    monkeypatch.setattr(
+        blowups.config, "BLOWUP_FORMATION_DATES", BLOWUP_FORMATION
+    )
+    monkeypatch.setattr(blowups.config, "BLOWUP_FINAL_END", "2023-06-30")
+    prices = make_blowup_prices()
+    calendar = backtest.trading_calendar(prices)
+    periods = blowups.blowup_periods(calendar)
+    details = blowups.blowup_details(
+        make_blowup_pool(), backtest.price_table(prices, calendar), periods
+    )
+    return details, blowups.blowup_rates(details)
+
+
+def test_blowup_periods_end_on_the_final_date(monkeypatch):
+    """Window 1 ends at window 2's start; window 2 ends 2023-06-30."""
+    monkeypatch.setattr(
+        blowups.config, "BLOWUP_FORMATION_DATES", BLOWUP_FORMATION
+    )
+    monkeypatch.setattr(blowups.config, "BLOWUP_FINAL_END", "2023-06-30")
+    calendar = backtest.trading_calendar(make_blowup_prices())
+    periods = blowups.blowup_periods(calendar)
+    assert periods["end"].tolist() == list(
+        pd.to_datetime(["2022-06-30", "2023-06-30"])
+    )
+
+
+def test_blowup_outcomes(monkeypatch):
+    """HALF hits exactly 50% (blowup); DROP falls then delists
+    (blowup); EARLY delists at 80% (unknown); OK bottoms at 60% (no
+    blowup), then 40% in window 2 (blowup)."""
+    details, _ = run_blowup_example(monkeypatch)
+    outcome = details.set_index(["year", "ticker"])["outcome"]
+    assert outcome[(2021, "HALF")] == "blowup"
+    assert outcome[(2021, "DROP")] == "blowup"
+    assert outcome[(2021, "EARLY")] == "unknown"
+    assert outcome[(2021, "OK")] == "no_blowup"
+    assert outcome[(2021, "PART")] == "no_blowup"
+    assert outcome[(2022, "HALF")] == "no_blowup"
+    assert outcome[(2022, "OK")] == "blowup"
+    ratio = details.set_index(["year", "ticker"])["min_ratio"]
+    assert ratio[(2021, "HALF")] == pytest.approx(0.5)
+    assert ratio[(2021, "OK")] == pytest.approx(0.6)
+    stopped = details.set_index(["year", "ticker"])["stopped"]
+    assert bool(stopped[(2021, "DROP")]) and bool(stopped[(2021, "EARLY")])
+    assert not bool(stopped[(2021, "HALF")])
+
+
+def test_blowup_rates_and_groups(monkeypatch):
+    """2021: Clean (HALF, OK) 1 of 2 = 0.5; Flagged (DROP, EARLY): EARLY
+    is unknown, so 1 of 1 = 1.0; 1 flag (EARLY only) has no known stock,
+    so NaN; the whole pool (PART included) 2 of 4 known = 0.5.
+    2022: Clean (HALF) 0 of 1 = 0; Flagged (OK, 2 flags) 1 of 1 = 1."""
+    _, rates = run_blowup_example(monkeypatch)
+    rate = rates.set_index(["year", "group"])
+    assert rate.loc[(2021, "clean"), "rate"] == pytest.approx(0.5)
+    assert rate.loc[(2021, "flagged"), "rate"] == pytest.approx(1.0)
+    assert rate.loc[(2021, "flagged"), "unknowns"] == 1
+    assert np.isnan(rate.loc[(2021, "1_flags"), "rate"])
+    assert rate.loc[(2021, "3_flags"), "rate"] == pytest.approx(1.0)
+    assert rate.loc[(2021, "whole_pool"), "stocks"] == 5
+    assert rate.loc[(2021, "whole_pool"), "rate"] == pytest.approx(0.5)
+    assert rate.loc[(2022, "clean"), "rate"] == pytest.approx(0.0)
+    assert rate.loc[(2022, "flagged"), "rate"] == pytest.approx(1.0)
+    assert rate.loc[(2022, "2_flags"), "rate"] == pytest.approx(1.0)
+
+
+def test_blowup_questions_and_pooled_rates(monkeypatch):
+    """Yearly differences (Flagged - Clean): +0.5 and +1.0. Mean 0.75,
+    standard deviation 0.3536, standard error 0.25 -> t = 3.0.
+    Pooled: Clean 1 blowup of 3; Flagged 2 of 2 known (EARLY unknown)
+    = 1.0; ratio 3.0."""
+    details, rates = run_blowup_example(monkeypatch)
+    question = blowups.registered_questions(rates).iloc[0]
+    assert question["mean_difference"] == pytest.approx(0.75)
+    assert question["median_difference"] == pytest.approx(0.75)
+    assert question["years_flagged_higher"] == 2
+    assert question["t"] == pytest.approx(3.0)
+    assert bool(question["passes"])
+    pooled = blowups.pooled_rates(details).set_index("group")
+    assert pooled.loc["clean", "rate"] == pytest.approx(1 / 3)
+    assert pooled.loc["flagged", "rate"] == pytest.approx(1.0)
+    assert pooled.loc["flagged", "ratio_to_clean"] == pytest.approx(3.0)
+
+
+def test_blowup_pools(monkeypatch):
+    """The comparison pool is the comparison group; with a large pool of
+    3, 2021 holds C, A and G (the same as test 9). all_three_scores
+    comes from the score behind each pick: G has only a Z''."""
+    monkeypatch.setattr(backtest.config, "BACKTEST_LARGE_CAP_COUNT", 3)
+    prices = make_full_prices()
+    calendar = backtest.trading_calendar(prices)
+    periods = backtest.holding_periods(calendar, FORMATION)
+    pools = blowups.build_pools(
+        *make_score_inputs(),
+        backtest.price_table(prices, calendar),
+        calendar,
+        periods,
+        make_floats(),
+    )
+    in_2021 = pools[pools["formation_date"].dt.year == 2021]
+    large = in_2021[in_2021["pool"] == "large_500"].set_index("ticker")
+    assert sorted(large.index) == ["A", "C", "G"]
+    assert not bool(large.loc["G", "all_three_scores"])
+    assert large.loc["C", "flags_raised"] == 3
+    comparison = in_2021[in_2021["pool"] == "comparison"]
+    assert sorted(comparison["ticker"]) == ["A", "B", "C", "D", "G"]

@@ -241,6 +241,16 @@ BACKTEST_FLOAT_MAX_FACTOR_TO_PRICE_X_SHARES = 100
 # dollars (SeaWorld FY2019-22, FuelCell FY2020), while no genuine float
 # in the data exceeds 100 times total assets.
 BACKTEST_FLOAT_MAX_FACTOR_TO_ASSETS = 100
+
+# Test 10, blowup rates (src/scores/blowups.py; registered in
+# docs/backtest.md before it was run). Same formation dates as the
+# 2014_2025 window, but the last holding window ends on this date (the
+# last trading day on or before it) instead of at the end of the prices.
+BLOWUP_FORMATION_DATES = [f"{year}-06-30" for year in range(2014, 2026)]
+BLOWUP_FINAL_END = "2026-06-30"
+# A blowup: the adjusted close falls to this share or less of the
+# trade-date close on any trading day in the window.
+BLOWUP_THRESHOLD = 0.5
 BACKTEST_LONG_FLAGS = 0  # flags_raised for the long leg
 BACKTEST_SHORT_FLAGS = 3  # flags_raised for the short leg
 # A score is used only if its 10-K was filed within this many months
