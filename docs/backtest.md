@@ -22,7 +22,9 @@ come from the run on 2026-11-19 with prices through 2026-11-10.
 | Information used | Each company's latest score whose 10-K `filed_date` (from `financials_annual`) is strictly before the trade date, and at most 15 months old | Nothing filed on or after the trade date is used; an old score from a company that stopped filing is not used |
 | Long leg | `flags_raised` = 0 | As specified |
 | Short leg | `flags_raised` = 3 (M-Score above -1.78, Z'' distress zone and F-Score weak band) | As specified |
-| Long leg variant | `all_three_scores`: 0 flags **and** an M-Score, a Z'' and an F-Score all exist | `flags_raised` counts a missing score as "no warning", so a company with only a safe Z'' has 0 flags. A 3 always needs all three scores, so the variant holds both legs to the same evidence standard. Both variants are reported |
+| Long leg variant | `all_three_scores`: 0 flags **and** an M-Score, a Z'' and an F-Score all exist | `flags_raised` counts a missing score as "no warning", so a company with only a safe Z'' has 0 flags. A 3 always needs all three scores, so the variant holds both legs to the same evidence standard |
+| Long leg variant | `best_scores`: every check at its best: M-Score not flagged, Z'' safe (above 2.60) and F-Score strong (7 to 9) | 0 flags still allows a grey-zone Z'' and a middle F-Score; this asks for the best reading of all three. Added 2026-11-19 at the team's request |
+| Sell on a flag (long only) | `long_only_sell_on_flag`: a long is sold at the close of the first trading day after a newer 10-K, filed during the holding year, raises any warning (`flags_raised` >= 1); the money waits in cash until the next June 30 | The first day an investor could act on the filing. A 10-K that is merely less than best (say an F-Score falling from 7 to 6) raises no flag, so the stock is held. Its exit trading cost is charged on the period's last day (same amount, slightly different timing in the daily path) |
 | Eligibility | A current SEC ticker; a price on each of the last 20 trading days; adjusted close of at least $5 | Penny stocks are hard to short |
 | Sizing | $100,000: $50,000 long and $50,000 short, equal-weighted within each leg | Dollar neutral |
 | Holding | Buy and hold until the next formation date, then sell everything and rebuild the portfolio (50/50 again); the final period runs to the last SPY price (2026-11-10, about 16 months) | As specified |
@@ -42,12 +44,16 @@ come from the run on 2026-11-19 with prices through 2026-11-10.
 | Strategy, all three scores | $212,299 | $208,814 | +108.8% | 14.7% | -31.0% |
 | Long leg alone, as specified | $129,635 | $127,112 | +27.1% | 4.6% | -27.8% |
 | Long leg alone, all three scores | $135,167 | $132,547 | +32.5% | 5.4% | -28.6% |
+| Strategy, best scores | $227,726 | $224,014 | +124.0% | 16.2% | -30.3% |
+| Long only, best scores, held | $155,944 | $152,962 | +53.0% | 8.2% | -29.2% |
+| Long only, best scores, sold on a flag | $157,025 | $154,027 | +54.0% | 8.4% | -26.9% |
 | Short leg alone | $276,788 | $272,621 | +172.6% | 20.6% | -89.7% |
 | SPY | $187,909 | (no costs) | +87.9% | 12.5% | -24.5% |
 
 The "0 bps" column still includes the 1% borrowing fee. Over the five
 periods the strategy (as specified, 20 bps) paid $2,456 in trading costs
-and $3,515 in borrowing fees. The short leg is the same in both variants.
+and $3,515 in borrowing fees. The short leg is the same in every
+variant. Long-only portfolios pay no borrowing fee.
 
 Max drawdown is the largest fall from a previous high in the daily
 value. Long legs and SPY bottomed in the 2022 bear market (late
@@ -104,6 +110,48 @@ stock the return runs to its exit price.
 - The stricter long leg (all three scores) did slightly better than the
   one as specified in total, but only in three of the five years, so the
   difference is small and not consistent.
+
+## Long only: best indicators, sold on a flag
+
+No shorting: $100,000 goes into the companies whose three checks are all
+at their best (`best_scores`), equal-weighted, and is rebuilt each June
+30. The second row also sells a stock as soon as a newer 10-K raises a
+warning. 20 bps, no borrowing fee.
+
+| Formation | Stocks bought | Sold after a flag | Held for the year | Sold on a flag | SPY |
+| --- | --- | --- | --- | --- | --- |
+| 2021 | 45 | 6 | -18.0% | -15.9% | -10.6% |
+| 2022 | 90 | 17 | +25.6% | +24.9% | +19.4% |
+| 2023 | 61 | 4 | +12.0% | +10.0% | +24.5% |
+| 2024 | 88 | 9 | +5.4% | +5.0% | +14.9% |
+| 2025 | 78 | 4 | +25.8% | +27.0% | +23.0% |
+
+Best-indicator candidates over the five years: 362 traded; not traded,
+147 with a stale score, 53 with no ticker, 5 with a gap in the last 20
+trading days, 10 under $5 and 1 with no prices
+(`data/logs/backtest_candidates.csv`).
+
+- **Choosing the best indicators helped.** The best-scores long leg
+  returned 8.2% a year against 4.6% for the 0-flag long leg, and beat
+  SPY in two of five years (2022 and 2025). It still trailed SPY
+  (12.5%) by about 4 points a year. 39.0% of its picks beat SPY.
+- **Selling on a flag changed little.** It added 0.1 points a year and
+  reduced the worst drop from -29.2% to -26.9%. 40 of 362 positions
+  were sold early. The typical sold stock did better sold than held
+  (median +1.6% against -10.0% to the rebalance), but a few sold stocks
+  rallied afterward, so on average holding would have earned slightly
+  more (+6.8% against +5.8%). In the 0-flag long leg (759 of 5,709
+  sold) selling helped on both measures; in the all-three-scores leg
+  (270 of 1,549) it helped the median but not the mean.
+- **One sale checked by hand.** AMD was bought on 2022-06-30 on its
+  FY2021 10-K (all three checks at their best). Its FY2022 10-K, filed
+  2023-02-27, raised an M-Score flag (likely reflecting the Xilinx
+  acquisition, which changes many of the M-Score's year-over-year
+  ratios). It was sold on 2023-02-28 at $78.58 against a $76.47 entry,
+  +2.76%.
+- The best-scores strategy (best longs, 3-flag shorts) earned 16.2% a
+  year, the highest of the long-short versions, but its edge over SPY
+  still comes mainly from the short leg and its biases.
 
 ## Data coverage
 

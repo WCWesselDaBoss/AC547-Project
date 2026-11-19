@@ -12,6 +12,10 @@ Strategy (dollar neutral, stocks only):
 - A stock whose prices stop mid-period (delisted) is sold or covered at
   its last available price; the cash then earns nothing. No price is
   ever invented.
+- Long-only variants: the long leg alone, optionally restricted to the
+  companies whose three checks are all at their best (best_scores), and
+  optionally sold as soon as a newer 10-K raises any warning
+  (long_only_sell_on_flag).
 
 This is an analysis for a class project, not investment advice. See
 docs/backtest.md for the results and their limitations.
@@ -58,7 +62,7 @@ def price_table(prices_df, calendar):
     return wide.reindex(calendar)
 
 
-def position_paths(price_wide, tickers, start, end, capital):
+def position_paths(price_wide, tickers, start, end, capital, sell_dates=None):
     """Return (daily values, positions) for equal dollar amounts.
 
     Each ticker gets capital / n dollars at its start price. Its daily
@@ -66,26 +70,44 @@ def position_paths(price_wide, tickers, start, end, capital):
     the value is frozen at that price, which is the same as exiting there
     and holding cash. For a short leg the same numbers are the amount
     owed to buy the shares back.
+
+    sell_dates (optional) maps a ticker to a day it is sold early, at
+    that day's close; its value is then frozen the same way. A sell date
+    on or after the end, or after the stock's last price, changes
+    nothing (the stock was already exiting).
     """
     days = price_window(price_wide, start, end)
     if len(tickers) == 0:
         return pd.DataFrame(index=days.index), empty_positions()
-    window = days[list(tickers)]
+    window = days[list(tickers)].copy()
     entry_prices = window.iloc[0]
     if entry_prices.isna().any():
         missing = entry_prices[entry_prices.isna()].index.tolist()
         raise ValueError(f"no price on {start.date()} for {missing}")
     shares = (capital / len(tickers)) / entry_prices
+    last_in_window = window.apply(pd.Series.last_valid_index)
+    sold = pd.Series(False, index=window.columns)
+    for ticker, sell_date in (sell_dates or {}).items():
+        if (
+            ticker in window.columns
+            and pd.notna(sell_date)
+            and sell_date < end
+            and sell_date <= last_in_window[ticker]
+        ):
+            window.loc[window.index > sell_date, ticker] = np.nan
+            sold[ticker] = True
     # Forward fill only inside the window: a delisted stock stays at its
     # last real price (the exit), never at a made-up later one.
     values = window.ffill() * shares
     exit_prices = window.ffill().iloc[-1]
     # Delisted = no price anywhere in the data after its last one in the
     # window, so a single missing day is not mistaken for a delisting.
+    # A stock sold early counts as sold, not delisted, even if it later
+    # stopped trading.
     last_ever = price_wide[list(tickers)].apply(pd.Series.last_valid_index)
-    delisted = (last_ever < end).to_numpy()
-    last_in_window = window.apply(pd.Series.last_valid_index)
-    exit_dates = np.where(delisted, last_in_window.to_numpy(), end)
+    delisted = ((last_ever < end) & ~sold).to_numpy()
+    exit_dates = window.apply(pd.Series.last_valid_index)
+    exit_dates = np.where(delisted | sold.to_numpy(), exit_dates, end)
     positions = pd.DataFrame(
         {
             "ticker": pd.array(list(tickers), dtype="string"),
@@ -93,6 +115,7 @@ def position_paths(price_wide, tickers, start, end, capital):
             "exit_price": exit_prices.to_numpy(),
             "exit_date": pd.to_datetime(exit_dates).astype("datetime64[ns]"),
             "delisted": delisted,
+            "sold_on_flag": sold.to_numpy(),
         }
     )
     positions["stock_return"] = (
@@ -116,6 +139,7 @@ def empty_positions():
             "exit_price": pd.Series([], dtype="float64"),
             "exit_date": pd.Series([], dtype="datetime64[ns]"),
             "delisted": pd.Series([], dtype="bool"),
+            "sold_on_flag": pd.Series([], dtype="bool"),
             "stock_return": pd.Series([], dtype="float64"),
         }
     )
@@ -131,6 +155,7 @@ def simulate_period(
     weights,
     cost_bps,
     borrow_rate,
+    long_sell_dates=None,
 ):
     """Simulate one holding period; return (daily path, positions, costs).
 
@@ -145,12 +170,15 @@ def simulate_period(
     - borrowing: borrow_rate a year on the short capital, pro-rated by
       calendar days.
     Entry cost is taken on the first day, borrowing accrues day by day
-    and exit cost is taken on the last day, so the path shows them.
+    and exit cost is taken on the last day, so the path shows them. A
+    long sold early (long_sell_dates, see position_paths) pays its exit
+    cost on the last day too: the amount is the same, only its timing in
+    the daily path differs.
     """
     long_capital = equity * weights[0]
     short_capital = equity * weights[1]
     long_values, long_positions = position_paths(
-        price_wide, longs, start, end, long_capital
+        price_wide, longs, start, end, long_capital, long_sell_dates
     )
     short_owed, short_positions = position_paths(
         price_wide, shorts, start, end, short_capital
@@ -195,12 +223,14 @@ def run_portfolio(
     cost_bps,
     borrow_rate,
     start_capital,
+    sell_on_flag=False,
 ):
     """Run every period in turn; return (period summary, daily path).
 
     Each period starts with the previous period's ending value (after
     costs), split again by weights, so the portfolio is rebalanced once
-    a year. picks_df has columns formation_date, leg, ticker.
+    a year. picks_df has columns formation_date, leg, ticker, and
+    sell_date (from flag_sell_dates) when sell_on_flag is True.
     """
     equity = start_capital
     rows, paths = [], []
@@ -208,7 +238,16 @@ def run_portfolio(
         chosen = picks_df[picks_df["formation_date"] == period.formation_date]
         longs = chosen.loc[chosen["leg"] == "long", "ticker"].tolist()
         shorts = chosen.loc[chosen["leg"] == "short", "ticker"].tolist()
-        path, _, costs = simulate_period(
+        sell_dates = None
+        if sell_on_flag:
+            is_long = chosen["leg"] == "long"
+            sell_dates = dict(
+                zip(
+                    chosen.loc[is_long, "ticker"],
+                    chosen.loc[is_long, "sell_date"],
+                )
+            )
+        path, positions, costs = simulate_period(
             price_wide,
             longs,
             shorts,
@@ -218,6 +257,7 @@ def run_portfolio(
             weights,
             cost_bps,
             borrow_rate,
+            sell_dates,
         )
         end_value = path["value"].iloc[-1]
         rows.append(
@@ -230,6 +270,7 @@ def run_portfolio(
                 "period_return": end_value / equity - 1,
                 "n_long": len(longs) if weights[0] > 0 else 0,
                 "n_short": len(shorts) if weights[1] > 0 else 0,
+                "n_sold_on_flag": int(positions["sold_on_flag"].sum()),
                 **costs,
             }
         )
@@ -273,12 +314,17 @@ LONG_VARIANTS = {
     # The strategy as specified: flags_raised = 0. A missing score counts
     # as "no warning" in flags_raised (CLAUDE.md section 4), so a company
     # with only a safe Z'' also has 0 flags.
-    "as_specified": False,
+    "as_specified": "flags_raised = 0",
     # Stricter: all three scores exist and none raises a warning, so the
     # long leg is held to the same evidence standard as the short leg
     # (3 flags always means all three scores exist).
-    "all_three_scores": True,
+    "all_three_scores": "0 flags and M, Z'' and F scores all exist",
+    # Strictest: every check at its best, not merely "no warning" (0
+    # flags still allows a grey-zone Z'' and a middle F-Score).
+    "best_scores": "M-Score not flagged, Z'' safe and F-Score strong",
 }
+BEST_Z_ZONE = "safe"
+BEST_F_BAND = "strong"
 STATUS_ELIGIBLE = "eligible"
 
 
@@ -337,7 +383,8 @@ def select_candidates(
     One row per formation date and company whose latest score has
     config.BACKTEST_LONG_FLAGS or BACKTEST_SHORT_FLAGS flags. Columns:
     formation_date, trade_date, cik, ticker, fiscal_year, filed_date,
-    flags_raised, leg, all_three_scores, status. Status is stale_score
+    flags_raised, m_flag, z_zone, f_band, leg, all_three_scores, status.
+    Status is stale_score
     or a price_status value; only "eligible" rows are traded. Keeping
     the rest lets the report count what was dropped and why.
     """
@@ -375,33 +422,104 @@ def select_candidates(
         "fiscal_year",
         "filed_date",
         "flags_raised",
+        "m_flag",
+        "z_zone",
+        "f_band",
         "leg",
         "all_three_scores",
         "status",
     ]
     candidates = pd.concat(frames, ignore_index=True)[columns]
-    return candidates.astype({"leg": "string", "ticker": "string"})
+    return candidates.astype(
+        {
+            "leg": "string",
+            "ticker": "string",
+            "m_flag": "boolean",
+            "z_zone": "string",
+            "f_band": "string",
+        }
+    )
 
 
 def picks_for_variant(candidates_df, variant):
-    """Return the traded picks (formation_date, leg, ticker) for a long
-    leg variant in LONG_VARIANTS. The short leg is the same in both."""
+    """Return the traded picks (formation_date, leg, cik, ticker) for a
+    long-leg variant in LONG_VARIANTS. The short leg is the same in all.
+    """
+    if variant not in LONG_VARIANTS:
+        raise ValueError(f"unknown variant {variant}")
     traded = candidates_df["status"] == STATUS_ELIGIBLE
-    if LONG_VARIANTS[variant]:
-        is_long = candidates_df["leg"] == "long"
+    is_long = candidates_df["leg"] == "long"
+    if variant in ("all_three_scores", "best_scores"):
         traded &= ~is_long | candidates_df["all_three_scores"]
-    picks = candidates_df.loc[traded, ["formation_date", "leg", "ticker"]]
-    return picks.reset_index(drop=True)
+    if variant == "best_scores":
+        # Each test is filled separately: a missing verdict is never best
+        # (and pandas cannot combine nullable masks that contain NA).
+        is_best = (
+            candidates_df["m_flag"].eq(False).fillna(False).astype(bool)
+            & candidates_df["z_zone"]
+            .eq(BEST_Z_ZONE)
+            .fillna(False)
+            .astype(bool)
+            & candidates_df["f_band"]
+            .eq(BEST_F_BAND)
+            .fillna(False)
+            .astype(bool)
+        )
+        traded &= ~is_long | is_best
+    columns = ["formation_date", "leg", "cik", "ticker"]
+    return candidates_df.loc[traded, columns].reset_index(drop=True)
+
+
+def flag_sell_dates(picks_df, scores_df, financials_df, calendar, periods):
+    """Return picks_df with sell_date: when a long would be sold on a flag.
+
+    A long is sold when a newer 10-K, filed on or after the period's
+    trade date and before its end, raises at least one warning
+    (flags_raised >= 1). The sale is at the close of the first trading
+    day after that 10-K's filed_date, the first day an investor could act
+    on it; the money then waits in cash until the next rebalance. A new
+    10-K that is merely less than "best" (say an F-Score falling from 7
+    to 6) raises no flag and does not trigger a sale. Shorts and longs
+    with no such 10-K get NaT.
+    """
+    filed = financials_df[["cik", "fiscal_year", "filed_date"]]
+    dated = scores_df.merge(filed, on=["cik", "fiscal_year"], how="left")
+    flagged = dated.loc[dated["flags_raised"].fillna(0) >= 1]
+    flagged = flagged[["cik", "filed_date"]]
+    picks = picks_df.copy()
+    picks["sell_date"] = pd.Series(pd.NaT, index=picks.index).astype(
+        "datetime64[ns]"
+    )
+    for period in periods.itertuples(index=False):
+        in_period = flagged[
+            (flagged["filed_date"] >= period.start)
+            & (flagged["filed_date"] < period.end)
+        ]
+        first_flag = in_period.groupby("cik")["filed_date"].min()
+        if first_flag.empty:
+            continue
+        is_row = (picks["formation_date"] == period.formation_date) & (
+            picks["leg"] == "long"
+        )
+        filed_dates = picks.loc[is_row, "cik"].map(first_flag).dropna()
+        # Next trading day strictly after the filing date.
+        positions = calendar.searchsorted(filed_dates.to_numpy(), side="right")
+        sell_days = [
+            calendar[i] if i < len(calendar) else pd.NaT for i in positions
+        ]
+        picks.loc[filed_dates.index, "sell_date"] = sell_days
+    return picks
 
 
 # ---------------------------------------------------------------------------
 # Benchmark, hit rates and summary metrics
 # ---------------------------------------------------------------------------
-PORTFOLIO_WEIGHTS = {
-    # (share of equity long, share short)
-    "strategy": (0.5, 0.5),
-    "long_only": (1.0, 0.0),
-    "short_only": (0.0, 1.0),
+PORTFOLIOS = {
+    # name: ((share of equity long, share short), sell longs on a flag)
+    "strategy": ((0.5, 0.5), False),
+    "long_only": ((1.0, 0.0), False),
+    "long_only_sell_on_flag": ((1.0, 0.0), True),
+    "short_only": ((0.0, 1.0), False),
 }
 BENCHMARK = "spy"
 
@@ -423,13 +541,14 @@ def period_benchmark_returns(price_wide, periods_df):
     )
 
 
-def position_log(price_wide, picks_df, periods_df):
+def position_log(price_wide, picks_df, periods_df, sell_on_flag=False):
     """Return one row per pick with its return and SPY's.
 
     stock_return runs from the start price to the exit price (the last
     price for a delisted stock, after which the money is cash), so it
     matches how the portfolio is valued. beat_spy: a long that returned
-    more than SPY; lagged_spy: a short that returned less than SPY.
+    more than SPY; lagged_spy: a short that returned less than SPY. With
+    sell_on_flag, longs are sold on their sell_date (flag_sell_dates).
     """
     spy_returns = period_benchmark_returns(price_wide, periods_df)
     frames = []
@@ -438,9 +557,13 @@ def position_log(price_wide, picks_df, periods_df):
     ):
         chosen = picks_df[picks_df["formation_date"] == period.formation_date]
         for leg in ("long", "short"):
-            tickers = chosen.loc[chosen["leg"] == leg, "ticker"].tolist()
+            in_leg = chosen[chosen["leg"] == leg]
+            tickers = in_leg["ticker"].tolist()
+            sell_dates = None
+            if sell_on_flag and leg == "long":
+                sell_dates = dict(zip(tickers, in_leg["sell_date"]))
             _, positions = position_paths(
-                price_wide, tickers, period.start, period.end, 1.0
+                price_wide, tickers, period.start, period.end, 1.0, sell_dates
             )
             positions["leg"] = leg
             positions["formation_date"] = period.formation_date
@@ -493,6 +616,7 @@ RESULT_COLUMNS = [
     "spy_return",
     "n_long",
     "n_short",
+    "n_sold_on_flag",
     "trading_cost",
     "borrow_cost",
 ]
@@ -507,7 +631,8 @@ def run_backtest(scores_df, financials_df, companies_df, prices_df):
     - summary: one row per variant, portfolio and cost level, plus SPY,
       with ending value, total and annualized return and max drawdown;
     - daily: the daily value of each of those portfolios;
-    - positions: one row per variant and pick, with returns vs SPY;
+    - positions: one row per variant, rule (hold or sell_on_flag) and
+      pick, with returns vs SPY (sell_on_flag rows are longs only);
     - candidates: every long or short candidate with its status.
     The 1% borrowing fee applies at every cost level, because a short
     seller always pays it; cost_bps varies only the trading cost.
@@ -523,11 +648,21 @@ def run_backtest(scores_df, financials_df, companies_df, prices_df):
 
     results, summaries, dailies, position_logs = [], [], [], []
     for variant in LONG_VARIANTS:
-        picks = picks_for_variant(candidates, variant)
-        log = position_log(price_wide, picks, periods)
-        log["variant"] = variant
-        position_logs.append(log)
-        for portfolio, weights in PORTFOLIO_WEIGHTS.items():
+        picks = flag_sell_dates(
+            picks_for_variant(candidates, variant),
+            scores_df,
+            financials_df,
+            calendar,
+            periods,
+        )
+        for rule in ("hold", "sell_on_flag"):
+            log = position_log(
+                price_wide, picks, periods, rule == "sell_on_flag"
+            )
+            if rule == "sell_on_flag":
+                log = log[log["leg"] == "long"]
+            position_logs.append(log.assign(variant=variant, rule=rule))
+        for portfolio, (weights, sell_on_flag) in PORTFOLIOS.items():
             for cost_bps in config.BACKTEST_COST_BPS:
                 labels = {
                     "variant": variant,
@@ -542,6 +677,7 @@ def run_backtest(scores_df, financials_df, companies_df, prices_df):
                     cost_bps,
                     config.BACKTEST_BORROW_RATE,
                     capital,
+                    sell_on_flag,
                 )
                 results.append(
                     period_df.assign(spy_return=spy_returns, **labels)
@@ -583,6 +719,7 @@ def benchmark_periods(periods_df, spy_returns, capital, labels):
         spy_return=spy_returns,
         n_long=0,
         n_short=0,
+        n_sold_on_flag=0,
         trading_cost=0.0,
         borrow_cost=0.0,
         **labels,
@@ -606,18 +743,23 @@ def coverage_table(candidates_df, positions_df):
     )
     delisted = (
         positions_df.assign(year=positions_df["formation_date"].dt.year)
-        .groupby(["variant", "year", "leg"])["delisted"]
-        .agg(picks="size", delisted_mid_period="sum")
+        .groupby(["variant", "rule", "year", "leg"])
+        .agg(
+            picks=("delisted", "size"),
+            delisted_mid_period=("delisted", "sum"),
+            sold_on_flag=("sold_on_flag", "sum"),
+        )
     )
     return by_status, delisted
 
 
 def hit_rate_table(positions_df):
-    """Return hit rates by variant and year, plus an "all" row per
-    variant: picks, share of longs that beat SPY, share of shorts that
-    lagged SPY."""
+    """Return hit rates by variant, rule and year, plus an "all" row per
+    variant and rule: picks, share of longs that beat SPY, share of
+    shorts that lagged SPY (NaN when a rule has no shorts)."""
     rows = []
-    for variant, picks in positions_df.groupby("variant", sort=False):
+    groups_by_rule = positions_df.groupby(["variant", "rule"], sort=False)
+    for (variant, rule), picks in groups_by_rule:
         years = picks["formation_date"].dt.year
         groups = [
             (str(year), picks[years == year])
@@ -628,6 +770,7 @@ def hit_rate_table(positions_df):
             rows.append(
                 {
                     "variant": variant,
+                    "rule": rule,
                     "year": label,
                     "n_long": int((group["leg"] == "long").sum()),
                     "long_beat_spy": long_rate,

@@ -170,8 +170,8 @@ results and limitations: docs/backtest.md. Not investment advice.
 
 | Column | Type | Meaning | Computed by |
 | --- | --- | --- | --- |
-| variant | string | Long leg: `as_specified` (flags_raised = 0), `all_three_scores` (also requires M, Z'' and F scores), or `spy` | `backtest.run_backtest` |
-| portfolio | string | `strategy` (50% long, 50% short), `long_only`, `short_only`, or `spy` | `backtest.run_backtest` |
+| variant | string | Long leg: `as_specified` (flags_raised = 0), `all_three_scores` (also requires M, Z'' and F scores), `best_scores` (M not flagged, Z'' safe, F strong), or `spy` | `backtest.picks_for_variant` |
+| portfolio | string | `strategy` (50% long, 50% short), `long_only`, `long_only_sell_on_flag` (longs sold the trading day after a 10-K raises a flag), `short_only`, or `spy` | `backtest.PORTFOLIOS` |
 | cost_bps | int64 | Trading cost per dollar traded, in basis points (0 or 20); the 1% a year borrowing fee applies at both | `config.BACKTEST_COST_BPS` |
 | formation_date | datetime64[ns] | June 30 the portfolio was formed for | `config.BACKTEST_FORMATION_DATES` |
 | start | datetime64[ns] | Trade date: last trading day on or before formation_date | `backtest.holding_periods` |
@@ -182,15 +182,16 @@ results and limitations: docs/backtest.md. Not investment advice.
 | spy_return | float64 | SPY's return over the same dates | `backtest.period_benchmark_returns` |
 | n_long | int64 | Stocks held long (0 for short_only and spy) | `backtest.run_portfolio` |
 | n_short | int64 | Stocks held short (0 for long_only and spy) | `backtest.run_portfolio` |
+| n_sold_on_flag | int64 | Longs sold early because a newer 10-K raised a flag (only long_only_sell_on_flag is nonzero) | `backtest.flag_sell_dates`, `backtest.position_paths` |
 | trading_cost | float64 | Entry plus exit trading cost, in dollars | `backtest.simulate_period` |
 | borrow_cost | float64 | Borrowing fee on the short leg, in dollars | `backtest.simulate_period` |
 
 Logs in `data/logs/` (gitignored): `backtest_summary.csv` (ending value,
 total and annualized return, max drawdown per portfolio),
 `backtest_hit_rates.csv`, `backtest_coverage_status.csv` (candidates by
-year, leg and drop reason), `backtest_coverage_delisted.csv`,
-`backtest_positions.csv` (every pick with entry, exit and return vs
-SPY), `backtest_candidates.csv` and `backtest_daily.csv` (daily values).
+year, leg and drop reason), `backtest_coverage_delisted.csv` (also counts sales on a flag),
+`backtest_positions.csv` (every pick with entry, exit, return vs SPY,
+rule `hold` or `sell_on_flag`, and sold_on_flag), `backtest_candidates.csv` and `backtest_daily.csv` (daily values).
 
 ## case_studies.csv (data/case_studies.csv)
 

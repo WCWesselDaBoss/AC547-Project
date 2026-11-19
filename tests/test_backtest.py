@@ -244,6 +244,9 @@ SCORE_ROWS = [
     (10, "H", 2020, "2021-03-01", 1, True),  # 1 flag: in neither leg
     (11, "I", 2020, "2021-03-01", 0, True),  # trading since 2021-06-21
 ]
+# 0-flag rows with all three scores are "best" (M not flagged, Z'' safe,
+# F strong) except B's FY2019 10-K, whose F-Score is only middle.
+NOT_BEST = {(2, 2019)}
 
 
 def make_score_inputs():
@@ -252,15 +255,33 @@ def make_score_inputs():
         SCORE_ROWS,
         columns=["cik", "ticker", "fiscal_year", "filed", "flags", "all3"],
     )
+    not_best = [
+        (cik, year) in NOT_BEST
+        for cik, year in zip(rows["cik"], rows["fiscal_year"])
+    ]
+    # Verdicts consistent with the flag count: 3 flags = all warnings;
+    # 1 flag = only the M-Score; 0 flags = none.
+    m_flag = rows["flags"] >= 1
+    z_zone = np.where(rows["flags"] == 3, "distress", "safe")
+    f_band = np.where(
+        rows["flags"] == 3, "weak", np.where(not_best, "middle", "strong")
+    )
     scores_df = pd.DataFrame(
         {
             "cik": rows["cik"],
             "fiscal_year": rows["fiscal_year"],
             "flags_raised": pd.array(rows["flags"], dtype="Int64"),
             "m_score": rows["all3"].map({True: -2.5, False: np.nan}),
+            "m_flag": pd.array(
+                m_flag.where(rows["all3"], None), dtype="boolean"
+            ),
             "z_score": 3.0,
+            "z_zone": pd.array(z_zone, dtype="string"),
             "f_score": pd.array(
                 rows["all3"].map({True: 7, False: None}), dtype="Int64"
+            ),
+            "f_band": pd.array(
+                pd.Series(f_band).where(rows["all3"], None), dtype="string"
             ),
         }
     )
@@ -398,13 +419,13 @@ def test_spy_benchmark():
 
 
 def test_run_backtest_tables(monkeypatch):
-    """2 variants x 3 portfolios x 2 cost levels x 2 periods = 24 rows,
+    """3 variants x 4 portfolios x 2 cost levels x 2 periods = 48 rows,
     plus 2 SPY rows. Picks: 2021 long A, B, G and short C, D; 2022 long
     A and short B, C, E. The stricter variant drops G (only a Z'')."""
     monkeypatch.setattr(backtest.config, "BACKTEST_FORMATION_DATES", FORMATION)
     tables = backtest.run_backtest(*make_score_inputs(), make_full_prices())
     results = tables["results"]
-    assert len(results) == 26
+    assert len(results) == 3 * 4 * 2 * 2 + 2
     assert list(results.columns) == backtest.RESULT_COLUMNS
     strategy = results[
         (results["portfolio"] == "strategy") & (results["cost_bps"] == 0)
@@ -416,12 +437,9 @@ def test_run_backtest_tables(monkeypatch):
     assert strategy.loc[("as_specified", 2022), "n_short"] == 3
     spy = tables["summary"].set_index("portfolio").loc["spy"]
     assert spy["end_value"] == pytest.approx(105_000.0)
-    # D (short, 2021) is the only delisting, in both variants.
+    # D (short, 2021) is the only delisting, once per variant.
     positions = tables["positions"]
-    assert positions.loc[positions["delisted"], "ticker"].tolist() == [
-        "D",
-        "D",
-    ]
+    assert positions.loc[positions["delisted"], "ticker"].tolist() == ["D"] * 3
 
 
 def test_outputs_and_hit_rate_table(monkeypatch, tmp_path):
@@ -434,10 +452,100 @@ def test_outputs_and_hit_rate_table(monkeypatch, tmp_path):
     monkeypatch.setattr(backtest.config, "BACKTEST_RESULTS_PATH", results_path)
     tables = backtest.run_backtest(*make_score_inputs(), make_full_prices())
     paths = backtest.write_outputs(tables)
-    assert pd.read_parquet(results_path).shape == (26, 14)
+    assert pd.read_parquet(results_path).shape == (50, 15)
     hits = pd.read_csv(paths["hit_rates"], dtype={"year": "string"})
     strict_all = hits[
-        (hits["variant"] == "all_three_scores") & (hits["year"] == "all")
+        (hits["variant"] == "all_three_scores")
+        & (hits["rule"] == "hold")
+        & (hits["year"] == "all")
     ].iloc[0]
     assert strict_all["n_long"] == 3
     assert strict_all["n_short"] == 5
+
+
+# ---------------------------------------------------------------------------
+# Best scores and selling on a flag
+# ---------------------------------------------------------------------------
+def test_best_scores_variant_keeps_only_best_longs():
+    """2021 longs: A is best; B (FY2019) has a middle F-Score and G has
+    only a Z'', so both are left out. 2022 long: A. Shorts unchanged."""
+    candidates = make_candidates()
+    best = backtest.picks_for_variant(candidates, "best_scores")
+    longs = best[best["leg"] == "long"]
+    assert longs["ticker"].tolist() == ["A", "A"]
+    loose = backtest.picks_for_variant(candidates, "as_specified")
+    assert (
+        best.loc[best["leg"] == "short", "ticker"].tolist()
+        == loose.loc[loose["leg"] == "short", "ticker"].tolist()
+    )
+
+
+def test_flag_sell_dates():
+    """B was bought on 2021-06-30 (FY2019, 0 flags). Its FY2020 10-K,
+    filed that same day, raises 3 flags, so B is sold on the next
+    trading day, 2021-07-01. A's FY2021 10-K (2022-03-01) raises none,
+    so A is never sold; shorts get no sell date."""
+    prices = make_full_prices()
+    calendar = backtest.trading_calendar(prices)
+    periods = backtest.holding_periods(calendar, FORMATION)
+    scores_df, financials_df, _ = make_score_inputs()
+    picks = backtest.picks_for_variant(make_candidates(), "as_specified")
+    picks = backtest.flag_sell_dates(
+        picks, scores_df, financials_df, calendar, periods
+    )
+    sells = picks.dropna(subset=["sell_date"])
+    assert sells[["ticker", "sell_date"]].values.tolist() == [
+        ["B", pd.Timestamp("2021-07-01")]
+    ]
+    assert picks.loc[picks["leg"] == "short", "sell_date"].isna().all()
+
+
+def test_selling_early_freezes_the_value():
+    """Long only, 100,000 in A and B. Selling A on 2021-12-31 at 10
+    (before its jump to 12) leaves A at 50,000: 50,000 + B 50,000 =
+    100,000, against 110,000 when held. A's return is 0%, it is marked
+    sold, not delisted, and its exit date is the sale day."""
+    price_wide, periods = setup()
+    period = periods.iloc[0]
+    sale = pd.Timestamp("2021-12-31")
+    path, positions, _ = backtest.simulate_period(
+        price_wide,
+        ["A", "B"],
+        [],
+        period.start,
+        period.end,
+        100_000.0,
+        (1.0, 0.0),
+        0,
+        0.0,
+        {"A": sale},
+    )
+    assert path["value"].iloc[-1] == pytest.approx(100_000.0)
+    a_row = positions.set_index("ticker").loc["A"]
+    assert bool(a_row["sold_on_flag"]) and not bool(a_row["delisted"])
+    assert a_row["exit_date"] == sale
+    assert a_row["stock_return"] == pytest.approx(0.0)
+
+
+def test_sell_date_at_or_after_the_end_changes_nothing():
+    """A sell date on the period's last day is just the normal exit."""
+    price_wide, periods = setup()
+    period = periods.iloc[0]
+    _, positions = backtest.position_paths(
+        price_wide, ["A"], period.start, period.end, 1.0, {"A": period.end}
+    )
+    assert not positions["sold_on_flag"].any()
+
+
+def test_sell_on_flag_portfolio_counts_sales(monkeypatch):
+    """In the full run, the as-specified long-only sell-on-flag portfolio
+    sells B once (2021) and nothing in 2022."""
+    monkeypatch.setattr(backtest.config, "BACKTEST_FORMATION_DATES", FORMATION)
+    tables = backtest.run_backtest(*make_score_inputs(), make_full_prices())
+    results = tables["results"]
+    rows = results[
+        (results["variant"] == "as_specified")
+        & (results["portfolio"] == "long_only_sell_on_flag")
+        & (results["cost_bps"] == 0)
+    ]
+    assert rows["n_sold_on_flag"].tolist() == [1, 0]
