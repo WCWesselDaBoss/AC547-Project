@@ -270,6 +270,10 @@ Design choices worth knowing:
   Phase 1 are labeled as such, with their reported parts and the
   function that calculated them; later restatements are shown, not used.
 
+User testing: `docs/user_test_script.md` (nine tasks with answer keys
+for a first-time tester) and `docs/feedback_log.md` (every confusion
+point, its severity, the fix and its commit).
+
 Code: `app/app.py` (shell), `app/views/` (one file per page), and pure,
 tested logic in `app/screening.py`, `app/company_view.py`,
 `app/trace.py`, `app/case_view.py` and `app/about_view.py`.
