@@ -237,6 +237,7 @@ every registered test is reported, whatever it shows.
 | 9a | Data fix: public-float plausibility check (below), applied to tests 7 and 9 | Found while running test 9; set from the spread of float-to-price-x-shares and float-to-assets ratios, without looking at returns | Test 7 re-run and both versions reported; the first test-9 run is discarded (below) |
 | 9b | Data fix: assets limit tightened from 1,000 to 100 times (below) | Found in the second test-9 run: SeaWorld's FY2019-22 floats, about 1,000 times too large, still passed and took 7.3% of the 2020 pool; set from the float-to-assets spread, without looking at returns | Tests 7 and 9 re-run with it; only this final run is reported |
 | 10 | Do flagged companies blow up more often? Questions (a) and (b) below | Registered 2026-11-19 before any test-10 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | Run 2026-11-19: (a) passed (t = 6.57); (b) did not (t = 1.76) |
+| 11 | After a 10-K becomes public, how fast do stocks fall 50%, by flag count? Question (a) below | Registered 2026-11-19 before any test-11 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | To run |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -626,6 +627,64 @@ Limitations:
   supporting evidence, not confirmation. It would need new years to
   confirm.
 - This is an analysis for a class project, not investment advice.
+
+### Test 11: how fast do stocks fall 50% after a 10-K? (registered before running)
+
+Registered before any test-11 result was computed; all years already
+seen in earlier tests, so this is supporting evidence, not confirmation.
+The definitions below are fixed.
+
+- **Observations.** Every scored company-year whose original 10-K
+  (`filed_date` in `financials_annual`, which holds only original
+  10-Ks) was filed on or before 2024-06-30, and whose score has an
+  M-Score, a Z'' and an F-Score, so a missing score never counts as "no
+  warning". A company appears once for each such year.
+- **Start.** The first market trading day (SPY's calendar, as in earlier
+  tests) on or after the 10-K's filing date. Reference price = the
+  stock's adjusted close that day.
+- **Eligibility at the start** (the same checks as earlier tests): a
+  current ticker; a price on each of the 20 trading days ending on the
+  start day; and an adjusted close of at least $5 on the start day.
+- **Event.** The first trading day after the start on which the
+  adjusted close is at or below 50% of the reference price. Time to the
+  event is counted in calendar days from the start.
+- **Follow-up and censoring.** Follow-up ends on the last trading day on
+  or before the start plus 24 months. A stock that never reaches 50% by
+  then is "censored" at that day. A stock whose prices stop earlier (no
+  price anywhere in the data after its last one) is censored at its
+  last price day, unless it had already reached 50%. "Censored" means
+  we know only that the drop had not happened by that day, not that it
+  never would.
+- **Groups.** 0, 1, 2 and 3 flags (`flags_raised`), and Clean (0) vs
+  Flagged (1 or more).
+- **Method.** Kaplan-Meier survival curves by group, from the `lifelines`
+  package (version pinned in `requirements.txt`). A survival curve shows,
+  for each day after the start, the estimated share of stocks that have
+  *not yet* fallen 50%. Kaplan-Meier uses every stock for as long as it
+  was observed: a censored stock counts as "not yet dropped" up to its
+  censoring day and then leaves the calculation, rather than being
+  wrongly counted as never dropping.
+- **Registered question (pass mark p < 0.01):** (a) Do Flagged stocks
+  reach a 50% drop faster than Clean stocks? Log-rank test (two-sided,
+  `lifelines.statistics.logrank_test`) of Flagged vs Clean. It passes
+  only if p < 0.01 and Flagged had more drops than expected if the two
+  groups were alike (the direction the question asks).
+- **Also reported (descriptive, not tests):** the four tiers' curves on
+  one chart; for each tier, the Kaplan-Meier estimate of the percent
+  that had dropped 50% by 3, 6, 12 and 24 months (days 91, 183, 365 and
+  730); and the median days to the drop, labeled "only among stocks
+  that dropped".
+- **Limitations, stated in advance.**
+  - Survivorship: current tickers only, so companies that crashed and
+    delisted are mostly missing; this likely understates the gap.
+  - One company appears in several years, and its follow-up windows
+    overlap, so observations are not fully independent and the
+    log-rank p-value is too optimistic.
+  - Flagged companies are weaker by construction; correlation, not
+    cause; years already studied.
+- **Outputs:** a "Test 11 results" section here, whatever the results;
+  the chart as `docs/screenshots/test11_survival.png`; details in
+  `data/logs/backtest_time_to_drop.csv`.
 
 ## Data coverage
 
