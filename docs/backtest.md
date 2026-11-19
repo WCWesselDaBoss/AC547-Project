@@ -238,6 +238,7 @@ every registered test is reported, whatever it shows.
 | 9b | Data fix: assets limit tightened from 1,000 to 100 times (below) | Found in the second test-9 run: SeaWorld's FY2019-22 floats, about 1,000 times too large, still passed and took 7.3% of the 2020 pool; set from the float-to-assets spread, without looking at returns | Tests 7 and 9 re-run with it; only this final run is reported |
 | 10 | Do flagged companies blow up more often? Questions (a) and (b) below | Registered 2026-11-19 before any test-10 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | Run 2026-11-19: (a) passed (t = 6.57); (b) did not (t = 1.76) |
 | 11 | After a 10-K becomes public, how fast do stocks fall 50%, by flag count? Question (a) below | Registered 2026-11-19 before any test-11 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | To run |
+| 11a | Method change: scipy instead of lifelines for test 11 (below) | Made 2026-11-19 before any test-11 result was computed, because lifelines cannot be installed with the project's pandas | Definitions unchanged |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -685,6 +686,18 @@ The definitions below are fixed.
 - **Outputs:** a "Test 11 results" section here, whatever the results;
   the chart as `docs/screenshots/test11_survival.png`; details in
   `data/logs/backtest_time_to_drop.csv`.
+
+**Method change 11a (2026-11-19, before any test-11 result was
+computed).** `lifelines` 0.30.3, its latest version, requires pandas
+below 3.0, and the project pins pandas 3.0.6, so installing it would
+break the rest of the project (the attempt downgraded pandas and was
+undone). Test 11 therefore uses scipy, pinned in `requirements.txt`:
+`scipy.stats.ecdf` on censored data for the Kaplan-Meier curves and
+`scipy.stats.logrank` (two-sided) for question (a). These compute the
+same statistics. Direction: scipy's log-rank statistic is positive when
+the first group's drops come earlier, so (a) passes only if p < 0.01
+and the statistic for Flagged (first) against Clean is positive. Every
+other definition above is unchanged.
 
 ## Data coverage
 
