@@ -1,8 +1,12 @@
 """Capture a screenshot of every dashboard page for the backup slides.
 
-Run from the project root:  python docs/screenshots/capture_screenshots.py
+Run from the project root:
+    python docs/screenshots/capture_screenshots.py                # sample
+    python docs/screenshots/capture_screenshots.py --source full  # full
 
-Starts the app on the committed sample (EQR_DATA_SOURCE=sample), opens
+Starts the app on the chosen data (default: the committed sample, so
+anyone can reproduce the shots from a fresh clone; "full" needs
+data/processed/ and saves to docs/screenshots/full/), opens
 each page in headless Chrome, waits until the page has finished loading,
 and saves full-page PNGs next to this script. Re-run it after any visual
 change so the backup slides match the live demo.
@@ -12,6 +16,7 @@ DevTools protocol with the "websockets" package, which Streamlit already
 installs, so no extra download is required. Only localhost is contacted.
 """
 
+import argparse
 import asyncio
 import base64
 import itertools
@@ -213,8 +218,8 @@ class DevTools:
         await self.set_height(VIEW_HEIGHT)
 
 
-async def capture_all(page_socket_url):
-    """Visit each page in SHOTS and save its screenshot."""
+async def capture_all(page_socket_url, output_dir):
+    """Visit each page in SHOTS and save its screenshot in output_dir."""
     async with websockets.connect(page_socket_url, max_size=None) as socket:
         tools = DevTools(socket)
         await tools.send("Page.enable")
@@ -225,15 +230,27 @@ async def capture_all(page_socket_url):
             if action:
                 await tools.click(action)
                 await tools.wait_for_text(after)
-            await tools.screenshot(OUTPUT_DIR / name, full_page)
+            await tools.screenshot(output_dir / name, full_page)
             print(f"Saved {name}")
 
 
-def main():
+def main(argv=None):
     """Start the app and Chrome, capture every page, then shut down."""
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--source",
+        choices=["sample", "full"],
+        default="sample",
+        help="data to show (full needs data/processed/)",
+    )
+    args = parser.parse_args(argv)
+    # Full-data shots go in their own folder so the committed sample
+    # shots stay reproducible from a fresh clone.
+    output_dir = OUTPUT_DIR if args.source == "sample" else OUTPUT_DIR / "full"
+    output_dir.mkdir(exist_ok=True)
     if not Path(CHROME_PATH).exists():
         sys.exit(f"Chrome not found at {CHROME_PATH}; set CHROME_PATH.")
-    app_env = dict(os.environ, EQR_DATA_SOURCE="sample")
+    app_env = dict(os.environ, EQR_DATA_SOURCE=args.source)
     app = subprocess.Popen(
         [
             sys.executable,
@@ -274,7 +291,7 @@ def main():
                 )
             )
             page = next(t for t in targets if t["type"] == "page")
-            asyncio.run(capture_all(page["webSocketDebuggerUrl"]))
+            asyncio.run(capture_all(page["webSocketDebuggerUrl"], output_dir))
         finally:
             chrome.terminate()
             app.terminate()

@@ -235,6 +235,16 @@ through its 977 reported parts) and 192 years with no 10-K in the data
 also run every page headlessly on the fixture data and every case study
 on the sample.
 
+**Full-data run (Phase 3, November 19, 2026).** With the full tables
+built locally (`python run_pipeline.py --scores-only`: 39,853 scored
+company-years for 5,493 companies on this laptop's Phase 1 tables), every
+page ran without errors. Cold-start load times: screener 2 s, a company
+page with the trace tab about 4 s (one company's filings are read from
+the 630 MB `facts_long` on demand, then cached). Peer groups are real
+here: Under Armour FY2015 is ranked against 7 similar-sized companies,
+not the sample's 2. The seven case-study results are identical on sample
+and full data. Screenshots: `docs/screenshots/full/`.
+
 
 ## Phase 3 dashboard
 
@@ -355,6 +365,7 @@ filed by early April.
    `config.py` and section 2 of `CLAUDE.md` together, as a team
    decision. It is fixed on purpose so the universe does not move between
    runs.
-4. Rerun `python docs/screenshots/capture_screenshots.py` so the backup
-   slides match the live app.
+4. Rerun `python docs/screenshots/capture_screenshots.py` (and add
+   `--source full` for the full-data set) so the backup slides match the
+   live app.
 5. Restart the app: it reads the new tables on start.
