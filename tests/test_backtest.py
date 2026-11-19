@@ -14,6 +14,7 @@ Period 2 (2022-06-30 to 2023-06-30, 365 days): long A, B; short C, E.
   SPY 400 -> 420 on 2023-01-03 (+5%).
 """
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -219,3 +220,141 @@ def test_drawdown_and_annualized_return():
     assert backtest.annualized_return(
         100_000.0, daily.iloc[-1], start, end
     ) == pytest.approx(1.0359375**0.5 - 1)
+
+
+# ---------------------------------------------------------------------------
+# Choosing the legs
+# ---------------------------------------------------------------------------
+# (cik, ticker, fiscal_year, filed_date, flags_raised, has all 3 scores)
+SCORE_ROWS = [
+    (1, "A", 2020, "2021-03-01", 0, True),
+    (1, "A", 2021, "2022-03-01", 0, True),
+    # B's FY2020 10-K is filed ON the 2021 trade date, so 2021 uses FY2019.
+    (2, "B", 2019, "2020-06-01", 0, True),
+    (2, "B", 2020, "2021-06-30", 3, True),
+    (3, "C", 2020, "2021-02-01", 3, True),
+    (3, "C", 2021, "2022-02-01", 3, True),
+    # D files no 10-K after March 2021: stale (16 months) by June 2022.
+    (4, "D", 2020, "2021-03-01", 3, True),
+    (5, "E", 2021, "2022-03-01", 3, True),
+    (6, "F", 2020, "2021-03-01", 0, True),  # $4 stock
+    (7, None, 2020, "2021-03-01", 0, True),  # no ticker
+    (8, "ZZZ", 2020, "2021-03-01", 0, True),  # no prices at all
+    (9, "G", 2020, "2021-03-01", 0, False),  # 0 flags, only Z''
+    (10, "H", 2020, "2021-03-01", 1, True),  # 1 flag: in neither leg
+    (11, "I", 2020, "2021-03-01", 0, True),  # trading since 2021-06-21
+]
+
+
+def make_score_inputs():
+    """Return (scores, financials, companies) for SCORE_ROWS."""
+    rows = pd.DataFrame(
+        SCORE_ROWS,
+        columns=["cik", "ticker", "fiscal_year", "filed", "flags", "all3"],
+    )
+    scores_df = pd.DataFrame(
+        {
+            "cik": rows["cik"],
+            "fiscal_year": rows["fiscal_year"],
+            "flags_raised": pd.array(rows["flags"], dtype="Int64"),
+            "m_score": rows["all3"].map({True: -2.5, False: np.nan}),
+            "z_score": 3.0,
+            "f_score": pd.array(
+                rows["all3"].map({True: 7, False: None}), dtype="Int64"
+            ),
+        }
+    )
+    financials_df = pd.DataFrame(
+        {
+            "cik": rows["cik"],
+            "fiscal_year": rows["fiscal_year"],
+            "filed_date": pd.to_datetime(rows["filed"]),
+        }
+    )
+    companies_df = rows.drop_duplicates("cik")[["cik", "ticker"]].astype(
+        {"ticker": "string"}
+    )
+    return scores_df, financials_df, companies_df
+
+
+def make_candidates():
+    """Return select_candidates() on the example, with extra stocks F
+    ($4), G ($30) and I (first trade 2021-06-21)."""
+    extra = [
+        stock("F", [(None, 4.0)]),
+        stock("G", [(None, 30.0)]),
+        stock("I", [(None, 25.0)]),
+    ]
+    extra[2] = extra[2][extra[2]["date"] >= "2021-06-21"]
+    prices = pd.concat([make_prices()] + extra, ignore_index=True)
+    prices = prices.astype({"ticker": "string"})
+    calendar = backtest.trading_calendar(prices)
+    periods = backtest.holding_periods(calendar, FORMATION)
+    return backtest.select_candidates(
+        *make_score_inputs(),
+        backtest.price_table(prices, calendar),
+        calendar,
+        periods,
+    )
+
+
+def statuses(candidates, year):
+    """Return {ticker or cik: (leg, status)} for one formation year."""
+    rows = candidates[candidates["formation_date"].dt.year == year]
+    return {
+        (r.ticker if pd.notna(r.ticker) else r.cik): (r.leg, r.status)
+        for r in rows.itertuples()
+    }
+
+
+def test_2021_candidates_and_reasons():
+    """2021: B uses FY2019 (FY2020 was filed on the trade date); F is
+    under $5; cik 7 has no ticker; ZZZ has no prices; I has only 8
+    trading days; H (1 flag) is not a candidate."""
+    assert statuses(make_candidates(), 2021) == {
+        "A": ("long", "eligible"),
+        "B": ("long", "eligible"),
+        "C": ("short", "eligible"),
+        "D": ("short", "eligible"),
+        "F": ("long", "under_min_price"),
+        7: ("long", "no_ticker"),
+        "ZZZ": ("long", "no_prices"),
+        "G": ("long", "eligible"),
+        "I": ("long", "short_history"),
+    }
+
+
+def test_2022_uses_latest_10k_and_drops_stale_scores():
+    """2022: B's FY2020 10-K (3 flags) is now known, so B is a short;
+    D, F, G, I, ZZZ and cik 7 last filed in March 2021, 16 months
+    before, so they are stale."""
+    result = statuses(make_candidates(), 2022)
+    assert {k: v for k, v in result.items() if v[1] == "eligible"} == {
+        "A": ("long", "eligible"),
+        "B": ("short", "eligible"),
+        "C": ("short", "eligible"),
+        "E": ("short", "eligible"),
+    }
+    stale = {k for k, v in result.items() if v[1] == "stale_score"}
+    assert stale == {"D", "F", 7, "ZZZ", "G", "I"}
+
+
+def test_no_score_filed_on_or_after_the_trade_date_is_used():
+    """Every candidate's 10-K was filed strictly before its trade date."""
+    candidates = make_candidates()
+    assert (candidates["filed_date"] < candidates["trade_date"]).all()
+
+
+def test_all_three_scores_variant_drops_partial_longs_only():
+    """G (0 flags but only a Z'') leaves the long leg in the stricter
+    variant; the short leg is unchanged."""
+    candidates = make_candidates()
+    loose = backtest.picks_for_variant(candidates, "as_specified")
+    strict = backtest.picks_for_variant(candidates, "all_three_scores")
+    assert "G" in set(loose["ticker"])
+    assert "G" not in set(strict["ticker"])
+
+    def shorts(picks):
+        return picks.loc[picks["leg"] == "short", "ticker"].tolist()
+
+    assert shorts(loose) == shorts(strict)

@@ -264,3 +264,131 @@ def max_drawdown(daily_values):
     """Return the worst peak-to-trough drop (a negative decimal)."""
     running_peak = daily_values.cummax()
     return float((daily_values / running_peak - 1).min())
+
+
+# ---------------------------------------------------------------------------
+# Choosing the legs (no information filed on or after the trade date)
+# ---------------------------------------------------------------------------
+LONG_VARIANTS = {
+    # The strategy as specified: flags_raised = 0. A missing score counts
+    # as "no warning" in flags_raised (CLAUDE.md section 4), so a company
+    # with only a safe Z'' also has 0 flags.
+    "as_specified": False,
+    # Stricter: all three scores exist and none raises a warning, so the
+    # long leg is held to the same evidence standard as the short leg
+    # (3 flags always means all three scores exist).
+    "all_three_scores": True,
+}
+STATUS_ELIGIBLE = "eligible"
+
+
+def latest_scores(scores_df, financials_df, trade_date):
+    """Return each company's latest score filed before the trade date.
+
+    scores has no filing date, so filed_date comes from the matching
+    financials_annual row (the 10-K the score was computed from). Only
+    10-Ks filed strictly before trade_date count. The latest one must
+    also be no older than config.BACKTEST_MAX_SCORE_AGE_MONTHS; the
+    column is_stale marks the rest so they can be counted.
+    """
+    filed = financials_df[["cik", "fiscal_year", "filed_date"]]
+    dated = scores_df.merge(filed, on=["cik", "fiscal_year"], how="left")
+    known = dated[dated["filed_date"] < trade_date]
+    latest = known.sort_values(["filed_date", "fiscal_year"])
+    latest = latest.drop_duplicates("cik", keep="last").copy()
+    oldest_allowed = trade_date - pd.DateOffset(
+        months=config.BACKTEST_MAX_SCORE_AGE_MONTHS
+    )
+    latest["is_stale"] = latest["filed_date"] < oldest_allowed
+    return latest.reset_index(drop=True)
+
+
+def price_status(tickers, price_wide, calendar, trade_date):
+    """Return each ticker's eligibility on the trade date.
+
+    no_ticker: SEC lists no ticker. no_prices: the ticker has no prices
+    at all. short_history: a price is missing on any of the last
+    config.BACKTEST_HISTORY_DAYS trading days (through the trade date).
+    under_min_price: adjusted close below config.BACKTEST_MIN_PRICE.
+    Otherwise eligible.
+    """
+    history = calendar[calendar <= trade_date][-config.BACKTEST_HISTORY_DAYS :]
+    recent = price_wide.loc[history]
+    statuses = []
+    for ticker in tickers:
+        if pd.isna(ticker):
+            statuses.append("no_ticker")
+        elif ticker not in price_wide.columns:
+            statuses.append("no_prices")
+        elif recent[ticker].isna().any():
+            statuses.append("short_history")
+        elif recent[ticker].iloc[-1] < config.BACKTEST_MIN_PRICE:
+            statuses.append("under_min_price")
+        else:
+            statuses.append(STATUS_ELIGIBLE)
+    return pd.Series(statuses, index=tickers.index, dtype="string")
+
+
+def select_candidates(
+    scores_df, financials_df, companies_df, price_wide, calendar, periods_df
+):
+    """Return every long or short candidate on each formation date.
+
+    One row per formation date and company whose latest score has
+    config.BACKTEST_LONG_FLAGS or BACKTEST_SHORT_FLAGS flags. Columns:
+    formation_date, trade_date, cik, ticker, fiscal_year, filed_date,
+    flags_raised, leg, all_three_scores, status. Status is stale_score
+    or a price_status value; only "eligible" rows are traded. Keeping
+    the rest lets the report count what was dropped and why.
+    """
+    tickers = companies_df[["cik", "ticker"]]
+    frames = []
+    for period in periods_df.itertuples(index=False):
+        latest = latest_scores(scores_df, financials_df, period.start)
+        flags = latest["flags_raised"]
+        is_long = flags == config.BACKTEST_LONG_FLAGS
+        is_short = flags == config.BACKTEST_SHORT_FLAGS
+        chosen = latest[(is_long | is_short).fillna(False)].copy()
+        chosen["leg"] = np.where(
+            chosen["flags_raised"] == config.BACKTEST_LONG_FLAGS,
+            "long",
+            "short",
+        )
+        chosen["all_three_scores"] = (
+            chosen["m_score"].notna()
+            & chosen["z_score"].notna()
+            & chosen["f_score"].notna()
+        )
+        chosen = chosen.merge(tickers, on="cik", how="left")
+        chosen["status"] = price_status(
+            chosen["ticker"], price_wide, calendar, period.start
+        )
+        chosen.loc[chosen["is_stale"], "status"] = "stale_score"
+        chosen["formation_date"] = period.formation_date
+        chosen["trade_date"] = period.start
+        frames.append(chosen)
+    columns = [
+        "formation_date",
+        "trade_date",
+        "cik",
+        "ticker",
+        "fiscal_year",
+        "filed_date",
+        "flags_raised",
+        "leg",
+        "all_three_scores",
+        "status",
+    ]
+    candidates = pd.concat(frames, ignore_index=True)[columns]
+    return candidates.astype({"leg": "string", "ticker": "string"})
+
+
+def picks_for_variant(candidates_df, variant):
+    """Return the traded picks (formation_date, leg, ticker) for a long
+    leg variant in LONG_VARIANTS. The short leg is the same in both."""
+    traded = candidates_df["status"] == STATUS_ELIGIBLE
+    if LONG_VARIANTS[variant]:
+        is_long = candidates_df["leg"] == "long"
+        traded &= ~is_long | candidates_df["all_three_scores"]
+    picks = candidates_df.loc[traded, ["formation_date", "leg", "ticker"]]
+    return picks.reset_index(drop=True)
