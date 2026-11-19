@@ -285,7 +285,7 @@ def test_hand_approval_turns_a_review_pair_into_a_match():
 
 
 def test_review_file_keeps_earlier_approvals(tmp_path):
-    """Rewriting the review file keeps marks typed into the old copy."""
+    """Rewriting the review file keeps the approved marks and notes."""
     path = tmp_path / "name_review.csv"
     review = pd.DataFrame(
         {
@@ -300,9 +300,11 @@ def test_review_file_keeps_earlier_approvals(tmp_path):
     iv.write_review(review, path)
     marked = pd.read_csv(path)
     marked["approved"] = "yes"
+    marked["review_note"] = "checked by hand"
     marked.to_csv(path, index=False)
     iv.write_review(review, path)
     assert iv.approved_pairs(path) == {(2, 30)}
+    assert pd.read_csv(path)["review_note"].tolist() == ["checked by hand"]
 
 
 def test_put_payoff_at_expiry():
@@ -373,3 +375,65 @@ def test_review_helpers_flag_renames_but_approve_nothing():
     assert helped["wrds_history_has_sec_name"].tolist() == [False, True, False]
     assert helped.loc[1, "sec_former_names"] == "PQ Group Holdings Inc."
     assert "approved" not in helped.columns
+
+
+def test_option_data_falls_back_per_delta():
+    """Start Wednesday 2024-03-06. Delta -50 has a row that day; delta
+    -25 only on Monday 03-04 (2 trading days earlier) and Thursday 03-07
+    (later, never used). Secid 7 is an ADR. Each delta falls back on its
+    own."""
+    surface = pd.DataFrame(
+        {
+            "secid": [7, 7, 7],
+            "date": pd.to_datetime(["2024-03-06", "2024-03-04", "2024-03-07"]),
+            "delta": [-50, -25, -25],
+            "impl_volatility": [0.40, 0.45, 0.99],
+            "impl_strike": [50.0, 40.0, 41.0],
+            "impl_premium": [6.0, 2.0, 2.5],
+            "issue_type": ["F", "F", "F"],
+        }
+    )
+    matched = pd.DataFrame(
+        {
+            "cik": [1],
+            "fiscal_year": [2023],
+            "secid": [7],
+            "start": [pd.Timestamp("2024-03-06")],
+        }
+    )
+    row = iv.option_data(matched, surface, WEEK).iloc[0]
+    assert row["option_date_50"] == pd.Timestamp("2024-03-06")
+    assert row["iv_50"] == 0.40
+    assert row["option_date_25"] == pd.Timestamp("2024-03-04")
+    assert (row["strike_25"], row["premium_25"]) == (40.0, 2.0)
+    assert bool(row["is_adr"])
+
+
+def test_tradeability_counts():
+    """Three observations: a Clean one matched with both deltas, a
+    2-flag one matched with delta -50 only, and a 3-flag one not
+    matched."""
+    obs = pd.DataFrame(
+        {
+            "cik": [1, 2, 3],
+            "fiscal_year": 2023,
+            "group": ["clean", "flagged", "flagged"],
+            "tier": ["0 flags", "2 flags", "3 flags"],
+        }
+    )
+    matches = pd.DataFrame(
+        {"cik": [1, 2, 3], "fiscal_year": 2023, "secid": [10, 20, None]}
+    )
+    options = pd.DataFrame(
+        {
+            "cik": [1, 2],
+            "fiscal_year": 2023,
+            "iv_50": [0.3, 0.5],
+            "iv_25": [0.35, np.nan],
+        }
+    )
+    table = iv.tradeability(obs, matches, options).set_index("group")
+    assert table.loc["Clean"].tolist() == [1, 1, 1, 1]
+    assert table.loc["Flagged"].tolist() == [2, 1, 1, 0]
+    assert table.loc["2 flags"].tolist() == [1, 1, 1, 0]
+    assert table.loc["3 flags"].tolist() == [1, 0, 0, 0]

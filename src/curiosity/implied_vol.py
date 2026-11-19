@@ -17,18 +17,24 @@ computed until that review is done.
 This is an analysis for a class project, not investment advice.
 """
 
+import argparse
 import difflib
 import json
 import math
 import re
 import zipfile
 
-import numpy as np
-import pandas as pd
-from scipy.stats import norm
+import matplotlib
 
-import config
-from src.scores import backtest
+matplotlib.use("Agg")  # draw to a file; no window
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+from scipy.stats import norm  # noqa: E402
+
+import config  # noqa: E402
+from src.curiosity import vol_matched  # noqa: E402
+from src.scores import backtest  # noqa: E402
 
 WRDS_DIR = config.RAW_DIR / "wrds"
 SURFACE_FILE = WRDS_DIR / "vsurf_puts_730d.csv.gz"
@@ -37,6 +43,12 @@ NAMES_FILE = WRDS_DIR / "secnmd_names.csv.gz"
 # stays in the gitignored WRDS folder.
 REVIEW_FILE = WRDS_DIR / "name_review.csv"
 OBSERVATIONS_FILE = config.LOG_DIR / "curiosity_vol_matched.csv"
+# Derived values per observation (no raw WRDS rows); data/logs/ is
+# gitignored.
+DETAILS_FILE = config.LOG_DIR / "curiosity_implied_vol.csv"
+CHART_FILE = (
+    config.PROJECT_ROOT / "docs" / "curiosity" / "implied_vol_benchmark.png"
+)
 
 SURFACE_COLUMNS = [
     "secid",
@@ -279,21 +291,28 @@ def add_review_helpers(review_df, former_names, names_df):
 
 
 def write_review(review_df, path=REVIEW_FILE):
-    """Write the below-threshold pairs for hand review, keeping any
-    "approved" marks already typed into an earlier copy of the file."""
+    """Write the below-threshold pairs for hand review, keeping the
+    "approved" mark and any "review_note" already typed into an earlier
+    copy of the file (matched on cik and secid)."""
     review = review_df.copy()
     review["approved"] = ""
+    review["review_note"] = ""
     if path.exists() and not review.empty:
-        earlier = pd.read_csv(path, dtype={"approved": "string"})
-        marks = {
-            (row.cik, row.secid): row.approved
-            for row in earlier.itertuples()
-            if isinstance(row.approved, str) and row.approved.strip()
-        }
-        review["approved"] = [
-            marks.get((cik, secid), "")
-            for cik, secid in zip(review["cik"], review["secid"])
-        ]
+        earlier = pd.read_csv(path, dtype="string")
+        for column in ("approved", "review_note"):
+            if column not in earlier.columns:
+                continue
+            kept = {
+                (int(cik), int(secid)): value
+                for cik, secid, value in zip(
+                    earlier["cik"], earlier["secid"], earlier[column]
+                )
+                if isinstance(value, str) and value.strip()
+            }
+            review[column] = [
+                kept.get((int(cik), int(secid)), "")
+                for cik, secid in zip(review["cik"], review["secid"])
+            ]
     review.sort_values(["similarity", "cik"]).to_csv(path, index=False)
     return path
 
@@ -318,6 +337,169 @@ def option_row(secid_rows, calendar, start):
         if day in secid_rows.index:
             return secid_rows.loc[day]
     return None
+
+
+def option_data(matched_df, surface_df, calendar):
+    """Return one row per matched observation with, for each delta, the
+    option date, implied volatility, strike and premium from the usable
+    surface row on the start date or the fallback day (blank if none),
+    plus whether the security is an ADR (issue type F).
+
+    matched_df has cik, fiscal_year, secid and start. The surface values
+    stay in this derived table only; they are written to data/logs/
+    (gitignored), never to docs.
+    """
+    by_key = {
+        key: rows.set_index("date")
+        for key, rows in surface_df.groupby(["secid", "delta"])
+    }
+    adr = set(
+        surface_df.loc[surface_df["issue_type"] == ADR_ISSUE_TYPE, "secid"]
+    )
+    records = []
+    for obs in matched_df.itertuples(index=False):
+        record = {
+            "cik": obs.cik,
+            "fiscal_year": obs.fiscal_year,
+            "is_adr": obs.secid in adr,
+        }
+        for delta in DELTAS:
+            suffix = str(abs(delta))
+            rows = by_key.get((obs.secid, delta))
+            row = (
+                None if rows is None else option_row(rows, calendar, obs.start)
+            )
+            record[f"option_date_{suffix}"] = None if row is None else row.name
+            for column, name in [
+                ("impl_volatility", "iv"),
+                ("impl_strike", "strike"),
+                ("impl_premium", "premium"),
+            ]:
+                record[f"{name}_{suffix}"] = (
+                    np.nan if row is None else row[column]
+                )
+        records.append(record)
+    return pd.DataFrame(records)
+
+
+def tradeability(obs_df, matches_df, options_df):
+    """Return, for Clean, Flagged, 2 flags and 3 flags: observations,
+    matched, with delta -50 data and with delta -25 data."""
+    frame = obs_df[["cik", "fiscal_year", "group", "tier"]].merge(
+        matches_df[["cik", "fiscal_year", "secid"]], on=["cik", "fiscal_year"]
+    )
+    frame = frame.merge(options_df, on=["cik", "fiscal_year"], how="left")
+    groups = [
+        ("Clean", frame["group"] == "clean"),
+        ("Flagged", frame["group"] == "flagged"),
+        ("2 flags", frame["tier"] == "2 flags"),
+        ("3 flags", frame["tier"] == "3 flags"),
+    ]
+    rows = []
+    for label, mask in groups:
+        part = frame[mask]
+        rows.append(
+            {
+                "group": label,
+                "observations": len(part),
+                "matched": int(part["secid"].notna().sum()),
+                "with_delta_50": int(part["iv_50"].notna().sum()),
+                "with_delta_25": int(part["iv_25"].notna().sum()),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def benchmark_chart(implied_tables, trailing_tables, path=CHART_FILE):
+    """Save actual vs predicted 24-month drop shares by group, with the
+    prediction from trailing and from implied volatility, one panel per
+    drop size (PNG)."""
+    groups = ["Clean", "Flagged", "1 flag", "2 flags", "3 flags"]
+    figure, axes = plt.subplots(
+        1, len(vol_matched.DROPS), figsize=(12, 5), dpi=150
+    )
+    for axis, drop in zip(axes, vol_matched.DROPS):
+        implied = implied_tables[drop].set_index("group").reindex(groups)
+        trailing = trailing_tables[drop].set_index("group").reindex(groups)
+        x = np.arange(len(groups))
+        axis.bar(
+            x - 0.27,
+            implied["pct_actual"],
+            0.27,
+            color="#52514e",
+            label="Actual",
+        )
+        axis.bar(
+            x,
+            trailing["pct_predicted"],
+            0.27,
+            color="#2a78d6",
+            label="Predicted from trailing volatility",
+        )
+        axis.bar(
+            x + 0.27,
+            implied["pct_predicted"],
+            0.27,
+            color="#eb6834",
+            label="Predicted from implied volatility",
+        )
+        axis.set_xticks(x, groups, fontsize=9)
+        axis.set_title(
+            f"Fell {int(100 * drop)}% within 24 months", fontsize=11
+        )
+        axis.set_ylabel("Share (%)")
+        axis.set_ylim(0, 100)
+        axis.grid(axis="y", color="#e1e0d9")
+        axis.legend(loc="upper left", fontsize=8)
+    figure.suptitle(
+        "Actual vs predicted drops, observations with option data "
+        "(zero-drift barrier formula; curiosity analysis)",
+        fontsize=12,
+    )
+    figure.text(
+        0.01,
+        0.01,
+        "Not part of the test register. OptionMetrics data via WRDS. "
+        "Current tickers only. Correlation, not cause. Not investment advice.",
+        fontsize=8,
+        color="#52514e",
+    )
+    figure.tight_layout(rect=(0, 0.04, 1, 0.95))
+    figure.savefig(path)
+    plt.close(figure)
+    return path
+
+
+def run_analyses_1_2(obs_df, matches_df, options_df):
+    """Return analyses 1 and 2 on the observations with delta -50 data.
+
+    For each drop size: the volatility-only benchmark with implied
+    volatility (analysis 1), the same with trailing volatility on the
+    same observations, and the Cox model with log implied volatility
+    and, for comparison, with log trailing volatility (analysis 2), both
+    clustered by company.
+    """
+    details = pd.read_csv(OBSERVATIONS_FILE)
+    details["event"] = (
+        details["event"].astype(str).str.lower().eq("true").astype("boolean")
+    )
+    keep = options_df.loc[
+        options_df["iv_50"].notna(), ["cik", "fiscal_year", "iv_50"]
+    ]
+    results = {}
+    for drop in vol_matched.DROPS:
+        frame = details[details["drop_size"] == drop].merge(
+            keep, on=["cik", "fiscal_year"]
+        )
+        implied = frame.assign(volatility=frame["iv_50"])
+        results[drop] = {
+            "observations": len(frame),
+            "benchmark_implied": vol_matched.benchmark_table(implied, drop),
+            "benchmark_trailing": vol_matched.benchmark_table(frame, drop),
+            "cox_implied": vol_matched.cox_flagged(implied),
+            "cox_trailing": vol_matched.cox_flagged(frame),
+        }
+    return results
 
 
 # ---------------------------------------------------------------------------
@@ -367,9 +549,13 @@ def load_observations():
     return details[details["drop_size"] == 0.3].reset_index(drop=True)
 
 
-def main():
+def main(argv=None):
     """Match observations and write the review file; print counts and at
-    most MAX_PRINTED_ROWS review rows. No result is computed."""
+    most MAX_PRINTED_ROWS review rows. With --results (only after the
+    hand review), also compute tradeability and analyses 1 and 2."""
+    parser = argparse.ArgumentParser(description="Curiosity part 2")
+    parser.add_argument("--results", action="store_true")
+    args = parser.parse_args(argv)
     obs = load_observations()
     companies = pd.read_parquet(config.COMPANIES_PATH, columns=["cik", "name"])
     sec_names = dict(zip(companies["cik"], companies["name"]))
@@ -397,6 +583,48 @@ def main():
         print(f"first {MAX_PRINTED_ROWS} (lowest similarity first):")
         shown = review.sort_values("similarity").head(MAX_PRINTED_ROWS)
         print(shown.to_string(index=False))
+    if not args.results:
+        return
+
+    matched = matches[matches["secid"].notna()].merge(
+        obs[["cik", "fiscal_year", "start"]], on=["cik", "fiscal_year"]
+    )
+    matched["secid"] = matched["secid"].astype(int)
+    calendar = backtest.trading_calendar(pd.read_parquet(config.PRICES_PATH))
+    options = option_data(matched, surface, calendar)
+    options.merge(
+        matches[["cik", "fiscal_year", "secid"]], on=["cik", "fiscal_year"]
+    ).to_csv(DETAILS_FILE, index=False)
+    pd.set_option("display.width", 220)
+    print("\nTradeability:")
+    print(tradeability(obs, matches, options).to_string(index=False))
+    print(
+        "matched observations on an ADR (issue type F):",
+        int(options["is_adr"].sum()),
+    )
+    results = run_analyses_1_2(obs, matches, options)
+    for drop, result in results.items():
+        print(
+            f"\n===== {int(100 * drop)}% drop, {result['observations']:,} observations"
+        )
+        print("Analysis 1, implied volatility:")
+        print(result["benchmark_implied"].round(3).to_string(index=False))
+        print("Same observations, trailing volatility:")
+        print(result["benchmark_trailing"].round(3).to_string(index=False))
+        for name in ("cox_implied", "cox_trailing"):
+            cox = result[name]
+            print(
+                f"{name}: HR {cox['hazard_ratio_flagged']:.3f} "
+                f"({cox['ci_low']:.3f} to {cox['ci_high']:.3f}), "
+                f"p {cox['p_value']:.3e}, volatility HR "
+                f"{cox['hazard_ratio_log_volatility']:.3f}, "
+                f"{cox['drops']} drops, {cox['companies']} companies"
+            )
+    benchmark_chart(
+        {d: r["benchmark_implied"] for d, r in results.items()},
+        {d: r["benchmark_trailing"] for d, r in results.items()},
+    )
+    print(f"\nSaved {DETAILS_FILE} and {CHART_FILE}")
 
 
 if __name__ == "__main__":
