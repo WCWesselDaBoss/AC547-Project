@@ -152,3 +152,131 @@ observation, no raw WRDS rows). Code: `src/curiosity/implied_vol.py`.
 Tests: `tests/test_curiosity.py` (put payoff at expiry on a hand-checked
 example, the exit rule on a fake price path, and the fallback rule: a
 missing start date filled from 2 days earlier, never from a later day).
+
+## Results (run 2026-11-19)
+
+Run with `python -m src.curiosity.implied_vol --results` (matching
+alone: without `--results`). Everything above this section was committed
+before any result was computed. Only summary results are shown here; no
+raw OptionMetrics rows.
+
+**Short answer: the options market already priced most of it.** Once
+each stock's implied volatility is held equal, the flags no longer add a
+statistically clear signal about 30% or 50% drops. With trailing
+volatility on the same observations they still do (part 1's result).
+
+### Matching and the name review
+
+- 4,513 of the 4,783 observations were matched to an OptionMetrics
+  security. Not matched: 261 whose ticker is not in the WRDS data, 5
+  ambiguous (two secids of one ticker both passed the name check), 3
+  whose name did not match, and 1 with no name history on the start
+  date.
+- **The hand review was delegated to Claude by the user** (2026-11-19).
+  Of the 131 pairs below the name threshold, 128 were approved and 3
+  rejected, using two pieces of evidence recorded in the gitignored
+  review file: one of the company's former SEC names matches the WRDS
+  name (77 pairs), or the security's own name history later carries
+  today's SEC name (125 pairs; OptionMetrics security IDs are never
+  recycled, so this is a renamed security, not a reused ticker). Every
+  approval rested on a similarity of at least 0.85 or a shared name of
+  at least 6 letters; a random sample of 5 was checked by eye. The 3
+  rejected pairs had neither kind of evidence and are different
+  companies using the same ticker. Each decision and its basis is noted
+  in the review file.
+- 23 matched observations are on a security that OptionMetrics codes as
+  an ADR/ADS (issue type F). They were kept, as the definitions say.
+
+### Tradeability
+
+| Group | Observations | Matched | With delta -50 data | With delta -25 data |
+| --- | --- | --- | --- | --- |
+| Clean | 3,094 | 2,916 | 2,839 | 2,839 |
+| Flagged | 1,689 | 1,597 | 1,478 | 1,480 |
+| 2 flags | 420 | 394 | 350 | 351 |
+| 3 flags | 80 | 77 | 66 | 66 |
+
+About 92% of Clean and 88% of Flagged observations have delta -50 option
+data (83% for 3 flags). The analyses below use the 4,317 observations
+with delta -50 data (790 companies). Those without it are excluded and,
+as the limitations note, may be among the riskiest.
+
+![Actual vs predicted drops](implied_vol_benchmark.png)
+
+### Analysis 1: implied-volatility benchmark
+
+Actual share that dropped within 24 months against the average chance
+predicted by the zero-drift formula, from implied volatility and, on the
+same observations, from trailing volatility:
+
+| Group | Observations | 30% drop: actual | Predicted (implied) | Actual / predicted (implied) | Actual / predicted (trailing) | 50% drop: actual | Predicted (implied) | Actual / predicted (implied) | Actual / predicted (trailing) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Clean | 2,839 | 42.7% | 45.3% | 0.94 | 0.95 | 17.9% | 17.3% | 1.03 | 0.99 |
+| Flagged | 1,478 | 59.1% | 58.7% | 1.01 | 1.01 | 34.9% | 32.2% | 1.08 | 1.07 |
+| 1 flag | 1,062 | 55.0% | 55.6% | 0.99 | 0.99 | 29.4% | 28.3% | 1.04 | 1.01 |
+| 2 flags | 350 | 69.4% | 66.2% | 1.05 | 1.06 | 48.9% | 41.6% | 1.17 | 1.19 |
+| 3 flags | 66 | 69.7% | 69.6% | 1.00 | 1.03 | 50.0% | 45.8% | 1.09 | 1.16 |
+
+- Implied volatility predicts the groups' drop rates about as well as
+  trailing volatility, and both come close: Flagged stocks dropped 30%
+  almost exactly as often as predicted (1.01).
+- The clearest excess is for 50% drops with 2 flags: 48.9% actual
+  against 41.6% predicted from implied volatility (1.17), on 350
+  observations. The 3-flag group (66 observations) is too small to read
+  much into.
+
+### Analysis 2: Cox regression, implied vs trailing volatility
+
+Same 4,317 observations, Flagged and the log of volatility as inputs,
+Efron ties, standard errors clustered by company (790):
+
+| Drop | Volatility held equal | Hazard ratio for Flagged | 95% interval | p-value |
+| --- | --- | --- | --- | --- |
+| 30% | Implied (options market) | 1.08 | 0.97 to 1.20 | 0.15 |
+| 30% | Trailing (price history) | 1.18 | 1.07 to 1.31 | 0.0013 |
+| 50% | Implied (options market) | 1.09 | 0.94 to 1.27 | 0.26 |
+| 50% | Trailing (price history) | 1.22 | 1.06 to 1.41 | 0.0057 |
+
+- **The key result:** with the options market's own volatility held
+  equal, Flagged's hazard ratio falls to about 1.08 to 1.09 and its
+  interval includes 1, so the flags no longer show a clear extra risk.
+  With trailing volatility on the same observations, the extra risk
+  remains (1.18 to 1.22), so the change comes from switching to implied
+  volatility, not from the smaller sample.
+- In plain English: put prices on flagged stocks were already high
+  enough to reflect most of their extra crash risk. Implied volatility
+  also predicts drops more strongly than trailing volatility does
+  (hazard ratios per unit of log volatility of 4.0 and 7.6, against 3.1
+  and 5.8).
+- Absence of a clear signal is not proof of none: the point estimates
+  are still above 1, and the 50% drop with 2 flags stands out in
+  analysis 1.
+
+### Analyses 3 to 5: not run
+
+The put-payoff analyses need OptionMetrics security prices
+(`optionm.secprd`), because strike and premium are in dollars of the
+option date while Yahoo adjusted closes are rescaled for later splits
+and dividends. That file was not downloaded, so, as the definitions say,
+analyses 3 to 5 are not run. The tested put arithmetic is ready in
+`src/curiosity/implied_vol.py` if the prices are added later.
+
+### What this means
+
+- Part 1 found that the flags signal crash risk beyond a stock's past
+  volatility. Part 2 suggests the options market already knew: once
+  implied volatility is held equal, little extra risk remains. This is
+  consistent with the flags summarizing public information that option
+  traders also use.
+- For the project, this supports presenting the flags as a transparent,
+  explainable risk screen, not as a source of trading profits.
+
+### Limitations
+
+Those stated in advance (interpolated standardized options and mid
+prices; current tickers only; companies without listed options
+excluded; years already studied; simplified rates and dividends;
+correlation, not cause), plus: the name review was made by Claude on the
+user's instruction rather than by a person, using the recorded evidence
+above. Not investment advice.
+
