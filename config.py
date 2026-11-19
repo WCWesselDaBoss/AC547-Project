@@ -251,6 +251,28 @@ APP_TABLES = (
 )
 
 
+# Screener M-Score cutoff slider. Its range brackets both published
+# cutoffs (BENEISH_FLAG_CUTOFF -1.78 and BENEISH_ALTERNATE_CUTOFF -2.22)
+# with room on each side, so the analyst can see how sensitive the flag is.
+APP_M_CUTOFF_MIN = -3.0
+APP_M_CUTOFF_MAX = -1.0
+APP_M_CUTOFF_STEP = 0.01
+
+# Screener size filter: bands of total assets in the fiscal year shown.
+# A team display convention (like the F-Score bands), not a published
+# rule. Absolute bands are used rather than the peer groups' size
+# terciles because those terciles exist only where an industry has
+# enough companies (none do in the 50-company sample). On the Nov 17
+# full data, of the size-floor company-years FY2012-FY2025, 45% are
+# small, 40% mid and 15% large (21 have no total assets, so no band).
+# Each band includes its lower edge and excludes its upper.
+APP_SIZE_BANDS = {
+    "Small (under $1B assets)": (0, 1_000_000_000),
+    "Mid ($1B to $10B)": (1_000_000_000, 10_000_000_000),
+    "Large ($10B and over)": (10_000_000_000, float("inf")),
+}
+
+
 def missing_app_tables(data_dir):
     """Return the APP_TABLES file names that are missing from data_dir."""
     return [

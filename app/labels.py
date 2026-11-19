@@ -82,6 +82,113 @@ SCORE_HELP = {
 
 NOT_AVAILABLE = "Not available"
 
+# ---------------------------------------------------------------------------
+# Verdicts: an icon AND a word, so color is never the only cue.
+# ---------------------------------------------------------------------------
+NO_SCORE = "⚪ No score"
+M_FLAG_LABELS = {True: "🔴 Warning", False: "🟢 No warning"}
+Z_ZONE_LABELS = {
+    "distress": "🔴 Distress zone",
+    "grey": "🟡 Grey zone",
+    "safe": "🟢 Safe zone",
+}
+F_BAND_LABELS = {
+    "weak": "🔴 Weak",
+    "middle": "🟡 Middle",
+    "strong": "🟢 Strong",
+}
+
+# Short names for the three checks, used as filter and column headings.
+CHECK_NAMES = {
+    "m": "Earnings manipulation risk",
+    "z": "Financial distress risk",
+    "f": "Financial strength",
+}
+
+# ---------------------------------------------------------------------------
+# Why companies or scores are missing
+# ---------------------------------------------------------------------------
+# Keys are the exclusion_reason codes written by src/pipeline/companies.py.
+EXCLUSION_REASON_LABELS = {
+    "financial_sic_6000_6799": (
+        "Banks, insurers, REITs and shell companies (SIC 6000 to 6799)"
+    ),
+    "missing_sic": "No industry code, so no peer group",
+    "no_10k_filings": "Never filed a 10-K (e.g. foreign filers)",
+    "no_xbrl_facts": "No machine-readable (XBRL) financial data",
+    "no_submissions_record": "No SEC filing history found",
+}
+
+# financials_annual line items, in words an analyst would use.
+LINE_ITEM_LABELS = {
+    "revenue": "Revenue",
+    "cost_of_revenue": "Cost of revenue",
+    "sga": "Selling, general and administrative expense",
+    "depreciation": "Depreciation and amortization",
+    "operating_income": "Operating income",
+    "income_continuing_ops": "Income from continuing operations",
+    "net_income": "Net income",
+    "cfo": "Operating cash flow",
+    "receivables": "Accounts receivable",
+    "current_assets": "Current assets",
+    "ppe_net": "Property, plant and equipment (net)",
+    "total_assets": "Total assets",
+    "current_liabilities": "Current liabilities",
+    "long_term_debt": "Long-term debt",
+    "total_liabilities": "Total liabilities",
+    "retained_earnings": "Retained earnings",
+    "stockholders_equity": "Stockholders' equity",
+    "shares_outstanding": "Shares outstanding",
+}
+
+# Fixed missing_inputs codes (see the scores modules in src/scores/).
+_FIXED_REASON_LABELS = {
+    "no_row_t-1": "No filing data for the prior year",
+    "no_row_t-2": "No filing data for two years earlier",
+    "shares_t-1_same_filing": (
+        "Prior-year share count not shown in the same 10-K"
+    ),
+    "net_income_not_positive": (
+        "Net income zero or negative, so cash conversion is not shown"
+    ),
+    "f_leverage_down_no_point": (
+        "Long-term debt not reported, so the debt test earned no point"
+    ),
+}
+_YEAR_SUFFIXES = {"_t-1": "prior year", "_t": "this year"}
+
+
+def describe_missing_input(code):
+    """Return a plain-English sentence for one missing_inputs code.
+
+    Patterns: "<line item>_t" or "_t-1" (not reported), "<index>_set_to_1"
+    (set to neutral), "<index>_zero_denominator" (division by zero).
+    Unknown codes are returned unchanged rather than guessed at.
+    """
+    if code in _FIXED_REASON_LABELS:
+        return _FIXED_REASON_LABELS[code]
+    if code.endswith("_set_to_1"):
+        index = code.removesuffix("_set_to_1").upper()
+        return f"{index} set to neutral (1) because an input is missing"
+    if code.endswith("_zero_denominator"):
+        index = code.removesuffix("_zero_denominator").upper()
+        return f"{index} not computable (division by zero)"
+    # The item must be a known line item, so a code that merely happens
+    # to end in "_t" is not mislabeled; it falls through unchanged.
+    for suffix, year_text in _YEAR_SUFFIXES.items():
+        item = code.removesuffix(suffix)
+        if code.endswith(suffix) and item in LINE_ITEM_LABELS:
+            return f"{LINE_ITEM_LABELS[item]} not reported ({year_text})"
+    return code
+
+
+def verdict_label(value, labels_by_value):
+    """Return the icon-and-word label for a verdict value, or NO_SCORE."""
+    if is_missing(value):
+        return NO_SCORE
+    return labels_by_value[value]
+
+
 # (divisor, suffix), largest first, for compact money display.
 _MONEY_SCALES = [(1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "K")]
 

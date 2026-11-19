@@ -6,9 +6,17 @@ detail) and step 5 (click-to-trace).
 
 import streamlit as st
 
-from app import labels
+from app import data, labels
 
 st.title("Company detail")
+
+# Placeholder handoff check: show which company the screener selected.
+selected_cik = st.session_state.get(data.SELECTED_CIK)
+if selected_cik is not None:
+    companies_df = data.companies()
+    name = companies_df.loc[companies_df["cik"] == selected_cik, "name"]
+    year = st.session_state.get(data.SELECTED_YEAR)
+    st.subheader(f"{name.iloc[0]} (FY{year})")
 st.markdown(
     "See one company's three checks at a glance, the reasons behind "
     "them, how it compares with similar companies, and the SEC filing "

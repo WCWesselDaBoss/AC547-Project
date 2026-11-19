@@ -16,6 +16,11 @@ import streamlit as st
 
 import config
 
+# Session-state keys that carry the company chosen on one page (screener,
+# case studies) to the company detail page.
+SELECTED_CIK = "selected_cik"
+SELECTED_YEAR = "selected_fiscal_year"
+
 
 def resolve_data_source():
     """Return (source name, data folder) for this session.
@@ -71,6 +76,16 @@ def scores():
 def score_drivers():
     """Return the score_drivers table for the current data source."""
     return load_table(resolve_data_source()[1], "score_drivers")
+
+
+def financials_size():
+    """Return the financials_annual columns the screener needs.
+
+    Only four columns: the size band (total assets) and the size-floor
+    count. Reading the whole table would load data the app never shows.
+    """
+    columns = ("cik", "fiscal_year", "total_assets", "passes_size_floor")
+    return load_table(resolve_data_source()[1], "financials_annual", columns)
 
 
 def company_facts(cik):

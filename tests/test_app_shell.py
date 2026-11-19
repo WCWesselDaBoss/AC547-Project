@@ -55,12 +55,40 @@ def test_sidebar_names_the_data_source(fixture_source):
     assert labels.DATA_SOURCE_NOTES["fixture"] in sidebar_notes
 
 
-def test_screener_counts_come_from_the_tables(fixture_source):
-    """Fixture: 3 companies scored, FY2021 to FY2023, 2 excluded."""
-    metrics = {m.label: m.value for m in run_app().metric}
-    assert metrics["Companies scored"] == "3"
-    assert metrics["Fiscal years"] == "2021 to 2023"
-    assert metrics["Companies left out of scoring"] == "2"
+def screener_count_text(app_test):
+    """Return the "N of M companies ... match" line on the screener."""
+    return next(
+        md.value
+        for md in app_test.markdown
+        if "match your filters" in md.value
+    )
+
+
+def test_screener_defaults_to_latest_year_and_shows_all(fixture_source):
+    """Fixture FY2023: all 3 scored companies shown, riskiest first."""
+    app_test = run_app()
+    assert app_test.selectbox(key="screener_year").value == 2023
+    assert screener_count_text(app_test).startswith("**3** of 3")
+    table = app_test.dataframe[0].value
+    assert list(table["Company"]) == ["Stretch Co", "Steady Co", "Service Co"]
+
+
+def test_screener_cutoff_slider_changes_warnings(fixture_source):
+    """Lowering the cutoff below Stretch Co's -2.66 adds its 3rd concern."""
+    app_test = run_app()
+    app_test.slider(key="screener_cutoff").set_value(-2.70).run()
+    table = app_test.dataframe[0].value.set_index("Company")
+    assert table.loc["Stretch Co", "Concerns"] == 3
+    assert table.loc["Stretch Co", labels.CHECK_NAMES["m"]] == "🔴 Warning"
+
+
+def test_screener_empty_filter_shows_message(fixture_source):
+    """Filters that match nothing explain how to widen them."""
+    app_test = run_app()
+    app_test.multiselect(key="screener_zones").set_value(["grey"]).run()
+    assert screener_count_text(app_test).startswith("**0** of 3")
+    assert "No companies match" in app_test.warning[0].value
+    assert not app_test.dataframe
 
 
 def test_bad_data_source_shows_message_not_crash(monkeypatch):
