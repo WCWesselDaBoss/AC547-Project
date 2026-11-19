@@ -234,6 +234,7 @@ every registered test is reported, whatever it shows.
 | 7 | Value tilt, tests V1 to V3 below | Registered 2026-11-19, before any value-portfolio return was computed | Run 2026-11-19; no registered test passed (results below) |
 | 8 | Best-score value stocks (V3) against the whole value group (V1) | After seeing test 7 | Exploratory: t = 2.20, at the pass mark, but not registered |
 | 9 | Large companies minus red flags, tests L1 and L2 below | Registered 2026-11-19 after tests 1-8 (all years already seen), before any test-9 return was computed | To run |
+| 9a | Data fix: public-float plausibility check (below), applied to tests 7 and 9 | Found while running test 9; set from the spread of float-to-price-x-shares and float-to-assets ratios, without looking at returns | Test 7 re-run and both versions reported; the first test-9 run is discarded (below) |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -364,6 +365,20 @@ years.
   reported but not used as evidence.
 - **Fixed here:** 500 companies, public-float size and weights, "any
   warning" as the exclusion rule, 20 bps and the window.
+
+**Data fix 9a (2026-11-19, before the clean test-9 run).** The first
+test-9 run gave a "large-company" pool that did not track SPY at all
+(+60.6% in 2018 against SPY's +10.1%). The cause: some 10-Ks tag the
+public float at the wrong scale, by up to a million times. IQVIA's
+FY2017 float is $1.2 x 10^16 (about $20 billion would be plausible) and
+took 99.8% of the 2018 portfolio; Advanced Energy's FY2020 is $2.6 x
+10^18; SolarEdge's FY2022 is $15.1. That run is discarded. From now on a
+float is used only if it is within 100 times adjusted price x shares
+outstanding (where both exist; wide because adjusted prices carry later
+splits) and within 1,000 times total assets. Failing floats are not
+corrected, only left out (status `float_implausible`). The same errors
+can push a company into or out of test 7's value group, so test 7 is
+re-run with the check, and both versions are reported.
 
 ## Data coverage
 

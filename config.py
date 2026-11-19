@@ -227,6 +227,17 @@ BACKTEST_START_CAPITAL = 100_000.0
 # Value tilt (test 7 in docs/backtest.md, registered before running): the
 # value group is this top share of the comparison group by book-to-market.
 BACKTEST_VALUE_TOP_SHARE = 0.2
+# Large companies minus red flags (test 9, registered before running):
+# the pool is this many eligible companies with the largest public float.
+BACKTEST_LARGE_CAP_COUNT = 500
+# Public-float plausibility (found while running test 9: some 10-Ks tag
+# the float a million times too large or small). A float is used only if
+# it is within these factors of (a) adjusted price x shares outstanding,
+# where both exist (wide, because adjusted prices carry later splits),
+# and (b) total assets. Chosen from the spread of these ratios across
+# all companies, without looking at any returns.
+BACKTEST_FLOAT_MAX_FACTOR_TO_PRICE_X_SHARES = 100
+BACKTEST_FLOAT_MAX_FACTOR_TO_ASSETS = 1000
 BACKTEST_LONG_FLAGS = 0  # flags_raised for the long leg
 BACKTEST_SHORT_FLAGS = 3  # flags_raised for the short leg
 # A score is used only if its 10-K was filed within this many months

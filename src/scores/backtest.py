@@ -19,6 +19,9 @@ Strategy (dollar neutral, stocks only):
 - Value tilt (test 7 in docs/backtest.md): long-only portfolios drawn
   from the comparison group's top fifth by book-to-market, where market
   value is each 10-K's cover-page public float.
+- Large companies minus red flags (test 9): the 500 largest eligible
+  companies by public float, float-weighted like an index, with and
+  without the companies whose latest score raises any warning.
 - Long-only variants: the long leg alone, optionally restricted to the
   companies whose three checks are all at their best (best_scores), and
   optionally sold as soon as a newer 10-K raises any warning
@@ -70,10 +73,13 @@ def price_table(prices_df, calendar):
     return wide.reindex(calendar)
 
 
-def position_paths(price_wide, tickers, start, end, capital, sell_dates=None):
-    """Return (daily values, positions) for equal dollar amounts.
+def position_paths(
+    price_wide, tickers, start, end, capital, sell_dates=None, weights=None
+):
+    """Return (daily values, positions) for the given dollar amounts.
 
-    Each ticker gets capital / n dollars at its start price. Its daily
+    Each ticker gets capital / n dollars at its start price, or capital
+    x its weight when weights (ticker -> share, summing to 1) is given. Its daily
     value is shares x price. After the last available price (delisting),
     the value is frozen at that price, which is the same as exiting there
     and holding cash. For a short leg the same numbers are the amount
@@ -92,7 +98,11 @@ def position_paths(price_wide, tickers, start, end, capital, sell_dates=None):
     if entry_prices.isna().any():
         missing = entry_prices[entry_prices.isna()].index.tolist()
         raise ValueError(f"no price on {start.date()} for {missing}")
-    shares = (capital / len(tickers)) / entry_prices
+    if weights is None:
+        dollars = capital / len(tickers)
+    else:
+        dollars = capital * pd.Series(weights).reindex(window.columns)
+    shares = dollars / entry_prices
     last_in_window = window.apply(pd.Series.last_valid_index)
     sold = pd.Series(False, index=window.columns)
     for ticker, sell_date in (sell_dates or {}).items():
@@ -164,6 +174,7 @@ def simulate_period(
     cost_bps,
     borrow_rate,
     long_sell_dates=None,
+    long_weights=None,
 ):
     """Simulate one holding period; return (daily path, positions, costs).
 
@@ -186,7 +197,13 @@ def simulate_period(
     long_capital = equity * weights[0]
     short_capital = equity * weights[1]
     long_values, long_positions = position_paths(
-        price_wide, longs, start, end, long_capital, long_sell_dates
+        price_wide,
+        longs,
+        start,
+        end,
+        long_capital,
+        long_sell_dates,
+        long_weights,
     )
     short_owed, short_positions = position_paths(
         price_wide, shorts, start, end, short_capital
@@ -254,7 +271,9 @@ def run_portfolio(
     Each period starts with the previous period's ending value (after
     costs), split again by weights, so the portfolio is rebalanced once
     a year. picks_df has columns formation_date, leg, ticker, and
-    sell_date (from flag_sell_dates) when sell_on_flag is True. After a
+    sell_date (from flag_sell_dates) when sell_on_flag is True. An
+    optional weight column sizes the longs (normalized to sum to 1 each
+    period); without it they are equal-weighted. After a
     period that wipes the account out, later periods hold nothing and
     stay at 0 (their period_return is NaN: there is no capital to earn
     a return on).
@@ -285,6 +304,15 @@ def run_portfolio(
         chosen = picks_df[picks_df["formation_date"] == period.formation_date]
         longs = chosen.loc[chosen["leg"] == "long", "ticker"].tolist()
         shorts = chosen.loc[chosen["leg"] == "short", "ticker"].tolist()
+        long_weights = None
+        if "weight" in chosen.columns:
+            in_long = chosen[chosen["leg"] == "long"]
+            long_weights = dict(
+                zip(
+                    in_long["ticker"],
+                    in_long["weight"] / in_long["weight"].sum(),
+                )
+            )
         sell_dates = None
         if sell_on_flag:
             is_long = chosen["leg"] == "long"
@@ -305,6 +333,7 @@ def run_portfolio(
             cost_bps,
             borrow_rate,
             sell_dates,
+            long_weights,
         )
         end_value = path["value"].iloc[-1]
         rows.append(
@@ -705,6 +734,11 @@ def universe_picks(
                     "m_flag": eligible["m_flag"].to_numpy(),
                     "z_zone": eligible["z_zone"].to_numpy(),
                     "f_band": eligible["f_band"].to_numpy(),
+                    "flags_raised": eligible["flags_raised"].to_numpy(),
+                    # Only for checking the public float's scale.
+                    "entry_price": price_wide.loc[
+                        period.start, eligible["ticker"]
+                    ].to_numpy(),
                 }
             )
         )
@@ -735,13 +769,21 @@ def book_to_market(universe_df, financials_df, floats_df):
     book_to_market = stockholders_equity / public_float, both from the
     10-K behind the company's latest score (matched on fiscal year, then
     on accession). value_status is "ranked", "no_float" (no float in
-    that 10-K), "float_not_positive" or "equity_not_positive" (zero,
-    negative or missing book equity); only ranked companies get a value
-    rank. is_value marks the top config.BACKTEST_VALUE_TOP_SHARE of
+    that 10-K), "float_not_positive", "float_implausible" (see
+    plausible_float), or "equity_not_positive" (zero, negative or
+    missing book equity); only ranked companies get a value rank, and
+    float_ok marks a float usable for company size. is_value marks the top config.BACKTEST_VALUE_TOP_SHARE of
     ranked companies on each formation date.
     """
     filing = financials_df[
-        ["cik", "fiscal_year", "accession", "stockholders_equity"]
+        [
+            "cik",
+            "fiscal_year",
+            "accession",
+            "stockholders_equity",
+            "shares_outstanding",
+            "total_assets",
+        ]
     ]
     frame = universe_df.merge(filing, on=["cik", "fiscal_year"], how="left")
     frame = frame.merge(
@@ -752,14 +794,22 @@ def book_to_market(universe_df, financials_df, floats_df):
         how="left",
     )
     equity_ok = frame["stockholders_equity"] > 0
-    float_ok = frame["public_float"] > 0
+    float_positive = frame["public_float"] > 0
+    plausible = plausible_float(frame)
+    frame["float_ok"] = float_positive & plausible
     frame["value_status"] = np.select(
         [
             frame["public_float"].isna(),
-            ~float_ok,
+            ~float_positive,
+            ~plausible,
             ~equity_ok,
         ],
-        ["no_float", "float_not_positive", "equity_not_positive"],
+        [
+            "no_float",
+            "float_not_positive",
+            "float_implausible",
+            "equity_not_positive",
+        ],
         default="ranked",
     )
     ranked = frame["value_status"] == "ranked"
@@ -780,6 +830,35 @@ def book_to_market(universe_df, financials_df, floats_df):
     return frame
 
 
+def plausible_float(frame):
+    """Return True where the public float's scale is believable.
+
+    Some 10-Ks tag the float a million times too large (IQVIA's FY2017
+    float is $1.2 x 10^16) or too small (SolarEdge's FY2022 is $15.1).
+    A float passes if it is within
+    config.BACKTEST_FLOAT_MAX_FACTOR_TO_PRICE_X_SHARES of entry price x
+    shares outstanding (checked only where both are positive; adjusted
+    prices carry later splits, hence the wide factor) and within
+    config.BACKTEST_FLOAT_MAX_FACTOR_TO_ASSETS of total assets (checked
+    where assets are positive). A failed check only removes the company
+    from the value and size rankings; it is never corrected or guessed.
+    """
+    public = frame["public_float"]
+    rough_value = frame["entry_price"] * frame["shares_outstanding"]
+    can_check_price = rough_value > 0
+    price_factor = config.BACKTEST_FLOAT_MAX_FACTOR_TO_PRICE_X_SHARES
+    near_price = (public <= rough_value * price_factor) & (
+        public >= rough_value / price_factor
+    )
+    assets = frame["total_assets"]
+    can_check_assets = assets > 0
+    assets_factor = config.BACKTEST_FLOAT_MAX_FACTOR_TO_ASSETS
+    near_assets = (public <= assets * assets_factor) & (
+        public >= assets / assets_factor
+    )
+    return (~can_check_price | near_price) & (~can_check_assets | near_assets)
+
+
 def value_picks(value_df, variant):
     """Return the picks for a VALUE_VARIANTS portfolio."""
     if variant not in VALUE_VARIANTS:
@@ -798,6 +877,49 @@ def value_picks(value_df, variant):
     return value_df.loc[chosen, columns].reset_index(drop=True)
 
 
+LARGE_CAP_VARIANTS = {
+    # Test 9, registered in docs/backtest.md before it was run.
+    "large_500": "the 500 largest eligible companies by public float",
+    "large_500_no_flags": "the same pool without any company whose "
+    "latest score raises a warning",
+}
+LARGE_CAP_PORTFOLIO = "long_only_float_weighted"
+
+
+def large_cap_picks(value_ranks_df, variant):
+    """Return float-weighted picks for a LARGE_CAP_VARIANTS portfolio.
+
+    The pool on each formation date is the config.BACKTEST_LARGE_CAP_COUNT
+    comparison-group companies with the largest usable public float
+    (float_ok in book_to_market's frame: positive and plausible). weight is the public float; the
+    no-flags version drops companies with flags_raised of 1 or more
+    (companies with no flag count stay in). run_portfolio normalizes the
+    weights of the stocks held.
+    """
+    if variant not in LARGE_CAP_VARIANTS:
+        raise ValueError(f"unknown large-cap variant {variant}")
+    has_float = value_ranks_df[value_ranks_df["float_ok"]]
+    pool = (
+        # Ties in float go to the lower CIK, so the pool never depends on
+        # row order.
+        has_float.sort_values(
+            ["formation_date", "public_float", "cik"],
+            ascending=[True, False, True],
+            kind="stable",
+        )
+        .groupby("formation_date")
+        .head(config.BACKTEST_LARGE_CAP_COUNT)
+    )
+    if variant == "large_500_no_flags":
+        flagged = (pool["flags_raised"] >= 1).fillna(False).astype(bool)
+        pool = pool[~flagged]
+    picks = pool[["formation_date", "leg", "cik", "ticker", "public_float"]]
+    picks = picks.rename(columns={"public_float": "weight"})
+    return picks.sort_values(["formation_date", "ticker"]).reset_index(
+        drop=True
+    )
+
+
 def run_backtest(
     scores_df,
     financials_df,
@@ -812,7 +934,8 @@ def run_backtest(
     formation_dates defaults to config.BACKTEST_FORMATION_DATES. Every
     table gets a window column ("<first year>_<last year>"). With
     floats_df (public_float.load_public_float), the value-tilt
-    portfolios in VALUE_VARIANTS are added (long only).
+    portfolios in VALUE_VARIANTS (long only) and the float-weighted
+    large-company portfolios in LARGE_CAP_VARIANTS are added.
 
     Returns a dict of tables:
     - results: one row per variant, portfolio, cost level and period
@@ -907,6 +1030,30 @@ def run_backtest(
                 labels = {
                     "variant": variant,
                     "portfolio": "long_only",
+                    "cost_bps": cost_bps,
+                }
+                period_df, daily = run_portfolio(
+                    price_wide,
+                    picks,
+                    periods,
+                    (1.0, 0.0),
+                    cost_bps,
+                    0.0,
+                    capital,
+                )
+                results.append(
+                    period_df.assign(spy_return=spy_returns, **labels)
+                )
+                summaries.append({**labels, **summarize(daily, capital)})
+                dailies.append(daily_frame(daily, labels))
+        for variant in LARGE_CAP_VARIANTS:
+            picks = large_cap_picks(value_ranks, variant)
+            log = position_log(price_wide, picks, periods)
+            position_logs.append(log.assign(variant=variant, rule="hold"))
+            for cost_bps in config.BACKTEST_COST_BPS:
+                labels = {
+                    "variant": variant,
+                    "portfolio": LARGE_CAP_PORTFOLIO,
                     "cost_bps": cost_bps,
                 }
                 period_df, daily = run_portfolio(

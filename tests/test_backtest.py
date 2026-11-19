@@ -312,6 +312,10 @@ def make_score_inputs():
                 EQUITY.get((c, y), 100.0)
                 for c, y in zip(rows.cik, rows.fiscal_year)
             ],
+            # Blank, so the float plausibility checks are skipped here;
+            # test_plausible_float covers them.
+            "shares_outstanding": np.nan,
+            "total_assets": np.nan,
         }
     )
     companies_df = rows.drop_duplicates("cik")[["cik", "ticker"]].astype(
@@ -826,9 +830,103 @@ def test_run_backtest_adds_value_portfolios(monkeypatch):
         *make_score_inputs(), make_full_prices(), floats_df=make_floats()
     )
     results = tables["results"]
-    assert len(results) == 3 * 4 * 2 * 2 + 4 + 12 + 2
+    # + value (3 x 2 x 2) + large companies (2 x 2 x 2) + SPY.
+    assert len(results) == 3 * 4 * 2 * 2 + 4 + 12 + 8 + 2
     strong = results[
         (results["variant"] == "value_strong_f") & (results["cost_bps"] == 20)
     ]
     assert strong["n_long"].tolist() == [0, 1]
     assert strong["period_return"].iloc[0] == pytest.approx(0.0)
+
+
+# ---------------------------------------------------------------------------
+# Large companies minus red flags (test 9)
+# ---------------------------------------------------------------------------
+def test_weighted_positions():
+    """Long only, 100,000 split 75/25 between A and B. A rises 20% and
+    B is flat: 90,000 + 25,000 = 115,000 (equal weights would give
+    110,000)."""
+    price_wide, periods = setup()
+    period = periods.iloc[0]
+    path, _, _ = backtest.simulate_period(
+        price_wide,
+        ["A", "B"],
+        [],
+        period.start,
+        period.end,
+        100_000.0,
+        (1.0, 0.0),
+        0,
+        0.0,
+        long_weights={"A": 0.75, "B": 0.25},
+    )
+    assert path["value"].iloc[-1] == pytest.approx(115_000.0)
+
+
+def test_run_portfolio_normalizes_weights():
+    """Weights 300 and 100 become 75% and 25%: same 115,000 in P1."""
+    price_wide, periods = setup()
+    picks = pd.DataFrame(
+        {
+            "formation_date": pd.Timestamp("2021-06-30"),
+            "leg": "long",
+            "ticker": ["A", "B"],
+            "weight": [300.0, 100.0],
+        }
+    )
+    summary, _ = backtest.run_portfolio(
+        price_wide, picks, periods.iloc[:1], (1.0, 0.0), 0, 0.0, 100_000.0
+    )
+    assert summary["end_value"].iloc[0] == pytest.approx(115_000.0)
+
+
+def test_large_cap_pool_and_no_flags(monkeypatch):
+    """With a pool of 3: 2021 floats among ranked-or-not companies with a
+    positive float are C 200, A 100, G 100, B 50 (D has none) -> pool
+    C, A and G. C has 3 flags, so the no-flags
+    version holds A and G. 2022: C 400, E 200, A 100, B 100 -> C, E and
+    A (A and B tie at 100; the lower CIK, A, wins); C and E (3 flags)
+    drop -> A."""
+    monkeypatch.setattr(backtest.config, "BACKTEST_LARGE_CAP_COUNT", 3)
+    ranks = make_value_ranks()
+
+    def held(variant):
+        picks = backtest.large_cap_picks(ranks, variant)
+        return {
+            year: sorted(group["ticker"])
+            for year, group in picks.groupby(picks["formation_date"].dt.year)
+        }
+
+    pool = held("large_500")
+    assert pool[2021] == ["A", "C", "G"]
+    assert pool[2022] == ["A", "C", "E"]
+    assert held("large_500_no_flags") == {2021: ["A", "G"], 2022: ["A"]}
+    picks = backtest.large_cap_picks(ranks, "large_500")
+    c_2022 = picks[
+        (picks["ticker"] == "C") & (picks["formation_date"].dt.year == 2022)
+    ]
+    assert c_2022["weight"].iloc[0] == 400.0
+
+
+def test_plausible_float():
+    """Rough value = price 10 x 1,000 shares = 10,000; assets 5,000.
+    - 20,000: within 100x of 10,000 and 1,000x of assets -> kept;
+    - 2e9 (200,000x the rough value) -> rejected;
+    - 50 (1/200 of the rough value) -> rejected;
+    - 2e7 with no shares (price check skipped) but 4,000x assets ->
+      rejected; 2e6 with no shares and 400x assets -> kept."""
+    frame = pd.DataFrame(
+        {
+            "public_float": [2e4, 2e9, 50.0, 2e7, 2e6],
+            "entry_price": 10.0,
+            "shares_outstanding": [1e3, 1e3, 1e3, np.nan, np.nan],
+            "total_assets": 5e3,
+        }
+    )
+    assert backtest.plausible_float(frame).tolist() == [
+        True,
+        False,
+        False,
+        False,
+        True,
+    ]
