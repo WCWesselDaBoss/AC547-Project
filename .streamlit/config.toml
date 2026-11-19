@@ -1,0 +1,26 @@
+# Streamlit settings for the Earnings Quality Radar dashboard.
+
+[browser]
+# Streamlit sends anonymous usage statistics by default. Turned off so
+# the app makes no internet calls at all (CLAUDE.md section 6, Offline).
+gatherUsageStats = false
+
+[server]
+# Serve only to this laptop. Without this, Streamlit looks up the public
+# IP address online at startup (an internet call) and accepts connections
+# from anyone on the same Wi-Fi.
+address = "localhost"
+
+[client]
+# Hide developer menu items during the demo; the audience sees only the app.
+toolbarMode = "minimal"
+
+[theme]
+# A fixed light theme so the demo looks the same on every laptop. Colors
+# match app/style.py (validated reference palette).
+base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#fcfcfb"
+secondaryBackgroundColor = "#f3f2ee"
+textColor = "#0b0b0b"
+font = "sans serif"
