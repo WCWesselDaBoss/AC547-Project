@@ -231,9 +231,9 @@ every registered test is reported, whatever it shows.
 | 4 | Selling a long on a flag | After seeing test 1 | Reported above; exploratory |
 | 5 | Formation from 2013 (scratch run) | After seeing tests 1-4 | Dropped: FY2012 has no F-Score, so 2013 could not be tested; replaced by 2014 |
 | 6 | 2014-2025 window and the equal-weighted comparison group | After seeing tests 1-4 | Reported above |
-| 7 | Value tilt, tests V1 to V3 below | Registered 2026-11-19, before any value-portfolio return was computed | Run 2026-11-19; no registered test passed (results below) |
-| 8 | Best-score value stocks (V3) against the whole value group (V1) | After seeing test 7 | Exploratory: t = 2.20, at the pass mark, but not registered |
-| 9 | Large companies minus red flags, tests L1 and L2 below | Registered 2026-11-19 after tests 1-8 (all years already seen), before any test-9 return was computed | To run |
+| 7 | Value tilt, tests V1 to V3 below | Registered 2026-11-19, before any value-portfolio return was computed | Run twice: first with unchecked floats, then (final) with data fixes 9a and 9b; no registered test passed either time |
+| 8 | Best-score value stocks (V3) against the whole value group (V1) | After seeing test 7 | Exploratory: t = 2.20 in the first run, 1.63 after the data fixes |
+| 9 | Large companies minus red flags, tests L1 and L2 below | Registered 2026-11-19 after tests 1-8 (all years already seen), before any test-9 return was computed | Final run after data fixes 9a and 9b; no registered test passed |
 | 9a | Data fix: public-float plausibility check (below), applied to tests 7 and 9 | Found while running test 9; set from the spread of float-to-price-x-shares and float-to-assets ratios, without looking at returns | Test 7 re-run and both versions reported; the first test-9 run is discarded (below) |
 | 9b | Data fix: assets limit tightened from 1,000 to 100 times (below) | Found in the second test-9 run: SeaWorld's FY2019-22 floats, about 1,000 times too large, still passed and took 7.3% of the 2020 pool; set from the float-to-assets spread, without looking at returns | Tests 7 and 9 re-run with it; only this final run is reported |
 
@@ -279,7 +279,12 @@ before citing them.
   and the window are fixed here. Any change after seeing results must be
   added to this register as a new, exploratory test.
 
-### Test 7 results
+### Test 7 results, first run (before data fixes 9a and 9b)
+
+These results used every public float as reported. Test 9 later showed
+that some floats are tagged at the wrong scale, so the final results
+are in "Test 7 results, final run" below; this first run is kept so the
+record is complete.
 
 Data check, made before any value-portfolio return was computed: 98.5%
 of scored company-years from FY2013 on have a public float. About 4% of
@@ -330,6 +335,35 @@ What this shows:
   registered, and test 7 ran five comparisons, so one reaching the pass
   mark by chance is not surprising. Treat it as an idea for a new test
   on new data, not a finding.
+
+### Test 7 results, final run (with data fixes 9a and 9b)
+
+408 company-years in the 2014-2025 comparison group were left out of
+the rankings for an implausible float (status `float_implausible`). The
+value group held 205 to 329 companies a year.
+
+| 2014-06-30 to 2026-11-10, 20 bps | Stocks a year | Per year | Worst drop | $100,000 becomes |
+| --- | --- | --- | --- | --- |
+| SPY | | 13.3% | -33.7% | $469,770 |
+| V3 value and best scores | 4 to 15 | 12.5% | -42.5% | $427,830 |
+| V2 value and strong F-Score | 8 to 37 | 9.5% | -47.7% | $306,259 |
+| V1 value group | 205 to 329 | 8.1% | -53.8% | $261,089 |
+| Comparison group | 1,177 to 1,992 | 9.0% | -40.4% | $291,789 |
+
+| Registered question (2014-2025, yearly differences) | Mean | Median | Years ahead | t | Passes (t >= 2.2)? |
+| --- | --- | --- | --- | --- | --- |
+| (a) V2 beats V1 | +4.7 pts | -1.9 pts | 5 of 12 | 0.66 | No |
+| (b) V2 beats the comparison group | +4.7 pts | -4.1 pts | 5 of 12 | 0.52 | No |
+| (b) V2 beats SPY | +1.5 pts | -11.1 pts | 1 of 12 | 0.13 | No |
+| (b) V3 beats the comparison group | +4.8 pts | +2.0 pts | 8 of 12 | 1.19 | No |
+| (b) V3 beats SPY | +1.6 pts | -1.8 pts | 5 of 12 | 0.23 | No |
+
+- The conclusion is unchanged: no registered test passed, and 2020-21
+  drives the means (without it, V2 trailed V1 by 1.9 points a year).
+- With clean floats V3 no longer matches SPY: 12.5% a year against
+  13.3%.
+- The exploratory test 8 (V3 against V1) falls from t = 2.20 to 1.63.
+  The earlier borderline result partly rested on bad data.
 
 ### Test 9: large companies minus red flags (registered before running)
 
@@ -390,6 +424,36 @@ error of this kind (FuelCell FY2020 $426 billion, Accuray FY2024 $194
 billion, Universal Display FY2023 $320 billion), and no genuine one
 comes close, so the limit is now 100 times. The second run is discarded
 like the first; the results below are from the final run.
+
+### Test 9 results (final run, with data fixes 9a and 9b)
+
+The pool's largest holding each year is Apple or Microsoft (4% to 10%),
+as in SPY, so the size measure now behaves sensibly. The no-flags
+version held 366 to 435 of the 500 companies.
+
+| 2014-06-30 to 2026-11-10, 20 bps | Per year | Worst drop | $100,000 becomes |
+| --- | --- | --- | --- |
+| L1 500 largest, float-weighted (our S&P stand-in) | 13.5% | -33.7% | $478,942 |
+| SPY | 13.3% | -33.7% | $469,770 |
+| L2 500 largest without flagged companies | 13.2% | -33.0% | $462,129 |
+
+| Question (2014-2025, yearly differences) | Mean | Median | Years ahead | t | Passes (t >= 2.2)? |
+| --- | --- | --- | --- | --- | --- |
+| (a) L2 beats SPY | -0.1 pts | -0.7 pts | 5 of 12 | -0.12 | No |
+| (b) L2 beats L1 (the checks' own effect) | -0.4 pts | -0.4 pts | 3 of 12 | -1.21 | No |
+| L1 against SPY (how good a stand-in) | +0.2 pts | -0.1 pts | 5 of 12 | 0.30 | (not a test) |
+
+- **The pool is a good stand-in for SPY.** L1 stayed within 5
+  points of SPY every year and ended 0.2 points a year ahead, even
+  though it excludes banks, insurers and REITs.
+- **Removing flagged large companies did not help.** L2 trailed L1 in 9
+  of 12 years, by 0.4 points a year on average. The difference is not
+  statistically reliable (t = -1.21), and its direction is against the
+  checks. In 2021-2025 alone the result is the same (-0.3 points a year,
+  2 of 5 years ahead).
+- **So the most SPY-like use of the checks did not beat SPY.** It
+  trailed by 0.1 points a year and was ahead in 5 of 12 years, which is
+  what holding SPY with some noise looks like.
 
 ## Data coverage
 
@@ -461,9 +525,13 @@ score.
    - A difference in returns does not show that the flags predict
      returns in other periods.
 5. **Smaller points.**
-   - The $5 test uses adjusted closes, which sit below the price
-     actually traded for older dates, so slightly more stocks are
-     excluded than with raw prices.
+   - The $5 test uses adjusted closes, which can sit above or below the
+     price actually traded at the time. Dividends push past adjusted
+     prices down; reverse splits push them up, sometimes far up (BINI's
+     adjusted close is about $1.5 trillion a share), so a penny stock
+     that later reverse-split can pass a $5 test it would have failed.
+     (An earlier version of this document said the test only excluded
+     more stocks; that was wrong.)
    - Trading costs are charged on the whole portfolio at each rebalance,
      including stocks held in both periods, which overstates costs.
    - SPY pays no costs.
