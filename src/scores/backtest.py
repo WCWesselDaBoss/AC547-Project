@@ -193,13 +193,28 @@ def simulate_period(
         owed_total = owed_total + short_capital
     gross = equity - long_capital + short_capital + long_total - owed_total
 
+    # Costs apply only to a leg that holds stocks: an empty leg is cash,
+    # which is neither traded nor borrowed.
+    traded_long = long_capital if len(longs) else 0.0
+    traded_short = short_capital if len(shorts) else 0.0
     rate = cost_bps / 10_000
-    entry_cost = rate * (long_capital + short_capital)
-    exit_cost = rate * (long_total.iloc[-1] + owed_total.iloc[-1])
+    entry_cost = rate * (traded_long + traded_short)
+    exit_cost = rate * (
+        (long_total.iloc[-1] if len(longs) else 0.0)
+        + (owed_total.iloc[-1] if len(shorts) else 0.0)
+    )
     elapsed_days = (days - start).days.to_numpy()
-    borrow = borrow_rate * short_capital * elapsed_days / DAYS_PER_YEAR
+    borrow = borrow_rate * traded_short * elapsed_days / DAYS_PER_YEAR
     net = gross - entry_cost - borrow
     net.iloc[-1] -= exit_cost
+
+    # Wiped out: once the account is worth nothing (shorts owe more than
+    # everything it holds), a broker would close it. Its value stays at
+    # 0; a negative balance is never carried forward.
+    wiped_out = bool((net <= 0).any())
+    if wiped_out:
+        first_zero = net.index[(net <= 0).to_numpy()][0]
+        net[net.index >= first_zero] = 0.0
 
     path = pd.DataFrame(
         {"long_value": long_total, "short_owed": owed_total, "gross": gross}
@@ -211,6 +226,7 @@ def simulate_period(
     costs = {
         "trading_cost": entry_cost + exit_cost,
         "borrow_cost": float(borrow[-1]),
+        "wiped_out": wiped_out,
     }
     return path, positions, costs
 
@@ -230,11 +246,34 @@ def run_portfolio(
     Each period starts with the previous period's ending value (after
     costs), split again by weights, so the portfolio is rebalanced once
     a year. picks_df has columns formation_date, leg, ticker, and
-    sell_date (from flag_sell_dates) when sell_on_flag is True.
+    sell_date (from flag_sell_dates) when sell_on_flag is True. After a
+    period that wipes the account out, later periods hold nothing and
+    stay at 0 (their period_return is NaN: there is no capital to earn
+    a return on).
     """
     equity = start_capital
     rows, paths = [], []
     for period in periods_df.itertuples(index=False):
+        if equity <= 0:
+            days = price_window(price_wide, period.start, period.end).index
+            paths.append(pd.Series(0.0, index=days))
+            rows.append(
+                {
+                    "formation_date": period.formation_date,
+                    "start": period.start,
+                    "end": period.end,
+                    "start_value": 0.0,
+                    "end_value": 0.0,
+                    "period_return": np.nan,
+                    "n_long": 0,
+                    "n_short": 0,
+                    "n_sold_on_flag": 0,
+                    "trading_cost": 0.0,
+                    "borrow_cost": 0.0,
+                    "wiped_out": True,
+                }
+            )
+            continue
         chosen = picks_df[picks_df["formation_date"] == period.formation_date]
         longs = chosen.loc[chosen["leg"] == "long", "ticker"].tolist()
         shorts = chosen.loc[chosen["leg"] == "short", "ticker"].tolist()
@@ -619,6 +658,7 @@ RESULT_COLUMNS = [
     "n_sold_on_flag",
     "trading_cost",
     "borrow_cost",
+    "wiped_out",
 ]
 
 
@@ -697,7 +737,12 @@ def run_backtest(scores_df, financials_df, companies_df, prices_df):
 
     results_df = pd.concat(results, ignore_index=True)[RESULT_COLUMNS]
     results_df = results_df.astype(
-        {"variant": "string", "portfolio": "string", "cost_bps": "int64"}
+        {
+            "variant": "string",
+            "portfolio": "string",
+            "cost_bps": "int64",
+            "wiped_out": "bool",
+        }
     )
     return {
         "results": results_df,
@@ -720,6 +765,7 @@ def benchmark_periods(periods_df, spy_returns, capital, labels):
         n_long=0,
         n_short=0,
         n_sold_on_flag=0,
+        wiped_out=False,
         trading_cost=0.0,
         borrow_cost=0.0,
         **labels,

@@ -185,6 +185,7 @@ results and limitations: docs/backtest.md. Not investment advice.
 | n_sold_on_flag | int64 | Longs sold early because a newer 10-K raised a flag (only long_only_sell_on_flag is nonzero) | `backtest.flag_sell_dates`, `backtest.position_paths` |
 | trading_cost | float64 | Entry plus exit trading cost, in dollars | `backtest.simulate_period` |
 | borrow_cost | float64 | Borrowing fee on the short leg, in dollars | `backtest.simulate_period` |
+| wiped_out | bool | The account fell to 0 or below during the period (or already had); its value is then held at 0 and later periods hold nothing | `backtest.simulate_period`, `backtest.run_portfolio` |
 
 Logs in `data/logs/` (gitignored): `backtest_summary.csv` (ending value,
 total and annualized return, max drawdown per portfolio),

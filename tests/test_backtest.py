@@ -452,7 +452,7 @@ def test_outputs_and_hit_rate_table(monkeypatch, tmp_path):
     monkeypatch.setattr(backtest.config, "BACKTEST_RESULTS_PATH", results_path)
     tables = backtest.run_backtest(*make_score_inputs(), make_full_prices())
     paths = backtest.write_outputs(tables)
-    assert pd.read_parquet(results_path).shape == (50, 15)
+    assert pd.read_parquet(results_path).shape == (50, 16)
     hits = pd.read_csv(paths["hit_rates"], dtype={"year": "string"})
     strict_all = hits[
         (hits["variant"] == "all_three_scores")
@@ -549,3 +549,61 @@ def test_sell_on_flag_portfolio_counts_sales(monkeypatch):
         & (results["cost_bps"] == 0)
     ]
     assert rows["n_sold_on_flag"].tolist() == [1, 0]
+
+
+# ---------------------------------------------------------------------------
+# Empty legs and wiped-out accounts
+# ---------------------------------------------------------------------------
+def test_empty_leg_is_cash_with_no_costs():
+    """No stocks to buy: the 100,000 stays in cash, so even at 20 bps and
+    a 1% borrow fee nothing is charged."""
+    price_wide, periods = setup()
+    period = periods.iloc[0]
+    path, _, costs = backtest.simulate_period(
+        price_wide,
+        [],
+        [],
+        period.start,
+        period.end,
+        100_000.0,
+        (0.5, 0.5),
+        20,
+        0.01,
+    )
+    assert path["value"].iloc[-1] == pytest.approx(100_000.0)
+    assert costs["trading_cost"] == 0.0 and costs["borrow_cost"] == 0.0
+
+
+def test_short_that_quadruples_wipes_the_account_out():
+    """Short only, 100,000 in X: X goes 10 -> 40 on 2022-01-03, so the
+    shorts owe 400,000 against 200,000 held: -200,000. The account is
+    wiped out that day and stays at 0; the next period holds nothing."""
+    prices = pd.concat(
+        [make_prices(), stock("X", [(None, 10.0), (JAN_2022, 40.0)])],
+        ignore_index=True,
+    ).astype({"ticker": "string"})
+    calendar = backtest.trading_calendar(prices)
+    periods = backtest.holding_periods(calendar, FORMATION)
+    picks = pd.DataFrame(
+        {
+            "formation_date": pd.to_datetime(FORMATION),
+            "leg": "short",
+            "ticker": ["X", "X"],
+        }
+    )
+    summary, daily = backtest.run_portfolio(
+        backtest.price_table(prices, calendar),
+        picks,
+        periods,
+        (0.0, 1.0),
+        0,
+        0.0,
+        100_000.0,
+    )
+    assert daily.loc["2021-12-31"] == pytest.approx(100_000.0)
+    assert daily.loc["2022-01-03"] == 0.0
+    assert (daily[daily.index >= "2022-01-03"] == 0.0).all()
+    assert summary["wiped_out"].tolist() == [True, True]
+    assert summary["end_value"].tolist() == [0.0, 0.0]
+    assert pd.isna(summary["period_return"].iloc[1])
+    assert backtest.max_drawdown(daily) == -1.0
