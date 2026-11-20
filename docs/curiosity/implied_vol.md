@@ -159,6 +159,39 @@ Each file is read by its exact name, never with a wildcard.
    5% and 10% above `impl_premium`, to stand in for paying the ask
    rather than the mid price.
 
+### Extension: 50% and 70% exit thresholds
+
+Added before any 50% or 70% result was computed; the 30% result was
+already known, so these are exploratory.
+
+- **Thresholds.** Analyses 4 and 5 are repeated with two more exit
+  rules, decided together: sell when the stock first closes 50% or more
+  below the reference price (at or below 50% of the option-date close),
+  or 70% or more below it (at or below 30%); otherwise hold to expiry
+  (730 days). Each threshold is a separate rule applied to the whole
+  life of the put; nothing is carried over from the 30% rule.
+- **Everything else unchanged.** The same deltas (-50 and -25), the
+  same two early-exit valuations (intrinsic value as a floor and the
+  Black-Scholes estimate, with the option date's implied volatility,
+  the remaining time and zero rate and dividend), the same mid, +5% and
+  +10% purchase prices, the same price rules, and the same valued puts
+  (those whose expiry is on or before 2025-08-29).
+- **Reported next to the existing 30% rows:** for each threshold, delta,
+  valuation and purchase price, the mean and median return per dollar
+  of premium and the share with a positive return, by group (Clean,
+  Flagged) and by flag count (0 to 3); and the number of puts that hit
+  the threshold before expiry.
+- **Analysis 1 extended to 70% drops.** Actual against
+  implied-volatility-predicted share reaching a 70% drop within 24
+  months, by group, on the same 4,317 observations with delta -50 data.
+  The drop is defined exactly as in tests 11 and 12 (the first close at
+  or below 30% of the start price, from adjusted closes), and the
+  prediction uses the same zero-drift formula with d = 0.7.
+- **Small rows.** Every reported row resting on fewer than 50 puts (or,
+  for analysis 1, fewer than 50 observations) is marked "too small to
+  read".
+- **Reported whatever the results show.**
+
 ## Limitations, stated in advance
 
 - Standardized options are interpolated from listed options and may not
