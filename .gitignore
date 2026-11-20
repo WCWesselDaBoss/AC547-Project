@@ -24,3 +24,7 @@ data/interim/
 
 # macOS Finder metadata, not project files
 .DS_Store
+
+# Paper-trading price cache (Yahoo data; the logs keep every price used)
+data/papertrade/prices/
+data/papertrade/run.log

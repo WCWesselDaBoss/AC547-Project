@@ -92,3 +92,75 @@ yet, so the rule cannot have been tuned to them.
 - The logs hold public data only and are meant to be committed after
   each run, so the git history also shows that no earlier row was
   changed.
+
+## Instructions: how to run weekly (not part of the rules)
+
+This section explains how to run the tracker; it changes none of the
+rules above, which were frozen in commit `7722c0a` (2026-11-20).
+
+1. **Once: set your SEC User-Agent.** SEC asks every automated request
+   to identify itself; the tracker refuses to run without it. In
+   PowerShell (this saves it for your user account, so scheduled runs
+   see it too; open a new window afterwards):
+
+   ```powershell
+   setx SEC_USER_AGENT "Your Name AC547 your.email@school.edu"
+   ```
+
+2. **Each week: run it** from the project folder, on the branch that
+   holds the tracker (`curiosity-events`, or `main` once merged):
+
+   ```powershell
+   cd C:\Projects\AC547-Project
+   py -m src.curiosity.papertrade
+   ```
+
+   A run reads SEC's daily filing indexes since the last run (it
+   catches up on any missed weeks), logs new events, fills entry and
+   exit prices that are due, checks that no earlier logged field was
+   changed (it stops with an error if one was), and rewrites
+   `docs/curiosity/paper_trade_status.md`. It takes a few minutes and
+   needs an internet connection.
+
+3. **After each run: review and commit the logs**, so the git history
+   also shows that no earlier row was changed:
+
+   ```powershell
+   git add data/papertrade docs/curiosity/paper_trade_status.md
+   git commit -m "Paper trading: weekly run"
+   ```
+
+   The price cache (`data/papertrade/prices/`) is gitignored; the logs
+   keep every price used.
+
+4. **If a row was logged wrong,** add a correction row; never edit the
+   CSV files by hand (the next run would stop on the changed row):
+
+   ```powershell
+   py -m src.curiosity.papertrade --correct T000003 --field ticker --value ABCD --reason "ticker changed before the event"
+   ```
+
+**Scheduling it (optional; set up only if you decide to).** Windows
+Task Scheduler can run step 2 weekly; nothing here creates the task.
+Run step 2 by hand once first: it creates `data\papertrade\`, where the
+scheduled run writes its output (`run.log`, which is gitignored).
+
+- In Task Scheduler: Create Basic Task, name it (for example
+  "Paper trade tracker"), trigger Weekly (for example Saturday 9:00),
+  action "Start a program":
+  - Program: `cmd.exe`
+  - Arguments: `/c py -m src.curiosity.papertrade >> data\papertrade\run.log 2>&1`
+  - Start in: `C:\Projects\AC547-Project`
+- In the task's properties, tick "Run task as soon as possible after a
+  scheduled start is missed", so a week the computer was off is caught
+  up next time (the tracker also catches up on missed days itself).
+- The same task from a command prompt, if you prefer (not run here):
+
+  ```
+  schtasks /Create /SC WEEKLY /D SAT /ST 09:00 /TN "Paper trade tracker" /TR "cmd /c cd /d C:\Projects\AC547-Project && py -m src.curiosity.papertrade >> data\papertrade\run.log 2>&1"
+  ```
+
+- A scheduled run does not commit anything; review
+  `data\papertrade\run.log` and commit the logs yourself (step 3). The
+  task only reads public data and writes local files: it places no
+  orders and connects to no brokerage.
