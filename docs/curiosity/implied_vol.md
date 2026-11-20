@@ -27,10 +27,15 @@ Each file is read by its exact name, never with a wildcard.
   security names (`optionm.secnmd`) for the 820 secids in the surface
   file, used to confirm matches (4,146 rows; every secid present; no
   missing issuer names).
-- **Security prices (pending approval; see analyses 3 to 5):**
-  OptionMetrics daily security prices (`optionm.secprd`: close and the
-  cumulative adjustment factor `cfadj`) for the same secids, 2013-07-01
-  to 2026-07-31.
+- **Security prices (approved and downloaded 2026-11-19, for analyses 3
+  to 5):** `data/raw/wrds/secprd_prices.csv.gz`, OptionMetrics daily
+  security prices (`optionm.secprd`: secid, date, close, volume and the
+  cumulative adjustment factor `cfadj`) for the same 820 secids. Checked
+  before use: 2,175,245 rows, every secid present, no missing values, no
+  duplicate secid-date rows; it runs from 2013-07-01 to **2025-08-29**
+  (the last date in the file, not the 2026-07-31 requested); 10 secids'
+  prices end before that date; 2,134 rows have a negative close and 1 a
+  zero close (see below).
 
 ## Definitions
 
@@ -104,18 +109,41 @@ Each file is read by its exact name, never with a wildcard.
    premium = (payoff - premium) / premium. Reported for Clean, Flagged
    and 0 to 3 flags (mean, median and share with a positive return), at
    delta -50 and delta -25.
-   - **Prices (pending approval).** Strike and premium are in dollars
-     as of the option date, but Yahoo adjusted closes are rescaled for
-     every later split and dividend, so the two cannot be compared
-     directly. The stock price at expiry is therefore taken from
-     OptionMetrics `secprd`, converted to option-date share units with
-     the adjustment factor: price at expiry x cfadj at expiry / cfadj on
-     the option date. This corrects for splits, as option contracts do,
-     and not for dividends, as option payoffs do not. If prices stop
-     before expiry, the put is valued at its intrinsic value on the last
-     price day, and the observation is counted.
-   - If `secprd` is not used, analyses 3 to 5 are not run, and only
-     analyses 1 and 2 are reported.
+   - **Prices.** Strike and premium are in dollars as of the option
+     date, but Yahoo adjusted closes are rescaled for every later split
+     and dividend, so the two cannot be compared directly. The stock
+     price at expiry is therefore taken from OptionMetrics `secprd`,
+     converted to option-date share units with the adjustment factor:
+     price at expiry x cfadj at expiry / cfadj on the option date. This
+     corrects for splits, as option contracts do, and not for dividends,
+     as option payoffs do not.
+
+   **Price rules for analyses 3 to 5 (added 2026-11-19, after the
+   security prices were checked and before any analysis 3 to 5 result
+   was computed):**
+   - **Negative and zero closes.** A negative close is the average of
+     the closing bid and ask on a day without a trade (IvyDB US
+     Reference Manual v5.0, Security_Price file, Close Price), so its
+     absolute value is used as that day's price. A zero close counts as
+     no price that day.
+   - **Split adjustment.** `cfadj` is the cumulative split factor
+     (dividends are in a separate factor not used here); the manual's
+     conversion, close x cfadj that day / cfadj on another day, gives
+     the price in that other day's share units, which is the formula
+     above.
+   - **Price on a day.** The close on that day; if the security has no
+     price row that day, the latest earlier row within 5 trading days.
+   - **Not yet expired in the data.** The price file ends on
+     2025-08-29. A put whose expiry (the last market trading day on or
+     before the option date plus 730 days) falls after that date is "not
+     yet expired in the data": it is counted by group and left out of
+     analyses 3 to 5. It is never valued at the last available price.
+   - **Prices that stop for the security.** If a security's own prices
+     stop before its expiry while the file continues past that expiry
+     (for example a delisting), the put is valued at its intrinsic value
+     on the security's last price day and counted separately. This was
+     the original rule for prices that stop; it now applies only to a
+     security's own prices stopping, not to the end of the file.
 4. **Put with an exit rule (approximate).** Sell when the stock first
    closes 30% or more below the reference price (the option-date close
    from `secprd`, in the same split-adjusted units), or at expiry. At an
