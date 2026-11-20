@@ -816,8 +816,16 @@ def write_status(events, trades, today):
         (e["score_status"] if e["score_status"] != "ok" else e["group"])
         for _, e in current_events.iterrows()
     )
-    lines += ["| Status | Events |", "| --- | --- |"]
-    lines += [f"| {key} | {value} |" for key, value in sorted(counts.items())]
+    if not counts:
+        lines.append(
+            "No events logged yet (NT 10-K filings count from "
+            f"{RULES_START:%Y-%m-%d})."
+        )
+    else:
+        lines += ["| Status | Events |", "| --- | --- |"]
+        lines += [
+            f"| {key} | {value} |" for key, value in sorted(counts.items())
+        ]
     lines += ["", "## Trades", ""]
     if current_trades.empty:
         lines.append("No hypothetical trades yet.")
