@@ -4,7 +4,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from src.curiosity import events as ev
 from src.curiosity import implied_vol as iv
+from src.curiosity import papertrade as pt
 from src.curiosity import vol_matched as vm
 
 
@@ -666,3 +668,432 @@ def test_summary_counts_hits_and_marks_small_rows():
     assert row.loc["Clean", "mean_return"] == pytest.approx((5.0 - 1.0) / 2)
     assert row.loc["Flagged", "puts"] == 60
     assert not bool(row.loc["Flagged", "too_small_to_read"])
+
+
+# ---------------------------------------------------------------------------
+# Warning-filing events (src/curiosity/events.py)
+# ---------------------------------------------------------------------------
+EV_CALENDAR = pd.DatetimeIndex(
+    pd.bdate_range("2024-01-01", "2024-12-31").astype("datetime64[ns]")
+)
+
+
+def test_event_type_of():
+    """NT 10-K counts (not its amendment); an original 8-K counts only
+    if item 4.01 is listed (not 4.011-style text, not 8-K/A)."""
+    assert ev.event_type_of("NT 10-K", "") == ev.NT_10K
+    assert ev.event_type_of("NT 10-K/A", "") is None
+    assert ev.event_type_of("8-K", "4.01,9.01") == ev.AUDITOR_8K
+    assert ev.event_type_of("8-K", "2.02,9.01") is None
+    assert ev.event_type_of("8-K", "4.011") is None
+    assert ev.event_type_of("8-K/A", "4.01") is None
+
+
+def test_friday_filing_enters_monday():
+    """Friday 2024-03-08: day 0 is that Friday, entry Monday 03-11.
+    Saturday 03-09: day 0 is the Friday before, entry Monday. Tuesday
+    03-12: day 0 Tuesday, entry Wednesday 03-13."""
+
+    def dates(filed):
+        day0, entry = ev.event_days(EV_CALENDAR, pd.Timestamp(filed))
+        return EV_CALENDAR[day0], EV_CALENDAR[entry]
+
+    assert dates("2024-03-08") == (
+        pd.Timestamp("2024-03-08"),
+        pd.Timestamp("2024-03-11"),
+    )
+    assert dates("2024-03-09") == (
+        pd.Timestamp("2024-03-08"),
+        pd.Timestamp("2024-03-11"),
+    )
+    assert dates("2024-03-12") == (
+        pd.Timestamp("2024-03-12"),
+        pd.Timestamp("2024-03-13"),
+    )
+
+
+def test_63_day_repeat_rule():
+    """Company 1's events on trading days 0, 30, 70 and 140: 30 is
+    within 63 of the kept 0 (dropped); 70 is 70 after 0 (kept); 140 is
+    70 after the kept 70, so it is kept although it is only 110 after the
+    dropped 30. Company 2's event on day 10 is unaffected, and so is
+    company 1's other event type."""
+    events = pd.DataFrame(
+        {
+            "cik": [1, 1, 1, 1, 2, 1],
+            "event_type": [ev.NT_10K] * 5 + [ev.AUDITOR_8K],
+            "day0": [0, 30, 70, 140, 10, 20],
+        }
+    )
+    kept = ev.drop_repeats(events)
+    assert kept.index.tolist() == [0, 2, 3, 4, 5]
+
+
+def test_market_adjustment():
+    """Stock 50 -> 55 (+10%), SPY 400 -> 412 (+3%): +7.0%. No stock
+    price on the end day gives no result."""
+    stock = np.array([50.0, 52.0, 55.0])
+    market = np.array([400.0, 405.0, 412.0])
+    assert ev.market_adjusted(stock, market, 0, 2) == pytest.approx(0.07)
+    gap = np.array([50.0, 52.0, np.nan])
+    assert np.isnan(ev.market_adjusted(gap, market, 0, 2))
+    assert np.isnan(ev.market_adjusted(stock, market, 0, 5))
+
+
+def test_eligibility():
+    """20 prices before day 0 and a close on day +1 are needed; a gap on
+    day -3 fails the history check."""
+    prices = np.full(30, 10.0)
+    assert ev.eligibility(prices, 25, 26) == (True, 10.0)
+    prices[22] = np.nan
+    assert ev.eligibility(prices, 25, 26)[0] is False
+    assert ev.eligibility(np.full(30, 10.0), 10, 11)[0] is False  # too early
+
+
+def test_flag_status():
+    """Company 1: its FY2023 10-K was filed ON the event day, so FY2022
+    (2 flags, a year old) is used: Flagged. Company 2's score is 16
+    months old: too old. Company 3 lacks an F-Score. Company 4 has no
+    score before the event. Company 5 filed two scores the same day: the
+    later fiscal year (0 flags) is used: Clean."""
+    scores = pd.DataFrame(
+        {
+            "cik": [1, 1, 2, 3, 5, 5],
+            "fiscal_year": [2022, 2023, 2022, 2023, 2022, 2023],
+            "flags_raised": pd.array([2, 0, 0, 0, 1, 0], dtype="Int64"),
+            "m_score": -2.0,
+            "z_score": 3.0,
+            "f_score": pd.array([7, 7, 7, None, 7, 7], dtype="Int64"),
+        }
+    )
+    financials = pd.DataFrame(
+        {
+            "cik": [1, 1, 2, 3, 5, 5],
+            "fiscal_year": [2022, 2023, 2022, 2023, 2022, 2023],
+            "filed_date": pd.to_datetime(
+                [
+                    "2023-03-06",
+                    "2024-03-05",
+                    "2023-01-02",
+                    "2024-02-01",
+                    "2024-02-01",
+                    "2024-02-01",
+                ]
+            ),
+        }
+    )
+    events = pd.DataFrame(
+        {
+            "cik": [1, 2, 3, 4, 5],
+            "filed": pd.to_datetime(
+                [
+                    "2024-03-05",
+                    "2024-05-15",
+                    "2024-03-01",
+                    "2024-03-01",
+                    "2024-03-01",
+                ]
+            ),
+        }
+    )
+    out = ev.flag_status(events, scores, financials).set_index("cik")
+    assert (out.loc[1, "score_status"], out.loc[1, "group"]) == (
+        "ok",
+        "flagged",
+    )
+    assert out.loc[1, "fiscal_year"] == 2022
+    assert out.loc[2, "score_status"] == "score_too_old"
+    assert out.loc[3, "score_status"] == "missing_a_score"
+    assert out.loc[4, "score_status"] == "no_score_before"
+    assert (out.loc[5, "group"], out.loc[5, "fiscal_year"]) == ("clean", 2023)
+
+
+def test_clustered_tests_on_made_up_data():
+    """Flagged events average +5% with little noise over 40 companies:
+    |t| far above 3 for (a) and for (b) against Clean events averaging
+    0. Pure noise of the same size does not reach 3."""
+    rng = np.random.default_rng(3)
+    n = 200
+    frame = pd.DataFrame(
+        {
+            "cik": rng.integers(0, 40, n),
+            "group": np.where(np.arange(n) < 100, "flagged", "clean"),
+        }
+    )
+    frame["car"] = np.where(
+        frame["group"] == "flagged", 0.05, 0.0
+    ) + rng.normal(0, 0.01, n)
+    result = ev.clustered_tests(frame, "car")
+    assert result["passes_a"] and result["passes_b"]
+    assert result["flagged_mean"] == pytest.approx(0.05, abs=0.005)
+    frame["car"] = rng.normal(0, 0.01, n)
+    noise = ev.clustered_tests(frame, "car")
+    assert not noise["passes_a"] and not noise["passes_b"]
+
+
+# ---------------------------------------------------------------------------
+# Paper-trading tracker (src/curiosity/papertrade.py): fake data only
+# ---------------------------------------------------------------------------
+PT_DAYS = pd.bdate_range("2026-09-01", "2027-06-30").astype("datetime64[ns]")
+FORM_INDEX = (
+    "Form Type   Company Name                CIK         Date Filed  File Name\n"
+    "-------------------------------------------------------------------------\n"
+    "NT 10-K     ACME CORP                   1234        20261204    "
+    "edgar/data/1234/0001234-26-000001.txt\n"
+    "NT 10-K/A   ACME CORP                   1234        20261204    "
+    "edgar/data/1234/0001234-26-000002.txt\n"
+    "10-K        OTHER INC                   5678        20261204    "
+    "edgar/data/5678/0005678-26-000003.txt\n"
+)
+
+
+def pt_table(acme):
+    """Return a price table (SPY flat at 100) with the given ACME
+    series."""
+    return pd.DataFrame({"SPY": 100.0, "ACME": acme}, index=PT_DAYS)
+
+
+def test_only_original_nt_10k_is_read():
+    """The daily index lists an NT 10-K, an NT 10-K/A and a 10-K: only
+    the NT 10-K is kept, with its accession number."""
+    rows = pt.parse_form_index(FORM_INDEX)
+    assert [r["form"] for r in rows] == ["NT 10-K"]
+    assert rows[0]["accession"] == "0001234-26-000001"
+    assert rows[0]["filing_date"] == pd.Timestamp("2026-12-04")
+
+
+def test_friday_filing_enters_monday_and_checks_price():
+    """Filed Friday 2026-12-04: entry Monday 12-07. Eligible at $20;
+    at $4 on the entry day, ineligible (below $5)."""
+    filed = pd.Timestamp("2026-12-04")
+    entry, eligibility = pt.entry_and_checks(pt_table(20.0), filed, "ACME")
+    assert entry == pd.Timestamp("2026-12-07")
+    assert eligibility == "eligible"
+    cheap = pt_table(20.0)
+    cheap.loc["2026-12-07", "ACME"] = 4.0
+    reason = pt.entry_and_checks(cheap, filed, "ACME")[1]
+    assert reason.startswith("ineligible: entry price")
+
+
+def test_63_day_repeat_rule_for_trades():
+    """An earlier trade entered 30 trading days before the new entry is
+    a repeat; one entered 70 trading days before is not; another
+    company's trade never is."""
+    calendar = pd.DatetimeIndex(PT_DAYS)
+    entry = calendar[100]
+    trades = pd.DataFrame(
+        {
+            "cik": ["1234", "9999"],
+            "entry_date": [str(calendar[70].date()), str(calendar[95].date())],
+        }
+    )
+    assert pt.is_repeat(trades, 1234, entry, calendar)
+    older = pd.DataFrame(
+        {"cik": ["1234"], "entry_date": [str(calendar[30].date())]}
+    )
+    assert not pt.is_repeat(older, 1234, entry, calendar)
+    assert not pt.is_repeat(trades, 5555, entry, calendar)
+
+
+def test_exit_on_day_63_and_result():
+    """Entry 2026-12-07 is day 1, so day 63 is 62 trading days later.
+    The stock goes 20 -> 15 and SPY stays at 100: stock -25%, result
+    +25% (the short made money), +22.5% after the 2.5% borrowing cost,
+    $2,500 on $10,000."""
+    acme = pd.Series(20.0, index=PT_DAYS)
+    acme[acme.index >= "2027-01-15"] = 15.0
+    table = pt_table(acme)
+    entry = pd.Timestamp("2026-12-07")
+    exit_day, stock, spy, note = pt.exit_plan(table, entry, "ACME")
+    calendar = table["SPY"].dropna().index
+    assert exit_day == calendar[calendar.get_loc(entry) + 62]
+    assert note == "exit on day 63"
+    result = pt.trade_result(20.0, 100.0, stock, spy)
+    assert result["stock_return"] == pytest.approx(-0.25)
+    assert result["result"] == pytest.approx(0.25)
+    assert result["result_after_borrow"] == pytest.approx(0.225)
+    assert result["result_dollars"] == pytest.approx(2500.0)
+
+
+def test_trade_stays_open_before_day_63():
+    """With prices only to 30 trading days after entry, there is no exit
+    yet."""
+    entry = pd.Timestamp("2026-12-07")
+    table = pt_table(20.0).iloc[: PT_DAYS.get_loc(entry) + 30]
+    assert pt.exit_plan(table, entry, "ACME") is None
+
+
+def test_delisting_closes_at_the_last_price():
+    """ACME's prices stop on 2027-01-08 at 12 (delisted) while SPY goes
+    on: after 5 trading days without a price, the trade closes at 12 on
+    2027-01-08, never at an invented price."""
+    acme = pd.Series(20.0, index=PT_DAYS)
+    acme[acme.index >= "2027-01-04"] = 12.0
+    acme[acme.index > "2027-01-08"] = np.nan
+    plan = pt.exit_plan(pt_table(acme), pd.Timestamp("2026-12-07"), "ACME")
+    exit_day, stock, _, note = plan
+    assert exit_day == pd.Timestamp("2027-01-08")
+    assert stock == 12.0
+    assert note.startswith("closed at last price")
+
+
+def make_pt_company():
+    """A made-up 10-K filer with 10-Ks for FY2023 (filed 2024-03-01),
+    FY2024 (2025-03-03) and FY2025 (2026-03-02), revenue and assets of
+    $500 million (passes the size floor)."""
+    filings = [
+        (2023, "0001-24-1", "2024-03-01"),
+        (2024, "0001-25-1", "2025-03-03"),
+        (2025, "0001-26-1", "2026-03-02"),
+    ]
+    submission = {
+        "cik": "1234",
+        "sic": "3571",
+        "filings": {
+            "recent": {
+                "form": ["10-K"] * 3,
+                "reportDate": [f"{year}-12-31" for year, _, _ in filings],
+                "accessionNumber": [accn for _, accn, _ in filings],
+                "filingDate": [filed for _, _, filed in filings],
+            },
+            "files": [],
+        },
+    }
+    revenue = [
+        {
+            "start": f"{year}-01-01",
+            "end": f"{year}-12-31",
+            "val": 5e8,
+            "accn": accn,
+            "form": "10-K",
+            "filed": filed,
+        }
+        for year, accn, filed in filings
+    ]
+    assets = [
+        {
+            "end": f"{year}-12-31",
+            "val": 5e8,
+            "accn": accn,
+            "form": "10-K",
+            "filed": filed,
+        }
+        for year, accn, filed in filings
+    ]
+    facts_json = {
+        "facts": {
+            "us-gaap": {
+                "Revenues": {"units": {"USD": revenue}},
+                "Assets": {"units": {"USD": assets}},
+            }
+        }
+    }
+    return facts_json, submission
+
+
+def test_point_in_time_scoring_ignores_a_later_10k():
+    """Event 2026-02-15: the FY2025 10-K (filed 2026-03-02) comes after
+    it and is ignored, so the latest year scored is FY2024 (filed
+    2025-03-03, 11 months earlier). This company reports too little for
+    the three scores, so it is not usable, but the year shows no later
+    filing was seen. An event after 2026-03-02 does see FY2025. The
+    project's fiscal-year limit is restored afterwards."""
+    facts_json, submission = make_pt_company()
+    limit = pt.config.LAST_FISCAL_YEAR
+    result = pt.point_in_time_score(
+        1234, pd.Timestamp("2026-02-15"), facts_json, submission, {}
+    )
+    assert result["score_fiscal_year"] == 2024
+    assert result["score_10k_filed"] == pd.Timestamp("2025-03-03").date()
+    assert result["score_status"] == "missing_a_score"
+    assert pt.config.LAST_FISCAL_YEAR == limit
+    later = pt.point_in_time_score(
+        1234, pd.Timestamp("2026-06-01"), facts_json, submission, {}
+    )
+    assert later["score_fiscal_year"] == 2025
+
+
+def pt_log(rows):
+    """Return a trades log (all text) from partial rows."""
+    return pd.DataFrame(
+        [{c: row.get(c, "") for c in pt.TRADE_COLUMNS} for row in rows],
+        dtype="string",
+    )
+
+
+def check(old, new):
+    """Run the append-only check on two trades logs."""
+    pt.check_append_only(
+        old, new, pt.TRADE_COLUMNS, pt.TRADE_FILLABLE, "trades"
+    )
+
+
+def test_append_only_check_catches_an_edited_row():
+    """Filling an exit price and moving status open -> closed is
+    allowed; editing a frozen field (filing date), changing a filled
+    price, moving status backward or removing a row is not."""
+    old = pt_log(
+        [{"row_id": "T000001", "filing_date": "2026-12-04", "status": "open"}]
+    )
+    filled = pt_log(
+        [
+            {
+                "row_id": "T000001",
+                "filing_date": "2026-12-04",
+                "status": "closed",
+                "exit_price_stock": "15.000000",
+            }
+        ]
+    )
+    check(old, filled)
+    edited = filled.copy()
+    edited.loc[0, "filing_date"] = "2026-12-03"
+    with pytest.raises(pt.AppendOnlyError, match="frozen field 'filing_date'"):
+        check(filled, edited)
+    repriced = filled.copy()
+    repriced.loc[0, "exit_price_stock"] = "14.000000"
+    with pytest.raises(pt.AppendOnlyError, match="filled field"):
+        check(filled, repriced)
+    backward = filled.copy()
+    backward.loc[0, "status"] = "open"
+    with pytest.raises(pt.AppendOnlyError):
+        check(filled, backward)
+    with pytest.raises(pt.AppendOnlyError, match="removed"):
+        check(filled, filled.iloc[:0])
+
+
+def test_ledger_catches_a_hand_edit_between_runs():
+    """A row fingerprinted when logged and later edited by hand on disk
+    fails the next run's ledger check."""
+    log = pt_log(
+        [{"row_id": "T000001", "filing_date": "2026-12-04", "status": "open"}]
+    )
+    empty = pd.DataFrame(columns=["log", "row_id", "fingerprint"])
+    ledger = pt.ledger_rows(
+        log, pt.TRADE_COLUMNS, pt.TRADE_FILLABLE, empty, "trades"
+    )
+    pt.check_ledger(log, pt.TRADE_COLUMNS, pt.TRADE_FILLABLE, ledger, "trades")
+    log.loc[0, "filing_date"] = "2026-11-30"
+    with pytest.raises(pt.AppendOnlyError, match="fingerprint"):
+        pt.check_ledger(
+            log, pt.TRADE_COLUMNS, pt.TRADE_FILLABLE, ledger, "trades"
+        )
+
+
+def test_correction_row_points_to_the_original():
+    """A correction is a new row; the original stays unchanged."""
+    log = pt_log(
+        [{"row_id": "T000001", "row_type": "original", "ticker": "ACME"}]
+    )
+    corrected = pt.add_correction(
+        log,
+        "T000001",
+        {"ticker": "ACMEX"},
+        "wrong ticker",
+        pt.TRADE_COLUMNS,
+        "T",
+    )
+    assert corrected.loc[0, "ticker"] == "ACME"
+    assert corrected.loc[1, "row_id"] == "T000002"
+    assert corrected.loc[1, "corrects_row_id"] == "T000001"
+    assert corrected.loc[1, "ticker"] == "ACMEX"
