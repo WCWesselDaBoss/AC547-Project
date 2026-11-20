@@ -192,6 +192,8 @@ raw OptionMetrics rows.
 each stock's implied volatility is held equal, the flags no longer add a
 statistically clear signal about 30% or 50% drops. With trailing
 volatility on the same observations they still do (part 1's result).
+Buying two-year puts on flagged stocks lost money on average, though
+less than on clean stocks.
 
 ### Matching and the name review
 
@@ -280,22 +282,97 @@ Efron ties, standard errors clustered by company (790):
   are still above 1, and the 50% drop with 2 flags stands out in
   analysis 1.
 
-### Analyses 3 to 5: not run
+### Analyses 3 to 5: put payoffs (run 2026-11-19, after the price rules were committed)
 
-The put-payoff analyses need OptionMetrics security prices
-(`optionm.secprd`), because strike and premium are in dollars of the
-option date while Yahoo adjusted closes are rescaled for later splits
-and dividends. That file was not downloaded, so, as the definitions say,
-analyses 3 to 5 are not run. The tested put arithmetic is ready in
-`src/curiosity/implied_vol.py` if the prices are added later.
+Run with `python -m src.curiosity.implied_vol --results --puts`, using
+the security prices in `data/raw/wrds/secprd_prices.csv.gz` and the price
+rules added to the definitions before this run. A put is valued only if
+its two-year life ended by 2025-08-29, the last date in the price file.
+
+**Which puts were valued** (delta -50; delta -25 differs by at most 2):
+
+| Group | Valued | Of which the security's prices stopped before expiry | Not yet expired in the data (left out) |
+| --- | --- | --- | --- |
+| Clean | 2,559 | 4 | 280 |
+| Flagged | 1,306 | 4 | 172 |
+| 1 flag | 947 | 2 | 115 |
+| 2 flags | 302 | 1 | 48 |
+| 3 flags | 57 | 1 | 9 |
+
+No put lacked a price on its option date. The put's strike and premium
+are on the scale expected for two-year puts (median strike 1.17 times
+the stock price at delta -50 and 0.83 times at delta -25; median premium
+30% and 12% of the stock price), and one put was recomputed by hand
+from the files (held to expiry, intrinsic exit and Black-Scholes exit
+all matched to four decimals).
+
+![Put returns by group](put_returns.png)
+
+**Mean return per dollar of premium, bought at the mid price** (5% and
+10% columns: analysis 5, the price paid raised to stand in for the
+bid-ask spread):
+
+| Put and valuation | Group | Mid | +5% | +10% | Median (mid) | Share positive (mid) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Delta -50, held to expiry (exact) | Clean | -44.1% | -46.7% | -49.1% | -100% | 25.0% |
+| | Flagged | -28.4% | -31.8% | -34.9% | -46.9% | 37.1% |
+| | 1 flag | -32.5% | -35.7% | -38.6% | -63.6% | 34.6% |
+| | 2 flags | -15.9% | -19.9% | -23.5% | -12.5% | 44.7% |
+| | 3 flags | -27.1% | -30.6% | -33.8% | -40.9% | 38.6% |
+| Delta -50, sold at a 30% fall, Black-Scholes estimate | Clean | -15.7% | -19.7% | -23.4% | -40.7% | 45.4% |
+| | Flagged | -7.6% | -12.0% | -16.0% | +16.5% | 60.9% |
+| | 2 flags | -0.9% | -5.6% | -9.9% | +17.1% | 69.9% |
+| Delta -50, sold at a 30% fall, intrinsic (lower bound) | Clean | -18.1% | -22.0% | -25.6% | -40.7% | 45.4% |
+| | Flagged | -11.8% | -16.0% | -19.9% | +9.4% | 60.7% |
+| Delta -25, held to expiry (exact) | Clean | -59.5% | -61.4% | -63.2% | -100% | 14.7% |
+| | Flagged | -43.0% | -45.7% | -48.2% | -100% | 24.5% |
+| | 2 flags | -25.7% | -29.3% | -32.5% | -100% | 36.3% |
+| Delta -25, sold at a 30% fall, Black-Scholes estimate | Clean | -18.1% | -22.0% | -25.6% | -100% | 41.7% |
+| | Flagged | -8.5% | -12.9% | -16.8% | +13.4% | 55.7% |
+| | 2 flags | -1.9% | -6.6% | -10.8% | +19.5% | 65.3% |
+| Delta -25, sold at a 30% fall, intrinsic (lower bound) | Clean | -42.2% | -45.0% | -47.5% | -100% | 25.9% |
+| | Flagged | -43.1% | -45.8% | -48.3% | -37.7% | 15.8% |
+
+Every group and tier is in `data/logs/curiosity_implied_vol.csv`
+(derived values only) and the run output.
+
+What this shows:
+
+- **No group made money on average.** Every mean return is negative,
+  for both deltas, both ways of selling, and at mid prices before any
+  spread. Paying 5% above the mid price lowers each mean return by 1.9 to
+  4.7 points, and paying 10% above it by 3.7 to 9.0 points.
+- **Puts on flagged stocks lost less than puts on clean stocks** (for
+  example -28% against -44% held to expiry at delta -50), and 2-flag
+  stocks came closest to breaking even (-1% sold at a 30% fall, by the
+  Black-Scholes estimate). This fits analysis 1: their actual 50% drops
+  ran a little ahead of what implied volatility predicted.
+- **Holding to expiry was the worst choice everywhere.** Stocks that
+  fell often recovered within two years, so the typical put held to
+  expiry lost most or all of its premium (median -100% for clean
+  stocks).
+- **The far out-of-the-money puts show the pricing most clearly.** At
+  delta -25 and valued at intrinsic value, flagged puts did no better
+  than clean ones (15.8% profitable against 25.9%). Their implied
+  volatility was higher (median 0.61 against 0.42 among early exits), so
+  their premium was larger (0.21 against 0.12 times the stock price),
+  and a 30% fall left an intrinsic value (about 0.17 times the price)
+  below what had been paid. The market had already charged for the
+  extra risk.
+- **The two valuations of an early exit bracket the true value.**
+  Intrinsic value is a floor; the Black-Scholes estimate uses the
+  option-date implied volatility, while implied volatility usually
+  rises after a crash, so the real exit price was probably at or above
+  the estimate. Neither is a traded price.
 
 ### What this means
 
 - Part 1 found that the flags signal crash risk beyond a stock's past
   volatility. Part 2 suggests the options market already knew: once
-  implied volatility is held equal, little extra risk remains. This is
-  consistent with the flags summarizing public information that option
-  traders also use.
+  implied volatility is held equal, little extra risk remains, and
+  buying puts on flagged stocks lost money on average, only less than on
+  clean stocks. This is consistent with the flags summarizing public
+  information that option traders also use.
 - For the project, this supports presenting the flags as a transparent,
   explainable risk screen, not as a source of trading profits.
 
