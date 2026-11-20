@@ -1,0 +1,1 @@
+row_id,row_type,corrects_row_id,correction_reason,rules_version,event_row_id,accession,cik,ticker,group,flags_raised,filing_date,entry_date,entry_price_stock,entry_price_spy,borrowing_note,status,exit_date,exit_price_stock,exit_price_spy,exit_note,stock_return,spy_return,result,result_after_borrow,result_dollars
