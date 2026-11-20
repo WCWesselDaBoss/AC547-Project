@@ -398,6 +398,113 @@ What this shows:
   rises after a crash, so the real exit price was probably at or above
   the estimate. Neither is a traded price.
 
+### Extension: exits at a 50% and a 70% fall (exploratory, run 2026-11-19)
+
+Run with the same command, after the extension's definitions were
+committed. Exploratory: the 30% result was known when the 50% and 70%
+thresholds were chosen. The 30% rows below are the earlier results,
+reproduced exactly by this run. Each threshold is its own rule; a put
+that never reaches it is held to expiry. Per the committed rule, a row
+on fewer than 50 puts is "too small to read": no row is, because the
+smallest group (3 flags) has 57 valued puts. But a row's exit effect
+rests only on the puts that hit the threshold, and for 3 flags that is
+40, 28 and 19 puts at the 30%, 50% and 70% falls (marked "fewer than 50
+hits" below), so read those rows with care.
+
+**Delta -50, bought at the mid price:** mean return per dollar of premium (median; share positive)
+
+| Exit at | Valuation | Clean | Flagged | 0 flags | 1 flag | 2 flags | 3 flags |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 30% fall | Black-Scholes estimate | -15.7% (-41%; 45%) | -7.6% (+16%; 61%) | -15.7% (-41%; 45%) | -10.0% (+16%; 57%) | -0.9% (+17%; 70%) | -3.4% (+17%; 70%) |
+| 30% fall | intrinsic (floor) | -18.1% (-41%; 45%) | -11.8% (+9%; 61%) | -18.1% (-41%; 45%) | -13.9% (+9%; 57%) | -6.1% (+10%; 70%) | -9.0% (+7%; 70%) |
+| 50% fall | Black-Scholes estimate | -32.3% (-100%; 30%) | -18.1% (-23%; 45%) | -32.3% (-100%; 30%) | -22.2% (-44%; 41%) | -5.3% (+11%; 55%) | -17.6% (+8%; 53%) |
+| 50% fall | intrinsic (floor) | -32.5% (-100%; 30%) | -18.7% (-23%; 45%) | -32.5% (-100%; 30%) | -22.6% (-44%; 41%) | -6.2% (+10%; 55%) | -18.7% (+7%; 53%) |
+| 70% fall | Black-Scholes estimate | -41.4% (-100%; 26%) | -25.1% (-43%; 39%) | -41.4% (-100%; 26%) | -29.6% (-63%; 35%) | -11.1% (-9%; 47%) | -23.1% (-33%; 42%) |
+| 70% fall | intrinsic (floor) | -41.4% (-100%; 26%) | -25.1% (-43%; 39%) | -41.4% (-100%; 26%) | -29.6% (-63%; 35%) | -11.2% (-9%; 47%) | -23.2% (-33%; 42%) |
+
+**Delta -25, bought at the mid price:** mean return per dollar of premium (median; share positive)
+
+| Exit at | Valuation | Clean | Flagged | 0 flags | 1 flag | 2 flags | 3 flags |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 30% fall | Black-Scholes estimate | -18.1% (-100%; 42%) | -8.5% (+13%; 56%) | -18.1% (-100%; 42%) | -11.0% (+7%; 52%) | -1.9% (+20%; 65%) | -1.9% (+24%; 67%) |
+| 30% fall | intrinsic (floor) | -42.2% (-100%; 26%) | -43.1% (-38%; 16%) | -42.2% (-100%; 26%) | -43.9% (-41%; 18%) | -40.9% (-33%; 10%) | -41.5% (-33%; 11%) |
+| 50% fall | Black-Scholes estimate | -39.7% (-100%; 22%) | -25.2% (-100%; 37%) | -39.7% (-100%; 22%) | -30.5% (-100%; 32%) | -8.8% (+3%; 50%) | -23.2% (+4%; 51%) |
+| 50% fall | intrinsic (floor) | -42.0% (-100%; 22%) | -31.3% (-100%; 36%) | -42.0% (-100%; 22%) | -35.4% (-100%; 31%) | -18.3% (-4%; 47%) | -33.5% (-2%; 47%) |
+| 70% fall | Black-Scholes estimate | -54.3% (-100%; 16%) | -36.6% (-100%; 27%) | -54.3% (-100%; 16%) | -43.0% (-100%; 22%) | -17.6% (-100%; 39%) | -30.8% (-100%; 39%) |
+| 70% fall | intrinsic (floor) | -54.4% (-100%; 16%) | -37.1% (-100%; 27%) | -54.4% (-100%; 16%) | -43.3% (-100%; 22%) | -18.7% (-100%; 39%) | -32.0% (-100%; 39%) |
+
+**Puts that hit each threshold before expiry** (of the valued puts in the group):
+
+| Delta | Exit at | Clean | Flagged | 0 flags | 1 flag | 2 flags | 3 flags |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| -50 | 30% fall | 1,091 of 2,559 | 776 of 1,306 | 1,091 of 2,559 | 527 of 947 | 209 of 302 | 40 of 57 (fewer than 50 hits) |
+| -50 | 50% fall | 463 of 2,559 | 454 of 1,306 | 463 of 2,559 | 281 of 947 | 145 of 302 | 28 of 57 (fewer than 50 hits) |
+| -50 | 70% fall | 131 of 2,559 | 232 of 1,306 | 131 of 2,559 | 122 of 947 | 91 of 302 | 19 of 57 (fewer than 50 hits) |
+| -25 | 30% fall | 1,091 of 2,559 | 778 of 1,308 | 1,091 of 2,559 | 528 of 948 | 210 of 303 | 40 of 57 (fewer than 50 hits) |
+| -25 | 50% fall | 463 of 2,559 | 455 of 1,308 | 463 of 2,559 | 281 of 948 | 146 of 303 | 28 of 57 (fewer than 50 hits) |
+| -25 | 70% fall | 131 of 2,559 | 232 of 1,308 | 131 of 2,559 | 122 of 948 | 91 of 303 | 19 of 57 (fewer than 50 hits) |
+
+**Analysis 5 for the new thresholds:** mean return per dollar of premium, Black-Scholes estimate, at mid / +5% / +10%:
+
+| Delta | Exit at | Clean | Flagged | 0 flags | 1 flag | 2 flags | 3 flags |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| -50 | 30% fall | -15.7% / -19.7% / -23.4% | -7.6% / -12.0% / -16.0% | -15.7% / -19.7% / -23.4% | -10.0% / -14.3% / -18.2% | -0.9% / -5.6% / -9.9% | -3.4% / -8.0% / -12.2% |
+| -50 | 50% fall | -32.3% / -35.5% / -38.5% | -18.1% / -22.0% / -25.6% | -32.3% / -35.5% / -38.5% | -22.2% / -25.9% / -29.3% | -5.3% / -9.8% / -13.9% | -17.6% / -21.6% / -25.1% |
+| -50 | 70% fall | -41.4% / -44.2% / -46.7% | -25.1% / -28.6% / -31.9% | -41.4% / -44.2% / -46.7% | -29.6% / -33.0% / -36.0% | -11.1% / -15.4% / -19.2% | -23.1% / -26.7% / -30.1% |
+| -25 | 30% fall | -18.1% / -22.0% / -25.6% | -8.5% / -12.9% / -16.8% | -18.1% / -22.0% / -25.6% | -11.0% / -15.2% / -19.1% | -1.9% / -6.6% / -10.8% | -1.9% / -6.6% / -10.8% |
+| -25 | 50% fall | -39.7% / -42.6% / -45.2% | -25.2% / -28.7% / -32.0% | -39.7% / -42.6% / -45.2% | -30.5% / -33.8% / -36.8% | -8.8% / -13.2% / -17.1% | -23.2% / -26.9% / -30.2% |
+| -25 | 70% fall | -54.3% / -56.5% / -58.5% | -36.6% / -39.6% / -42.4% | -54.3% / -56.5% / -58.5% | -43.0% / -45.8% / -48.2% | -17.6% / -21.5% / -25.1% | -30.8% / -34.1% / -37.1% |
+
+The intrinsic-value rows at +5% and +10% are in
+`data/logs/curiosity_put_summary.csv` (derived values only).
+
+**Analysis 1 extended to 70% drops** (same 4,317 observations; drop
+detected as in tests 11 and 12; predicted by the zero-drift formula from
+implied volatility):
+
+| Group | Observations | Actual | Predicted from implied volatility | Actual / predicted |
+| --- | --- | --- | --- | --- |
+| Clean | 2,839 | 5.0% | 3.7% | 1.34 |
+| Flagged | 1,478 | 17.8% | 12.4% | 1.44 |
+| 1 flag | 1,062 | 12.8% | 9.6% | 1.34 |
+| 2 flags | 350 | 30.0% | 19.1% | 1.57 |
+| 3 flags | 66 | 33.3% | 22.0% | 1.52 |
+
+No row is under 50 observations. Cross-check between the two price
+sources: 5.1% of Clean puts hit the 70% exit in the OptionMetrics prices
+(131 of 2,559), against 5.0% of Clean observations falling 70% in the
+adjusted closes.
+
+What the extension shows:
+
+- **Still no group made money on average.** Every mean return is
+  negative at every threshold, for both deltas, both valuations and all
+  three prices.
+- **Waiting for a deeper fall made things worse.** With the
+  Black-Scholes estimate, every group lost more at a 50% exit than at
+  30%, and more at 70% than at 50%, for both deltas and all prices (for
+  example, delta -50 Clean -15.7%, -32.3%, -41.4%; Flagged -7.6%,
+  -18.1%, -25.1%). Fewer stocks fall that far, and the rest are held to
+  expiry, which was the worst outcome. The only exceptions are the delta
+  -25 intrinsic-value rows, where the 30% exit is valued at a very low
+  floor (a far out-of-the-money put has little intrinsic value right
+  after a 30% fall).
+- **At a 70% fall the two valuations agree** (within 1.3 points): by
+  then the put is deep in the money and nearly all of its value is
+  intrinsic.
+- **Puts on flagged stocks again lost less than on clean stocks,** in
+  every row except the three delta -25, 30%, intrinsic rows already
+  explained above, and 2-flag stocks again came closest to breaking even
+  (-5.3% at a 50% exit, delta -50, Black-Scholes estimate).
+- **Deep drops were more common than the simple model predicts, for
+  every group.** Actual 70% drops ran 1.34 times the implied-volatility
+  prediction for Clean stocks and 1.44 times for Flagged ones (1.57 for
+  2 flags). Most of this gap is the formula's own limit: it assumes
+  normally distributed returns, while real crashes are more frequent (fat
+  tails). The excess is only modestly larger for flagged stocks, which
+  fits analysis 2: the options market priced most, not all, of their
+  extra crash risk.
+
 ### What this means
 
 - Part 1 found that the flags signal crash risk beyond a stock's past
