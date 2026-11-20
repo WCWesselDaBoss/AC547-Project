@@ -34,6 +34,7 @@ from scipy.stats import norm  # noqa: E402
 
 import config  # noqa: E402
 from src.curiosity import vol_matched  # noqa: E402
+from src.scores import drop_sizes  # noqa: E402
 from src.scores import backtest  # noqa: E402
 
 WRDS_DIR = config.RAW_DIR / "wrds"
@@ -44,6 +45,11 @@ PRICES_FILE = WRDS_DIR / "secprd_prices.csv.gz"
 PRICE_FILE_END = pd.Timestamp("2025-08-29")
 OPTION_DAYS = 730
 EXIT_THRESHOLD = 0.7  # analysis 4: sell at a 30% fall
+# Extension (exploratory, added before any result): sell at a 50% or a
+# 70% fall instead. Each is its own rule. The 30% rule keeps its
+# original field names, so the committed 30% results reproduce.
+EXTRA_EXITS = {50: 0.5, 70: 0.3}
+MIN_ROWS_TO_READ = 50  # fewer puts or observations: too small to read
 COST_MARKUPS = [0.0, 0.05, 0.10]  # analysis 5: price paid above mid
 NAMES_FILE = WRDS_DIR / "secnmd_names.csv.gz"
 # Below-threshold pairs for hand review. It holds licensed names, so it
@@ -600,7 +606,8 @@ def put_outcome(security_rows, calendar, option_date, strike, premium, sigma):
     Keys: status; expiry; value_expiry (analysis 3, held to expiry);
     exit_date, value_exit_intrinsic and value_exit_bs (analysis 4: sold
     at the first close 30% or more below the option-date close, else as
-    analysis 3). A put expiring after PRICE_FILE_END is "not yet expired
+    analysis 3); and for the extension, exit_date_50, value_exit50_* and
+    exit_date_70, value_exit70_* (the same at a 50% and a 70% fall). A put expiring after PRICE_FILE_END is "not yet expired
     in the data" and gets no value (never the last available price).
     """
     expiry = option_expiry(calendar, option_date)
@@ -630,22 +637,39 @@ def put_outcome(security_rows, calendar, option_date, strike, premium, sigma):
         ]
     result["value_expiry"] = value_expiry
 
-    exit_position = first_exit_day(
-        (converted / base_price).to_numpy(), EXIT_THRESHOLD
+    ratios = (converted / base_price).to_numpy()
+    exit_date, intrinsic, estimate = exit_values(
+        converted, ratios, EXIT_THRESHOLD, expiry, strike, sigma, value_expiry
     )
-    if exit_position is None:
-        result["value_exit_intrinsic"] = value_expiry
-        result["value_exit_bs"] = value_expiry
-    else:
-        exit_date = converted.index[exit_position]
-        exit_price = converted.iloc[exit_position]
-        years_left = (expiry - exit_date).days / 365
-        result["exit_date"] = exit_date
-        result["value_exit_intrinsic"] = max(strike - exit_price, 0.0)
-        result["value_exit_bs"] = black_scholes_put(
-            exit_price, strike, years_left, sigma
+    result["exit_date"] = exit_date
+    result["value_exit_intrinsic"] = intrinsic
+    result["value_exit_bs"] = estimate
+    for fall, threshold in EXTRA_EXITS.items():
+        exit_date, intrinsic, estimate = exit_values(
+            converted, ratios, threshold, expiry, strike, sigma, value_expiry
         )
+        result[f"exit_date_{fall}"] = exit_date
+        result[f"value_exit{fall}_intrinsic"] = intrinsic
+        result[f"value_exit{fall}_bs"] = estimate
     return result
+
+
+def exit_values(converted, ratios, threshold, expiry, strike, sigma, held):
+    """Return (exit date, intrinsic value, Black-Scholes value) for one
+    exit rule: sell at the first close at or below threshold x the
+    option-date close; if that never happens, the put is held to expiry
+    and both values equal the held-to-expiry value (exit date NaT)."""
+    position = first_exit_day(ratios, threshold)
+    if position is None:
+        return pd.NaT, held, held
+    exit_date = converted.index[position]
+    exit_price = converted.iloc[position]
+    years_left = (expiry - exit_date).days / 365
+    return (
+        exit_date,
+        max(strike - exit_price, 0.0),
+        black_scholes_put(exit_price, strike, years_left, sigma),
+    )
 
 
 def put_outcomes(options_df, prices_by_secid, calendar):
@@ -695,21 +719,37 @@ def put_summary(outcomes_df, groups_df):
     valued = outcomes_df[
         outcomes_df["status"].isin([STATUS_DONE, STATUS_STOPPED])
     ].merge(groups_df, on=["cik", "fiscal_year"])
+    # (value column, exit-date column) per valuation; holding to expiry
+    # has no exit. "exit" is the 30% rule, under its original names.
     valuations = {
-        "hold_to_expiry": "value_expiry",
-        "exit_intrinsic": "value_exit_intrinsic",
-        "exit_black_scholes": "value_exit_bs",
+        "hold_to_expiry": ("value_expiry", None),
+        "exit_intrinsic": ("value_exit_intrinsic", "exit_date"),
+        "exit_black_scholes": ("value_exit_bs", "exit_date"),
     }
+    for fall in EXTRA_EXITS:
+        valuations[f"exit{fall}_intrinsic"] = (
+            f"value_exit{fall}_intrinsic",
+            f"exit_date_{fall}",
+        )
+        valuations[f"exit{fall}_black_scholes"] = (
+            f"value_exit{fall}_bs",
+            f"exit_date_{fall}",
+        )
     rows = []
     for delta in DELTAS:
         part = valued[valued["delta"] == delta]
-        for valuation, column in valuations.items():
+        for valuation, (column, exit_column) in valuations.items():
             for markup in COST_MARKUPS:
                 returns = return_per_premium(
                     part[column], part["premium"], markup
                 )
                 for label, mask in group_masks(part):
                     picked = returns[mask]
+                    hits = (
+                        0
+                        if exit_column is None
+                        else int(part.loc[mask, exit_column].notna().sum())
+                    )
                     rows.append(
                         {
                             "delta": delta,
@@ -717,9 +757,12 @@ def put_summary(outcomes_df, groups_df):
                             "cost_markup": markup,
                             "group": label,
                             "puts": len(picked),
+                            "hits": hits,
                             "mean_return": picked.mean(),
                             "median_return": picked.median(),
                             "share_positive": (picked > 0).mean(),
+                            "too_small_to_read": len(picked)
+                            < MIN_ROWS_TO_READ,
                         }
                     )
     return pd.DataFrame(rows)
@@ -817,6 +860,34 @@ def put_chart(summary_df, path=PUT_CHART_FILE):
     figure.savefig(path)
     plt.close(figure)
     return path
+
+
+def benchmark_70(options_df, prices_df):
+    """Return analysis 1 at a 70% drop: actual against implied-volatility
+    predicted share by group, on observations with delta -50 data. The
+    drop is detected exactly as in tests 11 and 12 (src/scores/
+    drop_sizes.py, adjusted closes); rows on fewer than MIN_ROWS_TO_READ
+    observations are marked too small to read."""
+    details = pd.read_csv(OBSERVATIONS_FILE, parse_dates=["start", "end"])
+    frame = details[details["drop_size"] == 0.3].merge(
+        options_df.loc[
+            options_df["iv_50"].notna(), ["cik", "fiscal_year", "iv_50"]
+        ],
+        on=["cik", "fiscal_year"],
+    )
+    calendar = backtest.trading_calendar(prices_df)
+    price_wide = backtest.price_table(prices_df, calendar)
+    frame = drop_sizes.outcomes_at(
+        frame.drop(
+            columns=["event", "duration_days", "drop_date", "drop_size"]
+        ),
+        price_wide,
+        0.7,
+    )
+    frame = frame.assign(volatility=frame["iv_50"])
+    table = vol_matched.benchmark_table(frame, 0.7)
+    table["too_small_to_read"] = table["observations"] < MIN_ROWS_TO_READ
+    return table
 
 
 def load_observations():
@@ -940,11 +1011,7 @@ def main(argv=None):
     print(status_counts(outcomes, groups).to_string(index=False))
     summary = put_summary(outcomes, groups)
     for delta in DELTAS:
-        for valuation in [
-            "hold_to_expiry",
-            "exit_intrinsic",
-            "exit_black_scholes",
-        ]:
+        for valuation in summary["valuation"].unique():
             part = summary[
                 (summary["delta"] == delta)
                 & (summary["valuation"] == valuation)
@@ -962,10 +1029,26 @@ def main(argv=None):
             )
             mid = part[part["cost_markup"] == 0]
             print(
-                mid[["group", "puts", "median_return", "share_positive"]]
+                mid[
+                    [
+                        "group",
+                        "puts",
+                        "hits",
+                        "median_return",
+                        "share_positive",
+                        "too_small_to_read",
+                    ]
+                ]
                 .round(3)
                 .to_string(index=False)
             )
+    summary.to_csv(config.LOG_DIR / "curiosity_put_summary.csv", index=False)
+    print("\n===== Analysis 1 extended to 70% drops (implied volatility):")
+    print(
+        benchmark_70(options, pd.read_parquet(config.PRICES_PATH))
+        .round(3)
+        .to_string(index=False)
+    )
     put_chart(summary)
     print(f"\nSaved {DETAILS_FILE} and {PUT_CHART_FILE}")
 

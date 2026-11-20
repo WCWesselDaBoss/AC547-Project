@@ -565,3 +565,104 @@ def test_security_prices_use_absolute_and_skip_zero_closes(tmp_path):
     assert rows["close"].tolist() == [10.0, 11.0]
     row = iv.price_on(rows, WEEK, pd.Timestamp("2024-03-06"))
     assert row.name == pd.Timestamp("2024-03-05") and row["close"] == 11.0
+
+
+# Extension: exits at a 50% and a 70% fall, each its own rule.
+# Bought 2021-01-04 at 50 (cfadj 1); 2-for-1 split 2022-01-03 (close 20,
+# i.e. 40, 80%); 2022-03-01 close 12 -> 24 (48%: the 30% and 50% exits);
+# 2022-09-01 close 7 -> 14 (28%: the 70% exit); expiry 2023-01-04 close
+# 10 -> 20 (40%).
+DEEP_PATH = [
+    (pd.Timestamp("2021-01-04"), 50.0, 1.0),
+    (pd.Timestamp("2022-01-03"), 20.0, 2.0),
+    (pd.Timestamp("2022-03-01"), 12.0, 2.0),
+    (pd.Timestamp("2022-09-01"), 7.0, 2.0),
+    (pd.Timestamp("2023-01-04"), 10.0, 2.0),
+]
+
+
+def test_exits_at_50_and_70_percent_falls():
+    """Strike 50. 30% and 50% rules both sell on 2022-03-01 at 24:
+    intrinsic 26. The 70% rule waits for 2022-09-01 at 14: intrinsic 36.
+    Held to expiry: 50 - 20 = 30. Black-Scholes is never below
+    intrinsic."""
+    outcome = iv.put_outcome(
+        put_rows(DEEP_PATH),
+        PUT_CALENDAR,
+        pd.Timestamp("2021-01-04"),
+        50.0,
+        6.0,
+        0.4,
+    )
+    assert outcome["value_expiry"] == pytest.approx(30.0)
+    assert outcome["exit_date"] == pd.Timestamp("2022-03-01")
+    assert outcome["value_exit_intrinsic"] == pytest.approx(26.0)
+    assert outcome["exit_date_50"] == pd.Timestamp("2022-03-01")
+    assert outcome["value_exit50_intrinsic"] == pytest.approx(26.0)
+    assert outcome["exit_date_70"] == pd.Timestamp("2022-09-01")
+    assert outcome["value_exit70_intrinsic"] == pytest.approx(36.0)
+    expected = iv.black_scholes_put(14.0, 50.0, 125 / 365, 0.4)
+    assert outcome["value_exit70_bs"] == pytest.approx(expected)
+    assert outcome["value_exit70_bs"] >= 36.0
+
+
+def test_rule_that_never_triggers_holds_to_expiry():
+    """On SPLIT_PATH the lowest close is 60% of the start: no 50% or 70%
+    exit, so both rules hold to expiry (value 20, no exit date)."""
+    outcome = iv.put_outcome(
+        put_rows(SPLIT_PATH),
+        PUT_CALENDAR,
+        pd.Timestamp("2021-01-04"),
+        50.0,
+        6.0,
+        0.4,
+    )
+    for fall in (50, 70):
+        assert pd.isna(outcome[f"exit_date_{fall}"])
+        assert outcome[f"value_exit{fall}_intrinsic"] == pytest.approx(20.0)
+        assert outcome[f"value_exit{fall}_bs"] == pytest.approx(20.0)
+
+
+def test_summary_counts_hits_and_marks_small_rows():
+    """Two Clean puts (one hits the 70% rule) and 60 Flagged puts (none
+    do): the Clean row counts 1 hit and is too small to read (2 < 50);
+    the Flagged row has 60 puts and can be read."""
+    n = 62
+    outcomes = pd.DataFrame(
+        {
+            "cik": range(n),
+            "fiscal_year": 2020,
+            "delta": -50,
+            "premium": 6.0,
+            "status": iv.STATUS_DONE,
+            "value_expiry": 0.0,
+            "value_exit_intrinsic": 0.0,
+            "value_exit_bs": 0.0,
+            "exit_date": pd.NaT,
+            "value_exit50_intrinsic": 0.0,
+            "value_exit50_bs": 0.0,
+            "exit_date_50": pd.NaT,
+            "value_exit70_intrinsic": [36.0] + [0.0] * (n - 1),
+            "value_exit70_bs": [40.0] + [0.0] * (n - 1),
+            "exit_date_70": [pd.Timestamp("2022-09-01")] + [pd.NaT] * (n - 1),
+        }
+    )
+    groups = pd.DataFrame(
+        {
+            "cik": range(n),
+            "fiscal_year": 2020,
+            "group": ["clean"] * 2 + ["flagged"] * 60,
+            "tier": ["0 flags"] * 2 + ["1 flag"] * 60,
+        }
+    )
+    summary = iv.put_summary(outcomes, groups)
+    row = summary[
+        (summary["delta"] == -50)
+        & (summary["valuation"] == "exit70_intrinsic")
+        & (summary["cost_markup"] == 0)
+    ].set_index("group")
+    assert row.loc["Clean", "hits"] == 1
+    assert bool(row.loc["Clean", "too_small_to_read"])
+    assert row.loc["Clean", "mean_return"] == pytest.approx((5.0 - 1.0) / 2)
+    assert row.loc["Flagged", "puts"] == 60
+    assert not bool(row.loc["Flagged", "too_small_to_read"])
