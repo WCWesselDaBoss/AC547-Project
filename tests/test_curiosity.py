@@ -437,3 +437,131 @@ def test_tradeability_counts():
     assert table.loc["Flagged"].tolist() == [2, 1, 1, 0]
     assert table.loc["2 flags"].tolist() == [1, 1, 1, 0]
     assert table.loc["3 flags"].tolist() == [1, 0, 0, 0]
+
+
+# Analyses 3 to 5: one put from start to finish, by hand.
+PUT_CALENDAR = pd.DatetimeIndex(
+    pd.bdate_range("2020-12-01", "2026-12-31").astype("datetime64[ns]")
+)
+
+
+def put_rows(points, last_day=None):
+    """Return security rows (close, cfadj) on every weekday, stepping to
+    each (date, close, cfadj) from that date on."""
+    days = (
+        PUT_CALENDAR
+        if last_day is None
+        else PUT_CALENDAR[PUT_CALENDAR <= last_day]
+    )
+    rows = pd.DataFrame(index=days, columns=["close", "cfadj"], dtype=float)
+    for date, close, cfadj in points:
+        rows.loc[rows.index >= date, ["close", "cfadj"]] = [close, cfadj]
+    return rows
+
+
+# Bought Monday 2021-01-04 at 50 (cfadj 1). A 2-for-1 split on
+# 2022-01-03: close 20, cfadj 2, i.e. 40 in option-date shares (80%: no
+# exit). 2022-06-01: close 17 -> 34 (68%: the exit). Expiry Wednesday
+# 2023-01-04 (2021-01-04 + 730 days): close 15 -> 30.
+SPLIT_PATH = [
+    (pd.Timestamp("2021-01-04"), 50.0, 1.0),
+    (pd.Timestamp("2022-01-03"), 20.0, 2.0),
+    (pd.Timestamp("2022-06-01"), 17.0, 2.0),
+    (pd.Timestamp("2023-01-04"), 15.0, 2.0),
+]
+
+
+def test_put_held_to_expiry_through_a_split():
+    """Strike 50, premium 6. At expiry the stock is 15 x 2 / 1 = 30 in
+    option-date shares (without the split adjustment it would look like
+    15). Payoff 50 - 30 = 20; return (20 - 6) / 6 = +233%."""
+    outcome = iv.put_outcome(
+        put_rows(SPLIT_PATH),
+        PUT_CALENDAR,
+        pd.Timestamp("2021-01-04"),
+        50.0,
+        6.0,
+        0.4,
+    )
+    assert outcome["status"] == iv.STATUS_DONE
+    assert outcome["expiry"] == pd.Timestamp("2023-01-04")
+    assert outcome["value_expiry"] == pytest.approx(20.0)
+    assert iv.return_per_premium(
+        outcome["value_expiry"], 6.0
+    ) == pytest.approx(14 / 6)
+
+
+def test_put_sold_at_a_30_percent_fall():
+    """The first close at or below 70% of 50 (35) is 2022-06-01 at 34.
+    Intrinsic value 50 - 34 = 16 (a lower bound); Black-Scholes with
+    217 days left at 40% volatility is worth more than that."""
+    outcome = iv.put_outcome(
+        put_rows(SPLIT_PATH),
+        PUT_CALENDAR,
+        pd.Timestamp("2021-01-04"),
+        50.0,
+        6.0,
+        0.4,
+    )
+    assert outcome["exit_date"] == pd.Timestamp("2022-06-01")
+    assert outcome["value_exit_intrinsic"] == pytest.approx(16.0)
+    expected = iv.black_scholes_put(34.0, 50.0, 217 / 365, 0.4)
+    assert outcome["value_exit_bs"] == pytest.approx(expected)
+    assert outcome["value_exit_bs"] > 16.0
+
+
+def test_put_expiring_after_the_file_is_not_valued():
+    """Bought 2024-01-02: expiry 2026-01-02 is after the file's last
+    date (2025-08-29), so the put is "not yet expired in the data" and
+    gets no value at all, never the last available price."""
+    outcome = iv.put_outcome(
+        put_rows([(pd.Timestamp("2024-01-02"), 50.0, 1.0)]),
+        PUT_CALENDAR,
+        pd.Timestamp("2024-01-02"),
+        50.0,
+        6.0,
+        0.4,
+    )
+    assert outcome["status"] == iv.STATUS_NOT_EXPIRED
+    assert "value_expiry" not in outcome
+
+
+def test_put_on_a_security_whose_prices_stop():
+    """Prices stop 2022-03-01 at 15 x 2 = 30 (option-date shares), well
+    before expiry: valued at intrinsic value on that day, 50 - 30 = 20,
+    and marked as stopped."""
+    rows = put_rows(
+        SPLIT_PATH[:2] + [(pd.Timestamp("2022-02-01"), 15.0, 2.0)],
+        last_day="2022-03-01",
+    )
+    outcome = iv.put_outcome(
+        rows, PUT_CALENDAR, pd.Timestamp("2021-01-04"), 50.0, 6.0, 0.4
+    )
+    assert outcome["status"] == iv.STATUS_STOPPED
+    assert outcome["value_expiry"] == pytest.approx(20.0)
+
+
+def test_cost_markup():
+    """Value 20, mid premium 6, paying 10% more: 6.6 paid, return
+    (20 - 6.6) / 6.6 = 203%."""
+    assert iv.return_per_premium(20.0, 6.0, 0.10) == pytest.approx(13.4 / 6.6)
+
+
+def test_security_prices_use_absolute_and_skip_zero_closes(tmp_path):
+    """A negative close is the bid-ask midpoint (its absolute value is
+    used); a zero close is no price, so price_on falls back to the day
+    before."""
+    path = tmp_path / "prices.csv.gz"
+    pd.DataFrame(
+        {
+            "secid": [7, 7, 7],
+            "date": ["2024-03-04", "2024-03-05", "2024-03-06"],
+            "close": [10.0, -11.0, 0.0],
+            "volume": [100, 0, 0],
+            "cfadj": [1.0, 1.0, 1.0],
+        }
+    ).to_csv(path, index=False)
+    rows = iv.load_security_prices(path)[7]
+    assert rows["close"].tolist() == [10.0, 11.0]
+    row = iv.price_on(rows, WEEK, pd.Timestamp("2024-03-06"))
+    assert row.name == pd.Timestamp("2024-03-05") and row["close"] == 11.0

@@ -38,6 +38,13 @@ from src.scores import backtest  # noqa: E402
 
 WRDS_DIR = config.RAW_DIR / "wrds"
 SURFACE_FILE = WRDS_DIR / "vsurf_puts_730d.csv.gz"
+PRICES_FILE = WRDS_DIR / "secprd_prices.csv.gz"
+# The last date in the security-price file (checked 2026-11-19). A put
+# expiring after it is not yet expired in the data.
+PRICE_FILE_END = pd.Timestamp("2025-08-29")
+OPTION_DAYS = 730
+EXIT_THRESHOLD = 0.7  # analysis 4: sell at a 30% fall
+COST_MARKUPS = [0.0, 0.05, 0.10]  # analysis 5: price paid above mid
 NAMES_FILE = WRDS_DIR / "secnmd_names.csv.gz"
 # Below-threshold pairs for hand review. It holds licensed names, so it
 # stays in the gitignored WRDS folder.
@@ -46,6 +53,7 @@ OBSERVATIONS_FILE = config.LOG_DIR / "curiosity_vol_matched.csv"
 # Derived values per observation (no raw WRDS rows); data/logs/ is
 # gitignored.
 DETAILS_FILE = config.LOG_DIR / "curiosity_implied_vol.csv"
+PUT_CHART_FILE = config.PROJECT_ROOT / "docs" / "curiosity" / "put_returns.png"
 CHART_FILE = (
     config.PROJECT_ROOT / "docs" / "curiosity" / "implied_vol_benchmark.png"
 )
@@ -540,6 +548,277 @@ def black_scholes_put(price, strike, years, sigma, rate=0.0, dividend=0.0):
 # ---------------------------------------------------------------------------
 # Step 3a run: matching and the review file only
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Analyses 3 to 5: put payoffs from security prices
+# ---------------------------------------------------------------------------
+STATUS_DONE = "valued"
+STATUS_NOT_EXPIRED = "not_yet_expired_in_data"
+STATUS_NO_START_PRICE = "no_price_on_option_date"
+STATUS_STOPPED = "valued_at_last_price_security_stopped"
+
+
+def load_security_prices(path=PRICES_FILE):
+    """Read the security-price file by its exact name and return
+    {secid: rows indexed by date with close and cfadj}.
+
+    A negative close is the average of the closing bid and ask on a day
+    without a trade (IvyDB manual), so its absolute value is used; a
+    zero close counts as no price that day.
+    """
+    prices = pd.read_csv(path, usecols=["secid", "date", "close", "cfadj"])
+    prices["date"] = pd.to_datetime(prices["date"])
+    prices["close"] = prices["close"].abs()
+    prices = prices[prices["close"] > 0]
+    return {
+        secid: rows.set_index("date")[["close", "cfadj"]].sort_index()
+        for secid, rows in prices.groupby("secid")
+    }
+
+
+def price_on(security_rows, calendar, day):
+    """Return the (date, close, cfadj) row for day, or else the latest
+    earlier row within FALLBACK_TRADING_DAYS market trading days; None
+    if there is none."""
+    position = calendar.searchsorted(day, side="right") - 1
+    earliest = calendar[max(position - FALLBACK_TRADING_DAYS, 0)]
+    rows = security_rows.loc[earliest:day]
+    return None if rows.empty else rows.iloc[-1]
+
+
+def option_expiry(calendar, option_date):
+    """Return the last market trading day on or before option date +
+    730 days."""
+    limit = option_date + pd.Timedelta(days=OPTION_DAYS)
+    return calendar[calendar <= limit][-1]
+
+
+def put_outcome(security_rows, calendar, option_date, strike, premium, sigma):
+    """Return the outcome of one put bought on option_date (analyses 3
+    and 4), with every price converted to option-date share units:
+    price x cfadj that day / cfadj on the option date.
+
+    Keys: status; expiry; value_expiry (analysis 3, held to expiry);
+    exit_date, value_exit_intrinsic and value_exit_bs (analysis 4: sold
+    at the first close 30% or more below the option-date close, else as
+    analysis 3). A put expiring after PRICE_FILE_END is "not yet expired
+    in the data" and gets no value (never the last available price).
+    """
+    expiry = option_expiry(calendar, option_date)
+    result = {"status": STATUS_DONE, "expiry": expiry, "exit_date": pd.NaT}
+    if expiry > PRICE_FILE_END:
+        result["status"] = STATUS_NOT_EXPIRED
+        return result
+    start = price_on(security_rows, calendar, option_date)
+    if start is None:
+        result["status"] = STATUS_NO_START_PRICE
+        return result
+    base_price, base_factor = start["close"], start["cfadj"]
+    path = security_rows.loc[option_date + pd.Timedelta(days=1) : expiry]
+    converted = path["close"] * path["cfadj"] / base_factor
+
+    end = price_on(security_rows, calendar, expiry)
+    if end is None:
+        # The security's own prices stopped before expiry (the file goes
+        # on): intrinsic value on its last price day.
+        result["status"] = STATUS_STOPPED
+        last_price = converted.iloc[-1] if not converted.empty else base_price
+        value_expiry = max(strike - last_price, 0.0)
+    else:
+        price_at_expiry = end["close"] * end["cfadj"] / base_factor
+        value_expiry = put_return_at_expiry(strike, price_at_expiry, premium)[
+            0
+        ]
+    result["value_expiry"] = value_expiry
+
+    exit_position = first_exit_day(
+        (converted / base_price).to_numpy(), EXIT_THRESHOLD
+    )
+    if exit_position is None:
+        result["value_exit_intrinsic"] = value_expiry
+        result["value_exit_bs"] = value_expiry
+    else:
+        exit_date = converted.index[exit_position]
+        exit_price = converted.iloc[exit_position]
+        years_left = (expiry - exit_date).days / 365
+        result["exit_date"] = exit_date
+        result["value_exit_intrinsic"] = max(strike - exit_price, 0.0)
+        result["value_exit_bs"] = black_scholes_put(
+            exit_price, strike, years_left, sigma
+        )
+    return result
+
+
+def put_outcomes(options_df, prices_by_secid, calendar):
+    """Return one row per observation and delta with the put outcome.
+    options_df comes from option_data, with secid added."""
+    rows = []
+    for obs in options_df.itertuples(index=False):
+        for delta in DELTAS:
+            suffix = str(abs(delta))
+            premium = getattr(obs, f"premium_{suffix}")
+            if pd.isna(premium):
+                continue
+            outcome = put_outcome(
+                prices_by_secid.get(
+                    obs.secid, pd.DataFrame(columns=["close", "cfadj"])
+                ),
+                calendar,
+                getattr(obs, f"option_date_{suffix}"),
+                getattr(obs, f"strike_{suffix}"),
+                premium,
+                getattr(obs, f"iv_{suffix}"),
+            )
+            rows.append(
+                {
+                    "cik": obs.cik,
+                    "fiscal_year": obs.fiscal_year,
+                    "delta": delta,
+                    "premium": premium,
+                    **outcome,
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def return_per_premium(value, premium, markup=0.0):
+    """Return (value - price paid) / price paid, where the price paid is
+    the mid premium raised by markup (analysis 5's stand-in for the
+    bid-ask spread)."""
+    paid = premium * (1 + markup)
+    return (value - paid) / paid
+
+
+def put_summary(outcomes_df, groups_df):
+    """Return mean, median and share positive of the return per dollar
+    of premium, by delta, valuation, cost markup and group (Clean,
+    Flagged, 0 to 3 flags), over valued puts only."""
+    valued = outcomes_df[
+        outcomes_df["status"].isin([STATUS_DONE, STATUS_STOPPED])
+    ].merge(groups_df, on=["cik", "fiscal_year"])
+    valuations = {
+        "hold_to_expiry": "value_expiry",
+        "exit_intrinsic": "value_exit_intrinsic",
+        "exit_black_scholes": "value_exit_bs",
+    }
+    rows = []
+    for delta in DELTAS:
+        part = valued[valued["delta"] == delta]
+        for valuation, column in valuations.items():
+            for markup in COST_MARKUPS:
+                returns = return_per_premium(
+                    part[column], part["premium"], markup
+                )
+                for label, mask in group_masks(part):
+                    picked = returns[mask]
+                    rows.append(
+                        {
+                            "delta": delta,
+                            "valuation": valuation,
+                            "cost_markup": markup,
+                            "group": label,
+                            "puts": len(picked),
+                            "mean_return": picked.mean(),
+                            "median_return": picked.median(),
+                            "share_positive": (picked > 0).mean(),
+                        }
+                    )
+    return pd.DataFrame(rows)
+
+
+def group_masks(frame):
+    """Return (label, boolean mask) for Clean, Flagged and 0 to 3 flags."""
+    masks = [
+        ("Clean", frame["group"] == "clean"),
+        ("Flagged", frame["group"] == "flagged"),
+    ]
+    masks += [
+        (tier, frame["tier"] == tier)
+        for tier in ["0 flags", "1 flag", "2 flags", "3 flags"]
+    ]
+    return masks
+
+
+def status_counts(outcomes_df, groups_df):
+    """Return put counts by delta, group and status (valued, not yet
+    expired in the data, stopped, no price on the option date)."""
+    frame = outcomes_df.merge(groups_df, on=["cik", "fiscal_year"])
+    rows = []
+    for delta in DELTAS:
+        part = frame[frame["delta"] == delta]
+        for label, mask in group_masks(part):
+            counts = part.loc[mask, "status"].value_counts()
+            rows.append({"delta": delta, "group": label, **counts.to_dict()})
+    return pd.DataFrame(rows).fillna(0)
+
+
+def put_chart(summary_df, path=PUT_CHART_FILE):
+    """Save the mean return per dollar of premium by group, for holding
+    to expiry and for the exit rule (Black-Scholes estimate), at mid
+    prices, one panel per delta (PNG)."""
+    groups = ["Clean", "Flagged", "1 flag", "2 flags", "3 flags"]
+    figure, axes = plt.subplots(1, len(DELTAS), figsize=(12, 5), dpi=150)
+    for axis, delta in zip(axes, DELTAS):
+        part = summary_df[
+            (summary_df["delta"] == delta) & (summary_df["cost_markup"] == 0)
+        ]
+        x = np.arange(len(groups))
+        for offset, (valuation, label, color) in zip(
+            (-0.2, 0.2),
+            [
+                ("hold_to_expiry", "Held to expiry", "#52514e"),
+                (
+                    "exit_black_scholes",
+                    "Sold at a 30% fall (Black-Scholes estimate)",
+                    "#eb6834",
+                ),
+            ],
+        ):
+            values = (
+                part[part["valuation"] == valuation]
+                .set_index("group")
+                .reindex(groups)
+            )
+            axis.bar(
+                x + offset,
+                100 * values["mean_return"],
+                0.4,
+                color=color,
+                label=label,
+            )
+        axis.axhline(0, color="#0b0b0b", linewidth=0.8)
+        axis.set_xticks(x, groups, fontsize=9)
+        axis.set_title(f"Delta {delta} two-year puts", fontsize=11)
+        axis.set_ylabel("Mean return per dollar of premium (%)")
+        axis.grid(axis="y", color="#e1e0d9")
+    figure.suptitle(
+        "Buying puts on the day the 10-K became public, at mid prices "
+        "(curiosity analysis)",
+        fontsize=12,
+    )
+    figure.text(
+        0.01,
+        0.01,
+        "Puts expiring after 2025-08-29 left out. Interpolated standardized "
+        "options. Not investment advice.",
+        fontsize=8,
+        color="#52514e",
+    )
+    # One shared legend under the panels, so it never covers a bar.
+    handles, labels = axes[0].get_legend_handles_labels()
+    figure.legend(
+        handles,
+        labels,
+        loc="lower center",
+        ncol=2,
+        fontsize=9,
+        bbox_to_anchor=(0.5, 0.04),
+    )
+    figure.tight_layout(rect=(0, 0.1, 1, 0.95))
+    figure.savefig(path)
+    plt.close(figure)
+    return path
+
+
 def load_observations():
     """Return part 1's observations (one row each, from its details
     file), not recomputed."""
@@ -555,6 +834,11 @@ def main(argv=None):
     hand review), also compute tradeability and analyses 1 and 2."""
     parser = argparse.ArgumentParser(description="Curiosity part 2")
     parser.add_argument("--results", action="store_true")
+    parser.add_argument(
+        "--puts",
+        action="store_true",
+        help="with --results, also run analyses 3 to 5 (security prices)",
+    )
     args = parser.parse_args(argv)
     obs = load_observations()
     companies = pd.read_parquet(config.COMPANIES_PATH, columns=["cik", "name"])
@@ -625,6 +909,65 @@ def main(argv=None):
         {d: r["benchmark_trailing"] for d, r in results.items()},
     )
     print(f"\nSaved {DETAILS_FILE} and {CHART_FILE}")
+    if not args.puts:
+        return
+
+    # Analyses 3 to 5.
+    options = options.merge(
+        matches[["cik", "fiscal_year", "secid"]], on=["cik", "fiscal_year"]
+    )
+    options["secid"] = options["secid"].astype(int)
+    outcomes = put_outcomes(options, load_security_prices(), calendar)
+    groups = obs[["cik", "fiscal_year", "group", "tier"]]
+    details = options.merge(
+        outcomes.pivot_table(
+            index=["cik", "fiscal_year"],
+            columns="delta",
+            values=["value_expiry", "value_exit_intrinsic", "value_exit_bs"],
+            aggfunc="first",
+        )
+        .pipe(
+            lambda t: t.set_axis(
+                [f"{a}_{abs(b)}" for a, b in t.columns], axis=1
+            )
+        )
+        .reset_index(),
+        on=["cik", "fiscal_year"],
+        how="left",
+    )
+    details.to_csv(DETAILS_FILE, index=False)
+    print("\nPut status counts:")
+    print(status_counts(outcomes, groups).to_string(index=False))
+    summary = put_summary(outcomes, groups)
+    for delta in DELTAS:
+        for valuation in [
+            "hold_to_expiry",
+            "exit_intrinsic",
+            "exit_black_scholes",
+        ]:
+            part = summary[
+                (summary["delta"] == delta)
+                & (summary["valuation"] == valuation)
+            ]
+            print(f"\n===== delta {delta}, {valuation}")
+            print(
+                part.pivot_table(
+                    index="group",
+                    columns="cost_markup",
+                    values="mean_return",
+                    sort=False,
+                )
+                .round(3)
+                .to_string()
+            )
+            mid = part[part["cost_markup"] == 0]
+            print(
+                mid[["group", "puts", "median_return", "share_positive"]]
+                .round(3)
+                .to_string(index=False)
+            )
+    put_chart(summary)
+    print(f"\nSaved {DETAILS_FILE} and {PUT_CHART_FILE}")
 
 
 if __name__ == "__main__":
