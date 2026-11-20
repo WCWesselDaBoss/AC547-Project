@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from src.curiosity import events as ev
 from src.curiosity import implied_vol as iv
 from src.curiosity import vol_matched as vm
 
@@ -666,3 +667,164 @@ def test_summary_counts_hits_and_marks_small_rows():
     assert row.loc["Clean", "mean_return"] == pytest.approx((5.0 - 1.0) / 2)
     assert row.loc["Flagged", "puts"] == 60
     assert not bool(row.loc["Flagged", "too_small_to_read"])
+
+
+# ---------------------------------------------------------------------------
+# Warning-filing events (src/curiosity/events.py)
+# ---------------------------------------------------------------------------
+EV_CALENDAR = pd.DatetimeIndex(
+    pd.bdate_range("2024-01-01", "2024-12-31").astype("datetime64[ns]")
+)
+
+
+def test_event_type_of():
+    """NT 10-K counts (not its amendment); an original 8-K counts only
+    if item 4.01 is listed (not 4.011-style text, not 8-K/A)."""
+    assert ev.event_type_of("NT 10-K", "") == ev.NT_10K
+    assert ev.event_type_of("NT 10-K/A", "") is None
+    assert ev.event_type_of("8-K", "4.01,9.01") == ev.AUDITOR_8K
+    assert ev.event_type_of("8-K", "2.02,9.01") is None
+    assert ev.event_type_of("8-K", "4.011") is None
+    assert ev.event_type_of("8-K/A", "4.01") is None
+
+
+def test_friday_filing_enters_monday():
+    """Friday 2024-03-08: day 0 is that Friday, entry Monday 03-11.
+    Saturday 03-09: day 0 is the Friday before, entry Monday. Tuesday
+    03-12: day 0 Tuesday, entry Wednesday 03-13."""
+
+    def dates(filed):
+        day0, entry = ev.event_days(EV_CALENDAR, pd.Timestamp(filed))
+        return EV_CALENDAR[day0], EV_CALENDAR[entry]
+
+    assert dates("2024-03-08") == (
+        pd.Timestamp("2024-03-08"),
+        pd.Timestamp("2024-03-11"),
+    )
+    assert dates("2024-03-09") == (
+        pd.Timestamp("2024-03-08"),
+        pd.Timestamp("2024-03-11"),
+    )
+    assert dates("2024-03-12") == (
+        pd.Timestamp("2024-03-12"),
+        pd.Timestamp("2024-03-13"),
+    )
+
+
+def test_63_day_repeat_rule():
+    """Company 1's events on trading days 0, 30, 70 and 140: 30 is
+    within 63 of the kept 0 (dropped); 70 is 70 after 0 (kept); 140 is
+    70 after the kept 70, so it is kept although it is only 110 after the
+    dropped 30. Company 2's event on day 10 is unaffected, and so is
+    company 1's other event type."""
+    events = pd.DataFrame(
+        {
+            "cik": [1, 1, 1, 1, 2, 1],
+            "event_type": [ev.NT_10K] * 5 + [ev.AUDITOR_8K],
+            "day0": [0, 30, 70, 140, 10, 20],
+        }
+    )
+    kept = ev.drop_repeats(events)
+    assert kept.index.tolist() == [0, 2, 3, 4, 5]
+
+
+def test_market_adjustment():
+    """Stock 50 -> 55 (+10%), SPY 400 -> 412 (+3%): +7.0%. No stock
+    price on the end day gives no result."""
+    stock = np.array([50.0, 52.0, 55.0])
+    market = np.array([400.0, 405.0, 412.0])
+    assert ev.market_adjusted(stock, market, 0, 2) == pytest.approx(0.07)
+    gap = np.array([50.0, 52.0, np.nan])
+    assert np.isnan(ev.market_adjusted(gap, market, 0, 2))
+    assert np.isnan(ev.market_adjusted(stock, market, 0, 5))
+
+
+def test_eligibility():
+    """20 prices before day 0 and a close on day +1 are needed; a gap on
+    day -3 fails the history check."""
+    prices = np.full(30, 10.0)
+    assert ev.eligibility(prices, 25, 26) == (True, 10.0)
+    prices[22] = np.nan
+    assert ev.eligibility(prices, 25, 26)[0] is False
+    assert ev.eligibility(np.full(30, 10.0), 10, 11)[0] is False  # too early
+
+
+def test_flag_status():
+    """Company 1: its FY2023 10-K was filed ON the event day, so FY2022
+    (2 flags, a year old) is used: Flagged. Company 2's score is 16
+    months old: too old. Company 3 lacks an F-Score. Company 4 has no
+    score before the event. Company 5 filed two scores the same day: the
+    later fiscal year (0 flags) is used: Clean."""
+    scores = pd.DataFrame(
+        {
+            "cik": [1, 1, 2, 3, 5, 5],
+            "fiscal_year": [2022, 2023, 2022, 2023, 2022, 2023],
+            "flags_raised": pd.array([2, 0, 0, 0, 1, 0], dtype="Int64"),
+            "m_score": -2.0,
+            "z_score": 3.0,
+            "f_score": pd.array([7, 7, 7, None, 7, 7], dtype="Int64"),
+        }
+    )
+    financials = pd.DataFrame(
+        {
+            "cik": [1, 1, 2, 3, 5, 5],
+            "fiscal_year": [2022, 2023, 2022, 2023, 2022, 2023],
+            "filed_date": pd.to_datetime(
+                [
+                    "2023-03-06",
+                    "2024-03-05",
+                    "2023-01-02",
+                    "2024-02-01",
+                    "2024-02-01",
+                    "2024-02-01",
+                ]
+            ),
+        }
+    )
+    events = pd.DataFrame(
+        {
+            "cik": [1, 2, 3, 4, 5],
+            "filed": pd.to_datetime(
+                [
+                    "2024-03-05",
+                    "2024-05-15",
+                    "2024-03-01",
+                    "2024-03-01",
+                    "2024-03-01",
+                ]
+            ),
+        }
+    )
+    out = ev.flag_status(events, scores, financials).set_index("cik")
+    assert (out.loc[1, "score_status"], out.loc[1, "group"]) == (
+        "ok",
+        "flagged",
+    )
+    assert out.loc[1, "fiscal_year"] == 2022
+    assert out.loc[2, "score_status"] == "score_too_old"
+    assert out.loc[3, "score_status"] == "missing_a_score"
+    assert out.loc[4, "score_status"] == "no_score_before"
+    assert (out.loc[5, "group"], out.loc[5, "fiscal_year"]) == ("clean", 2023)
+
+
+def test_clustered_tests_on_made_up_data():
+    """Flagged events average +5% with little noise over 40 companies:
+    |t| far above 3 for (a) and for (b) against Clean events averaging
+    0. Pure noise of the same size does not reach 3."""
+    rng = np.random.default_rng(3)
+    n = 200
+    frame = pd.DataFrame(
+        {
+            "cik": rng.integers(0, 40, n),
+            "group": np.where(np.arange(n) < 100, "flagged", "clean"),
+        }
+    )
+    frame["car"] = np.where(
+        frame["group"] == "flagged", 0.05, 0.0
+    ) + rng.normal(0, 0.01, n)
+    result = ev.clustered_tests(frame, "car")
+    assert result["passes_a"] and result["passes_b"]
+    assert result["flagged_mean"] == pytest.approx(0.05, abs=0.005)
+    frame["car"] = rng.normal(0, 0.01, n)
+    noise = ev.clustered_tests(frame, "car")
+    assert not noise["passes_a"] and not noise["passes_b"]
