@@ -65,7 +65,12 @@ def test_quarterly_tables_present(tmp_path):
 
 def test_required_texts():
     """The note and the missing-score message are the agreed wording."""
-    assert "have NOT been backtested" in basis.QUARTERLY_NOTE
+    assert basis.QUARTERLY_NOTE == (
+        "Quarterly scores apply the same formulas and cutoffs as the annual "
+        "scores to trailing-twelve-month data from unaudited 10-Q filings. "
+        "They have not been backtested: tests 1 to 12 used annual scores "
+        "only."
+    )
     assert basis.NOT_ENOUGH_DATA == (
         "Not enough quarterly data (needs four complete quarters this "
         "year and last)"

@@ -179,7 +179,7 @@ Nine pass/fail signals, one point each (0 to 9):
 
 ### Quarterly (TTM) scores
 
-Quarterly scores use TTM data from unaudited 10-Q filings, apply the annual formulas and cutoffs unchanged, and have NOT been backtested; tests 1 to 12 apply to annual scores only.
+Quarterly scores apply the same formulas and cutoffs as the annual scores to trailing-twelve-month data from unaudited 10-Q filings. They have not been backtested: tests 1 to 12 used annual scores only.
 
 - **F-Score signal 7 in Q1 to Q3 (decided Nov 22, option C).** A 10-Q reports the prior share count only at the last fiscal year end, not at the same quarter a year earlier. So in Q1 to Q3, signal 7 compares the quarter-end count with the prior fiscal year-end count reported in the same 10-Q (split-safe, like the annual rule), and the row carries `shares_compared_with_prior_year_end` in `missing_inputs`. The window is 3, 6 or 9 months instead of 12, so the signal can differ from a 12-month comparison in either direction (for example, a buyback early in the trailing year is not seen). At Q4 the annual rule applies unchanged.
 - **Years and dates.** Every quarter from FY2012 to the latest filed is scored (no FY2025 limit). A score's `available_date` is the latest `available_date` of the rows it uses (t, t-1, t-2).

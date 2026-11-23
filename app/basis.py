@@ -21,9 +21,9 @@ BASIS_LABELS = {ANNUAL: "Annual (10-K)", QUARTERLY: "Quarterly (TTM)"}
 # The quarterly mode's required note (CLAUDE.md section 5, "Quarterly
 # (TTM) scores"), shown whenever quarterly scores are on screen.
 QUARTERLY_NOTE = (
-    "Quarterly scores use TTM data from unaudited 10-Q filings, apply the "
-    "annual formulas and cutoffs unchanged, and have NOT been backtested; "
-    "tests 1 to 12 apply to annual scores only."
+    "Quarterly scores apply the same formulas and cutoffs as the annual "
+    "scores to trailing-twelve-month data from unaudited 10-Q filings. "
+    "They have not been backtested: tests 1 to 12 used annual scores only."
 )
 # Shown wherever a quarterly score is missing, never a blank or an error.
 NOT_ENOUGH_DATA = (
