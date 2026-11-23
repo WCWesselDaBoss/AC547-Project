@@ -429,3 +429,169 @@ def test_another_tag_is_used_only_when_the_year_tag_cannot_give_a_quarter():
     wide, _, log = build(mixed_tag_company(with_q2_ytd=False))
     assert row(wide, 2023, 4)["depreciation"] == 46
     assert log["single_quarters:fallback_to_another_tag"] == 2
+
+
+# ---------------------------------------------------------------------------
+# Fix A: a reported 3-month value must agree with its YTD difference
+# ---------------------------------------------------------------------------
+MILLION = 1_000_000
+
+
+def contradicting_company():
+    """A FY2023 company whose 3-month values contradict its own year-to-
+    date (YTD) figures (made-up values in $ millions, one tag; the
+    agreement tolerance is 0.5% or $10,000, so values must be real
+    dollar amounts for a contradiction to count):
+
+    YTD: Q1 100 (3 months), 6 months 210, 9 months 173, 12 months 300,
+    so the quarters implied by the YTD are 100, 110, -37 and 127.
+    Reported 3-month values: Q2 999 (simply differs), Q3 +37 (the sign
+    is flipped; the YTD gives -37) and a Q4 "3-month" value of 300 (the
+    full year, as in AZZ's FY2024 10-K).
+
+    The two clear filing errors are replaced (Q3 by -37, Q4 by 127);
+    the plain difference (Q2) is kept as reported, because such a
+    difference is usually a revision of an earlier quarter, not an
+    error. So the TTM is 100 + 999 - 37 + 127 = 1,189; with every
+    reported value it would be 100 + 999 + 37 + 300 = 1,436.
+    """
+    rows = [
+        fact(
+            "revenue",
+            "2023-01-01",
+            "2023-03-31",
+            100,
+            2023,
+            1,
+            "q1",
+            "2023-05-01",
+        ),
+        fact(
+            "revenue",
+            "2023-01-01",
+            "2023-06-30",
+            210,
+            2023,
+            2,
+            "q2",
+            "2023-08-01",
+        ),
+        fact(
+            "revenue",
+            "2023-04-01",
+            "2023-06-30",
+            999,
+            2023,
+            2,
+            "q2",
+            "2023-08-01",
+        ),
+        fact(
+            "revenue",
+            "2023-01-01",
+            "2023-09-30",
+            173,
+            2023,
+            3,
+            "q3",
+            "2023-11-01",
+        ),
+        fact(
+            "revenue",
+            "2023-07-01",
+            "2023-09-30",
+            37,
+            2023,
+            3,
+            "q3",
+            "2023-11-01",
+        ),
+        fact(
+            "revenue", "2023-01-01", "2023-12-31", 300, 2023, 4, "k", K_FILED
+        ),
+        fact(
+            "revenue", "2023-10-01", "2023-12-31", 300, 2023, 4, "k", K_FILED
+        ),
+    ]
+    table = pd.DataFrame(rows)
+    table["duration_days"] = table["duration_days"].astype("Int64")
+    table["value"] *= MILLION
+    return table
+
+
+def test_clear_filing_errors_are_replaced_and_differences_kept():
+    """Q3 (opposite sign) and Q4 (the full year) use the YTD differences
+    (-37 and 127); Q2 keeps its reported 999. TTM = 1,189. All three
+    are counted under their action and reason."""
+    wide, sources, log = build(contradicting_company())
+    assert row(wide, 2023, 4)["revenue"] == 1_189 * MILLION
+    replaced, kept = ttm.ACTION_REPLACED, ttm.ACTION_KEPT
+    assert log[f"single_quarters:{kept}:{ttm.OVERRIDE_DIFFERS}"] == 1
+    assert log[f"single_quarters:{replaced}:{ttm.OVERRIDE_SIGN}"] == 1
+    assert log[f"single_quarters:{replaced}:{ttm.OVERRIDE_FULL_YEAR}"] == 1
+    q4 = sources[sources["component_period_end"] == pd.Timestamp("2023-12-31")]
+    assert sorted(q4["value"]) == [-173 * MILLION, 300 * MILLION]
+    assert set(q4["method"]) == {ttm.METHOD_ANNUAL}
+    q2 = sources[sources["component_period_end"] == pd.Timestamp("2023-06-30")]
+    assert q2["method"].tolist() == [ttm.METHOD_REPORTED]
+
+
+def test_every_disagreement_is_logged_with_its_values():
+    """The detail names the quarter, the reported value, the YTD
+    difference, the reason and what was done."""
+    overrides = []
+    log = Counter()
+    ttm.build_batch(contradicting_company(), {}, log, overrides)
+    detail = pd.concat(overrides).sort_values("fiscal_quarter")
+    assert detail["fiscal_quarter"].tolist() == [2, 3, 4]
+    assert detail["reported_value"].tolist() == [
+        v * MILLION for v in [999, 37, 300]
+    ]
+    assert detail["ytd_difference"].tolist() == [
+        v * MILLION for v in [110, -37, 127]
+    ]
+    assert detail["reason"].tolist() == [
+        ttm.OVERRIDE_DIFFERS,
+        ttm.OVERRIDE_SIGN,
+        ttm.OVERRIDE_FULL_YEAR,
+    ]
+    assert detail["action"].tolist() == [
+        ttm.ACTION_KEPT,
+        ttm.ACTION_REPLACED,
+        ttm.ACTION_REPLACED,
+    ]
+
+
+def test_an_agreeing_3_month_value_is_kept():
+    """Where the reported 3-month value agrees with the YTD difference
+    (Q1 of the calendar company is its own YTD; here Q2 3-month 110 and
+    6 months 210 - 100), the reported value is used: one source row."""
+    facts_df = pd.concat(
+        [
+            calendar_company(),
+            pd.DataFrame(
+                [
+                    fact(
+                        "revenue",
+                        "2023-01-01",
+                        "2023-06-30",
+                        210,
+                        2023,
+                        2,
+                        "q2",
+                        "2023-08-01",
+                    )
+                ]
+            ).astype({"duration_days": "Int64"}),
+        ],
+        ignore_index=True,
+    )
+    _, sources, log = build(facts_df)
+    q2 = sources[
+        (sources["line_item"] == "revenue")
+        & (sources["component_period_end"] == pd.Timestamp("2023-06-30"))
+        & (sources["period_end"] == pd.Timestamp("2023-12-31"))
+    ]
+    assert q2["method"].tolist() == [ttm.METHOD_REPORTED]
+    assert q2["value"].tolist() == [110]
+    assert not [key for key in log if "override" in key]

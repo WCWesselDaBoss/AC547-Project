@@ -622,3 +622,51 @@ added the same day (Phase 1, Tag mapping) then moved flags to 1,708.
 ADI FY2017 stays
 flagged (M -1.348 to -1.355) and AMD FY2018 stays flagged (-0.641 to
 -0.623; its FY2016-17 inputs were ASC 606 restatements).
+
+## Quarterly (TTM) upgrade
+
+Quarterly scores use TTM data from unaudited 10-Q filings, apply the
+annual formulas and cutoffs unchanged, and have NOT been backtested;
+tests 1 to 12 apply to annual scores only. The full quarterly method is
+documented in step 6; the notes below record decisions as they are made.
+
+### Single quarters must agree with the year to date (fix A, 2026-11-22)
+
+A single quarter can come from a reported 3-month value or from the
+difference of two year-to-date (YTD) values (6 months minus 3, 9 minus
+6, 12 minus 9). The step 5 cross-check found 3-month values that
+contradict the same company's YTD figures: a Q4 "3-month" fact equal to
+the full-year total (AZZ's FY2024 10-K), a 3-month value with the
+opposite sign (U-Haul, quarter ending Dec 2025), and other differences.
+About 95% of the unexplained year-end mismatches had one of these.
+
+Rule (`src/pipeline/ttm.py`, `quarters_from_facts`): where a quarter has
+both, the two are compared (agreement = within 0.5% or $10,000, the
+cross-check tolerance; values reported in thousands can differ by a few
+thousand dollars through rounding). Two disagreements are clear filing
+errors, and the YTD difference replaces the reported value: a Q4
+"3-month" value equal to the full-year total, and a value with the
+opposite sign of the YTD difference. Any other disagreement keeps the
+reported 3-month value. Most of those are revisions, not errors: a later
+10-Q's YTD includes a corrected earlier quarter (in 86% of them the
+3-month value and the YTD come from the same filing), so replacing the
+3-month value would move that correction into the current quarter. That
+would break the original-values rule (what investors saw for the
+quarter). Every disagreement, replaced or kept, is counted by action and
+reason in `data/logs/financials_ttm_log.csv` and listed with both values
+and the filings in `data/logs/ttm_overrides.csv`. A first version
+(2026-11-22) replaced all 30,970 disagreements; it was narrowed the same
+day for this reason.
+
+What this means for verification: tying quarters to the YTD figures
+makes the year-end cross-check (Q4 TTM against `financials_annual`)
+partly automatic for the replaced cases. When Q2 to Q4 all come from
+YTD differences, the four quarters add up to the 12-month value by
+construction, so agreement there no longer shows that the quarters are
+right, only that the 12-month value matches the annual table. The
+cross-check therefore remains a check of the data, not of this rule.
+The independent check is the Excel tie-out
+(`verification/tieout_quarterly.xlsx`): its TTM sheets rebuild every
+input from the source filings with Excel formulas, and each source row
+links to the filing on EDGAR, so a reader can confirm each quarter
+against the 10-Q or 10-K itself.

@@ -31,6 +31,7 @@ Run: python -m src.pipeline.ttm
 
 from collections import Counter
 
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -98,6 +99,41 @@ SOURCES_COLUMNS = [
     "accession",
     "filing_url",
 ]
+# Fix A (Nov 22): each reported 3-month value is checked against the
+# quarter implied by the same fiscal year's year-to-date (YTD) values.
+# Agreement uses the step 5 cross-check tolerance: within 0.5% or
+# $10,000 (values reported in thousands can differ by a few thousand
+# dollars through rounding alone). Every disagreement is logged with a
+# reason and an action:
+# - replaced by the YTD difference, for two clear filing errors: a Q4
+#   "3-month" value equal to the full year (a mis-tagged annual total)
+#   and a value with the opposite sign of the YTD difference;
+# - kept as reported, for any other difference. Most of these are a
+#   later 10-Q's YTD that includes a revision of an earlier quarter (in
+#   86% the 3-month value and the YTD come from the same filing).
+#   Replacing them would move that revision into the current quarter and
+#   make quarters tie to the 10-K by construction, so the reported value
+#   (what investors saw for the quarter) is kept, as the original-values
+#   rule requires. Decided Nov 22 after the first version replaced all
+#   30,970 disagreements.
+CONSISTENCY_RELATIVE = 0.005
+CONSISTENCY_ABSOLUTE = 10_000
+OVERRIDE_FULL_YEAR = "q4_3_month_value_equals_full_year"
+OVERRIDE_SIGN = "3_month_value_has_opposite_sign"
+OVERRIDE_DIFFERS = "3_month_value_differs_from_ytd"
+REPLACED_REASONS = (OVERRIDE_FULL_YEAR, OVERRIDE_SIGN)
+ACTION_REPLACED = "replaced_by_ytd_difference"
+ACTION_KEPT = "kept_as_reported"
+TTM_OVERRIDES_LOG = config.LOG_DIR / "ttm_overrides.csv"
+OVERRIDE_COLUMNS = ITEM_QUARTER_KEY + [
+    "reported_value",
+    "reported_accession",
+    "ytd_difference",
+    "ytd_accessions",
+    "reason",
+    "action",
+]
+
 REASON_MISSING = "a_quarter_has_no_3_month_value_or_ytd_pair"
 REASON_GAP = "quarters_not_consecutive"
 REASON_SPAN = "four_quarters_not_350_to_380_days"
@@ -200,12 +236,43 @@ def source_rows(facts_df, method, sign=1.0, suffix=""):
     )
 
 
+def values_agree(left, right):
+    """Return True where two values agree within the fix A tolerance."""
+    limit = np.maximum(
+        CONSISTENCY_RELATIVE * np.maximum(left.abs(), right.abs()),
+        CONSISTENCY_ABSOLUTE,
+    )
+    return (left - right).abs() <= limit
+
+
+def override_reason(both_df):
+    """Return why each contradicting 3-month value was replaced: a Q4
+    "3-month" value equal to the full-year YTD (a mis-tagged annual
+    total), a value with the opposite sign of the YTD difference, or
+    another difference."""
+    full_year = (both_df["fiscal_quarter"] == 4) & values_agree(
+        both_df["reported_value"], both_df["ytd_later"]
+    )
+    sign = values_agree(-both_df["reported_value"], both_df["ytd_difference"])
+    return pd.Series(
+        np.where(
+            full_year,
+            OVERRIDE_FULL_YEAR,
+            np.where(sign, OVERRIDE_SIGN, OVERRIDE_DIFFERS),
+        ),
+        index=both_df.index,
+    )
+
+
 def quarters_from_facts(flow_facts_df, log):
-    """Return (quarters, sources) for flows, from the given facts only.
+    """Return (quarters, sources, overrides) for flows, from the given
+    facts only.
 
     quarters: one row per company, line item and fiscal quarter, with
     the quarter's value, start, end and method. sources: the facts used
-    (one row, or two for a difference), with signed values.
+    (one row, or two for a difference), with signed values. overrides:
+    every reported 3-month value that contradicts its YTD difference
+    (fix A), with the reason and the action (replaced or kept).
 
     flow_facts_df holds original flow facts at the chosen quarter ends,
     with a "covered" column (quarters covered, 1 to 4).
@@ -232,13 +299,6 @@ def quarters_from_facts(flow_facts_df, log):
     pairs = later.merge(
         earlier, on=ITEM_QUARTER_KEY, suffixes=("", "_earlier")
     )
-    pairs = pairs.merge(
-        reported[ITEM_QUARTER_KEY],
-        on=ITEM_QUARTER_KEY,
-        how="left",
-        indicator=True,
-    )
-    pairs = pairs[pairs["_merge"] == "left_only"].drop(columns="_merge")
     same_start = (
         pairs["period_start"] - pairs["period_start_earlier"]
     ).abs() <= pd.Timedelta(days=START_TOLERANCE_DAYS)
@@ -255,6 +315,54 @@ def quarters_from_facts(flow_facts_df, log):
         end=pairs["period_end"],
         method=method,
     )
+
+    # Fix A: where a quarter has both a reported 3-month value and a YTD
+    # difference, keep the reported value only if the two agree.
+    both = (
+        reported[ITEM_QUARTER_KEY + ["value", "accession"]]
+        .rename(
+            columns={
+                "value": "reported_value",
+                "accession": "reported_accession",
+            }
+        )
+        .merge(
+            differenced[
+                ITEM_QUARTER_KEY + ["value", "accession", "accession_earlier"]
+            ]
+            .assign(ytd_later=pairs["value"])
+            .rename(columns={"value": "ytd_difference"}),
+            on=ITEM_QUARTER_KEY,
+        )
+    )
+    contradicts = ~values_agree(both["reported_value"], both["ytd_difference"])
+    overrides = both[contradicts].copy()
+    overrides["reason"] = override_reason(overrides)
+    overrides["action"] = np.where(
+        overrides["reason"].isin(REPLACED_REASONS),
+        ACTION_REPLACED,
+        ACTION_KEPT,
+    )
+    overrides["ytd_accessions"] = (
+        overrides["accession"] + "; " + overrides["accession_earlier"]
+    )
+    overrides = overrides[OVERRIDE_COLUMNS]
+    replaced = overrides.loc[
+        overrides["action"] == ACTION_REPLACED, ITEM_QUARTER_KEY
+    ].assign(replaced=True)
+    reported = reported.merge(replaced, on=ITEM_QUARTER_KEY, how="left")
+    reported = reported[reported["replaced"].isna()].drop(columns="replaced")
+    # A difference is used only where no reported value remains for the
+    # quarter (none was reported, or it was replaced).
+    keep = (
+        differenced[ITEM_QUARTER_KEY]
+        .merge(reported[ITEM_QUARTER_KEY], how="left", indicator=True)[
+            "_merge"
+        ]
+        .eq("left_only")
+        .to_numpy()
+    )
+    pairs, method, differenced = pairs[keep], method[keep], differenced[keep]
 
     columns = ITEM_QUARTER_KEY + ["value", "start", "end", "method"]
     quarters = pd.concat(
@@ -282,7 +390,7 @@ def quarters_from_facts(flow_facts_df, log):
         ),
         on=ITEM_QUARTER_KEY,
     )
-    return quarters, sources
+    return quarters, sources, overrides
 
 
 def year_tags(flow_facts_df):
@@ -327,7 +435,7 @@ def year_tags(flow_facts_df):
     )
 
 
-def single_quarters(flow_facts_df, log):
+def single_quarters(flow_facts_df, log, overrides=None):
     """Return (quarters, sources) for flows, keeping each fiscal year on
     one XBRL tag where possible.
 
@@ -336,6 +444,10 @@ def single_quarters(flow_facts_df, log):
     result when it exists and falls back to the all-facts result (the
     rule before Nov 22) only when the year tag cannot give one, so this
     never blanks a value; fallbacks are counted.
+
+    Fix A checks (a 3-month value contradicting its YTD difference) are
+    counted by action and reason for the quarters used, and their
+    details are appended to the overrides list, if one is given.
     """
     tags = year_tags(flow_facts_df)
     flows = flow_facts_df.merge(
@@ -346,8 +458,12 @@ def single_quarters(flow_facts_df, log):
     )
     # The YTD start-date check is counted from the all-facts pass only,
     # so a fact is never counted twice.
-    tag_quarters, tag_sources = quarters_from_facts(on_tag, Counter())
-    all_quarters, all_sources = quarters_from_facts(flow_facts_df, log)
+    tag_quarters, tag_sources, tag_overrides = quarters_from_facts(
+        on_tag, Counter()
+    )
+    all_quarters, all_sources, all_overrides = quarters_from_facts(
+        flow_facts_df, log
+    )
 
     fallback = all_quarters.merge(
         tag_quarters[ITEM_QUARTER_KEY],
@@ -363,6 +479,20 @@ def single_quarters(flow_facts_df, log):
     )
     quarters = pd.concat([tag_quarters, fallback], ignore_index=True)
     sources = pd.concat([tag_sources, fallback_sources], ignore_index=True)
+    used_overrides = pd.concat(
+        [
+            tag_overrides,
+            all_overrides.merge(
+                fallback[ITEM_QUARTER_KEY], on=ITEM_QUARTER_KEY
+            ),
+        ],
+        ignore_index=True,
+    )
+    counts = used_overrides.groupby(["action", "reason"]).size()
+    for (action, reason), count in counts.items():
+        log[f"single_quarters:{action}:{reason}"] += int(count)
+    if overrides is not None and not used_overrides.empty:
+        overrides.append(used_overrides)
     log["single_quarters:on_the_year_tag"] += len(tag_quarters)
     log["single_quarters:fallback_to_another_tag"] += len(fallback)
     for method_name, count in quarters["method"].value_counts().items():
@@ -466,9 +596,10 @@ def quarter_end_balances(balance_facts_df):
 # ---------------------------------------------------------------------------
 # One batch of companies
 # ---------------------------------------------------------------------------
-def build_batch(facts_df, report_ends, log):
+def build_batch(facts_df, report_ends, log, overrides=None):
     """Return (financials_ttm rows, ttm_sources rows) for the companies in
-    facts_df (original facts from facts_quarterly)."""
+    facts_df (original facts from facts_quarterly). Fix A override
+    details are appended to the overrides list, if one is given."""
     quarter_ends_df = choose_quarter_ends(facts_df, report_ends, log)
     on_chosen = facts_df.merge(
         quarter_ends_df[QUARTER_KEY + ["period_end"]],
@@ -479,7 +610,9 @@ def build_batch(facts_df, report_ends, log):
     )
     is_flow = on_chosen["line_item"].isin(FLOW_ITEMS)
 
-    quarters_df, quarter_sources = single_quarters(on_chosen[is_flow], log)
+    quarters_df, quarter_sources = single_quarters(
+        on_chosen[is_flow], log, overrides
+    )
     targets = ttm_flows(quarter_ends_df, quarters_df, log)
     flow_sources = ttm_flow_sources(targets, quarter_sources)
     balances, balance_sources = quarter_end_balances(
@@ -616,11 +749,13 @@ def load_original_facts(path=quarterly.FACTS_QUARTERLY_PATH):
     )
 
 
-def build_ttm(facts_df, report_ends, sources_path):
+def build_ttm(facts_df, report_ends, sources_path, overrides_path=None):
     """Return (financials_ttm, log Counter); ttm_sources is written to
     sources_path batch by batch, because it is too large to hold in
-    memory at once on a laptop."""
+    memory at once on a laptop. Every fix A override is written to
+    overrides_path (CSV), if one is given."""
     log = Counter()
+    overrides = []
     ciks = sorted(facts_df["cik"].unique())
     pieces = []
     writer = None
@@ -628,7 +763,7 @@ def build_ttm(facts_df, report_ends, sources_path):
         for start in range(0, len(ciks), BATCH_COMPANIES):
             batch_ciks = ciks[start : start + BATCH_COMPANIES]
             batch = facts_df[facts_df["cik"].isin(batch_ciks)]
-            wide_df, sources = build_batch(batch, report_ends, log)
+            wide_df, sources = build_batch(batch, report_ends, log, overrides)
             pieces.append(ttm_to_contract_types(wide_df))
             sources = sources_to_contract_types(sources)
             log["ttm_sources:rows"] += len(sources)
@@ -644,6 +779,15 @@ def build_ttm(facts_df, report_ends, sources_path):
     finally:
         if writer is not None:
             writer.close()
+    if overrides_path is not None:
+        detail = (
+            pd.concat(overrides, ignore_index=True)
+            if overrides
+            else pd.DataFrame(columns=OVERRIDE_COLUMNS)
+        )
+        detail.sort_values(ITEM_QUARTER_KEY).to_csv(
+            overrides_path, index=False
+        )
     return ttm_to_contract_types(pd.concat(pieces, ignore_index=True)), log
 
 
@@ -663,9 +807,11 @@ def main():
     report_ends = quarterly.report_period_ends(
         config.SUBMISSIONS_ZIP, sorted(facts_df["cik"].unique())
     )
-    ttm_df, log = build_ttm(facts_df, report_ends, TTM_SOURCES_PATH)
-    ttm_df.to_parquet(TTM_PATH, index=False)
     config.LOG_DIR.mkdir(parents=True, exist_ok=True)
+    ttm_df, log = build_ttm(
+        facts_df, report_ends, TTM_SOURCES_PATH, TTM_OVERRIDES_LOG
+    )
+    ttm_df.to_parquet(TTM_PATH, index=False)
     log_df = summary_log(ttm_df, log)
     log_df.to_csv(TTM_LOG, index=False)
     print(log_df.to_string(index=False))

@@ -39,7 +39,7 @@ Five company-quarters, two sheets each:
 | AAP FY25 Q2 | 16/12/12/12-week calendar; after a discontinued operation | -3.158 | 1.774 | 3 | 28 of 28 (1 both blank) | 34 of 34 |
 
 **Result: 140 of 140 score outputs and 166 of 166 TTM inputs match, with
-no Excel errors.** Recalculated in Microsoft Excel 16.0 (through its
+no Excel errors** (re-checked after fix A). Recalculated in Microsoft Excel 16.0 (through its
 automation interface) on Nov 22, 2026. The committed file stores the
 formulas without cached values, so Excel calculates them on opening.
 
@@ -65,14 +65,17 @@ rounded quarters can miss the total by a few thousand dollars).
 | Line item | Pairs | Agree |
 | --- | --- | --- |
 | Balance sheet items and shares (10 items) | 26,447 to 73,926 each | 99.1% to 99.6% |
-| cfo | 68,986 | 99.2% |
-| revenue | 54,757 | 94.5% |
-| cost_of_revenue | 39,233 | 94.4% |
-| net_income | 65,062 | 93.7% |
-| sga | 27,760 | 93.2% |
-| depreciation | 58,277 | 93.2% (84.0% before the consistent-tag rule) |
-| operating_income | 61,860 | 92.3% |
-| income_continuing_ops | 65,694 | 89.3% |
+| cfo | 68,986 | 99.3% |
+| revenue | 54,757 | 94.6% |
+| cost_of_revenue | 39,233 | 94.5% |
+| net_income | 65,064 | 93.9% |
+| sga | 27,760 | 93.3% |
+| depreciation | 58,277 | 93.3% (84.0% before the consistent-tag rule) |
+| operating_income | 61,860 | 92.5% |
+| income_continuing_ops | 65,697 | 89.5% |
+
+Figures are after fix A (section 2a); the consistent-tag table below
+shows the earlier step.
 
 Every disagreement is assigned one cause from the `ttm_sources` rows
 (counts per item are in the CSV):
@@ -124,23 +127,62 @@ for that quarter is not available.
 Coverage did not change (section 4), and the Excel tie-out still matches
 140 of 140 scores and 166 of 166 TTM inputs after the rebuild.
 
+## 2a. Fix A: 3-month values checked against the year to date (Nov 22)
+
+A year-end breakdown of the remaining mismatches found that about 95% of
+the unexplained flow cases had a reported 3-month value contradicting the
+same company's year-to-date (YTD) figures: a Q4 "3-month" fact equal to
+the full year (AZZ's FY2024 10-K), a value with the opposite sign
+(U-Haul, quarter ending Dec 2025), or another difference.
+
+Each 3-month value is now compared with its YTD difference (within 0.5%
+or $10,000). The two clear filing errors are replaced by the YTD
+difference; any other difference keeps the reported value, because most
+are revisions of an earlier quarter carried in a later YTD (see
+`docs/methodology.md`). Every disagreement is logged with its reason and
+action in `data/logs/ttm_overrides.csv`:
+
+| Reason | Action | Single quarters |
+| --- | --- | --- |
+| Q4 "3-month" value equals the full year | replaced by the YTD difference | 218 |
+| Opposite sign of the YTD difference | replaced by the YTD difference | 425 |
+| Other difference from the YTD difference | kept as reported | 30,327 |
+
+A first version replaced all 30,970. That raised the Q4 agreement with
+annual to about 99% for most flows, but mostly by construction: the
+quarters then add up to the 10-K's 12-month value, and revisions of
+earlier quarters moved into later ones. It was narrowed the same day.
+
+Effect of the narrowed fix, all 18 line items used in the scores:
+
+| Measure | Before fix A | After fix A |
+| --- | --- | --- |
+| Year-end mismatches (value differs or TTM blank) | 63,640 | 63,161 |
+| of which unexplained | 3,263 | 3,060 |
+| Q4 m_flag equal to annual | 99.46% | 99.48% |
+| Q4 M-Score within 0.01 of annual | 84.41% | 84.57% |
+
+The remaining unexplained flow cases are mostly kept "other
+difference" quarters; they cannot be told apart from revisions
+automatically and are listed in the override log for review.
+
 ## 3. Q4 scores vs annual scores (`quarterly_crosscheck_scores.csv`)
 
 39,702 company-years have both a Q4 quarterly row and an annual row
-(after the consistent-tag rule; before it, M-Score 81.48% and m_flag
-99.40%).
+(after the consistent-tag rule and fix A; before both, M-Score 81.48%
+and m_flag 99.40%).
 
 | Measure | Pairs | Agreement |
 | --- | --- | --- |
-| m_flag | 14,202 | 99.46% equal |
-| z_zone | 32,224 | 99.80% equal |
-| f_band | 12,156 | 98.60% equal |
-| flags_raised | 34,011 | 97.68% equal |
-| f_score | 12,156 | 96.27% equal |
-| z_score | 32,224 | 95.14% within 0.01 |
-| accruals_ratio | 34,246 | 98.27% within 0.01 |
-| cash_conversion | 21,517 | 96.33% within 0.01 |
-| m_score | 14,202 | 84.41% within 0.01 |
+| m_flag | 14,202 | 99.48% equal |
+| z_zone | 32,224 | 99.81% equal |
+| f_band | 12,156 | 98.65% equal |
+| flags_raised | 34,011 | 97.70% equal |
+| f_score | 12,156 | 96.34% equal |
+| z_score | 32,224 | 95.22% within 0.01 |
+| accruals_ratio | 34,246 | 98.36% within 0.01 |
+| cash_conversion | 21,517 | 96.39% within 0.01 |
+| m_score | 14,202 | 84.57% within 0.01 |
 
 The M-Score agrees least because it has the most flow inputs (eight
 indexes from up to eleven line items, for two years), so any input gap
@@ -151,10 +193,10 @@ company-years.
 
 | Basis | Rows | M-Score | Z'' | F-Score | Accruals | Option C rows |
 | --- | --- | --- | --- | --- | --- | --- |
-| Q1 | 42,156 | 32.4 | 78.7 | 25.9 | 81.3 | 24,044 |
-| Q2 | 41,844 | 32.4 | 79.0 | 26.7 | 83.9 | 24,549 |
-| Q3 | 41,078 | 32.3 | 79.1 | 26.7 | 84.2 | 24,146 |
-| Q4 | 40,014 | 36.6 | 81.5 | 31.0 | 86.5 | 0 |
+| Q1 | 42,154 | 32.4 | 78.7 | 25.9 | 81.3 | 24,042 |
+| Q2 | 41,842 | 32.4 | 79.0 | 26.7 | 83.9 | 24,547 |
+| Q3 | 41,076 | 32.3 | 79.1 | 26.7 | 84.2 | 24,144 |
+| Q4 | 40,012 | 36.6 | 81.5 | 31.0 | 86.5 | 0 |
 | Annual | 39,860 | 41.7 | 83.5 | 33.7 | 88.9 | |
 
 Quarterly coverage is lower than annual because every TTM flow needs
