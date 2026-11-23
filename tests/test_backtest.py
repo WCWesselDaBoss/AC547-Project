@@ -1537,3 +1537,57 @@ def test14_turnover_on_three_stocks():
     assert after == pytest.approx(400 - cost)
     assert new["A"] * 2.0 == pytest.approx(after / 3)
     assert set(new) == {"A", "B", "D"}
+
+
+# ---------------------------------------------------------------------------
+# Test 15: concentrated portfolios (src/scores/concentrated.py)
+# ---------------------------------------------------------------------------
+def test15_seed_gives_repeatable_draws_without_replacement():
+    """The same seed gives the same draws; each draw has 20 different
+    stocks; a different seed gives different draws."""
+    import numpy as np
+
+    from src.scores import concentrated
+
+    first = concentrated.draw_indices(np.random.default_rng(7), 50, 20, 100)
+    again = concentrated.draw_indices(np.random.default_rng(7), 50, 20, 100)
+    other = concentrated.draw_indices(np.random.default_rng(8), 50, 20, 100)
+    assert (first == again).all()
+    assert not (first == other).all()
+    assert all(len(set(row)) == 20 for row in first)
+    assert first.max() < 50
+
+
+def test15_three_stock_portfolio_return_hand_checked():
+    """A: $10 to $12 (+20%); B: $20 to $15 (-25%); C: $5 to $6, then its
+    prices stop, so it exits at its last real price (+20%). The
+    equal-weighted, bought-and-held portfolio returns (20 - 25 + 20) / 3
+    = 5%."""
+    import numpy as np
+
+    from src.scores import concentrated
+
+    dates = pd.to_datetime(["2024-01-02", "2024-06-03", "2025-01-02"])
+    prices = pd.DataFrame(
+        {
+            "A": [10.0, 11.0, 12.0],
+            "B": [20.0, 18.0, 15.0],
+            "C": [5.0, 6.0, np.nan],
+        },
+        index=dates,
+    )
+    returns = concentrated.stock_returns(
+        prices, ["A", "B", "C"], dates[0], dates[-1]
+    )
+    assert returns == pytest.approx([0.20, -0.25, 0.20])
+    portfolio = concentrated.portfolio_returns(returns, np.array([[0, 1, 2]]))
+    assert portfolio[0] == pytest.approx(0.05)
+
+
+def test15_fifth_percentile():
+    """The 5th percentile of 0, 1, ..., 100 is 5 (linear interpolation);
+    of 0 to 10 in steps of 1 it is 0.5."""
+    from src.scores import concentrated
+
+    assert concentrated.fifth_percentile(list(range(101))) == 5.0
+    assert concentrated.fifth_percentile(list(range(11))) == 0.5

@@ -243,6 +243,7 @@ every registered test is reported, whatever it shows.
 | 13 | Do quarterly (TTM) flags predict blowups, and do they add anything beyond the annual flags? Questions (a) and (b) below | Registered 2026-11-22 before any test-13 result was computed. Quarterly flags are new, but the years and outcomes were already studied with annual flags in tests 10 to 12, so this is supporting evidence | Run 2026-11-22: (a) passed (t = 11.56); (b) passed (t = 6.47, with annual-Flagged also significant, t = 6.09) |
 | 13a | Wording fix: test 13's entry rule (below) | Made 2026-11-22 before any test-13 result was computed: the registered entry is the first trading day strictly after `available_date`, as specified; the entry had wrongly called this "test 11's start rule" (test 11 starts on or after the filing date) | Definition unchanged |
 | 14 | Does excluding flagged companies from a large-company portfolio reduce blowups and drawdowns without hurting returns? Questions (a) and (b) below | Registered 2026-11-23 before any test-14 result was computed; years already studied in tests 1 to 13, so supporting evidence | Run 2026-11-23: (a) passed (t = -5.18, lower blowup exposure); (b) no return difference found (t = -1.06; 95% interval -0.29 to +0.09 points a quarter) |
+| 15 | Does excluding flagged stocks matter more in a concentrated (20-stock) portfolio? Question (a) below | Registered 2026-11-23 before any test-15 result was computed; years already studied in tests 1 to 14, so supporting evidence | Run 2026-11-23: (a) did not pass (t = 1.22, Newey-West) |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -1271,6 +1272,179 @@ already studied in tests 1 to 13, so this is supporting evidence, not
 confirmation; equal weighting rather than index (float) weighting;
 no risk-free rate; correlation, not cause. This is an analysis for a
 class project, not investment advice.
+
+### Test 15: concentrated portfolios, base vs overlay B (registered before running)
+
+Registered before any test-15 result was computed; years already studied
+in tests 1 to 14, so supporting evidence. The definitions below are
+fixed; pools, flags and price rules are test 14's (`src/scores/
+overlay.py`).
+
+- **Dates.** Test 14's first 44 rebalance dates (the ends of 2013Q4 to
+  2024Q3; trades on the last trading day on or before each), so the
+  holdings start in the quarters 2014Q1 to 2024Q4 and every draw has a
+  full 12-month follow-up in the price data.
+- **Pools.** On each date, test 14's base pool (the `large_500` pool,
+  500 stocks) and overlay B's pool (the base minus stocks flagged by the
+  annual or the quarterly flag, point in time).
+- **Holding.** Each stock is bought at its trade-date adjusted close and
+  held to the last trading day on or before the trade date + 12 months.
+  A stock whose prices stop is exited at its last real price and that
+  money earns nothing (test 14's rule). Its 12-month return is its last
+  real price on or before the end divided by its trade-date price,
+  minus 1. No trading costs (one purchase per portfolio, the same for
+  both pools).
+- **Random portfolios.** For each date and pool, 10,000 portfolios of
+  20 stocks, each drawn without replacement from the pool with equal
+  chance for every stock (portfolios drawn independently of each
+  other). A portfolio is equal-weighted at the trade date and bought
+  and held, so its 12-month return is the average of its 20 stocks'
+  returns. Random generator: `numpy.random.default_rng(20261123)`,
+  created once and used in this fixed order: dates oldest first; within
+  a date, sizes 20, then 10, then 15; within a size, the base pool, then
+  B. The same seed and order give the same draws every run.
+- **Measures, per date, pool and size.**
+  - Mean 12-month portfolio return.
+  - 5th percentile of the 10,000 portfolio returns (the "bad year"
+    outcome; `numpy.percentile`, linear interpolation).
+  - Probability that a portfolio holds at least one blowup: a stock
+    whose adjusted close falls to 50% or less of its trade-date close on
+    any trading day in its 12 months (test 10's rule, `blowups.
+    classify_window`). A stock with an unknown outcome (prices stop
+    with no blowup) counts as no blowup here; the number of such stocks
+    is reported (test 14 had none).
+  - Probability that a portfolio trails its own pool's equal-weighted
+    12-month return (the average of all the pool's stocks' returns) by
+    more than 10 percentage points.
+- **Registered question** (one question, pass mark t >= 3.0):
+  - (a) Is the 5th-percentile 12-month return of 20-stock portfolios
+    higher for overlay B than for the base? Quarterly differences (B
+    minus base) for the 44 dates; passes if the mean difference is
+    positive and t >= 3.0, with t = mean / Newey-West standard error, 3
+    lags.
+  - Why Newey-West: each 12-month holding window overlaps the next
+    three quarters' windows (a window starting in 2016Q1 shares 9 of its
+    12 months with the one starting in 2016Q2), so neighboring quarterly
+    differences move together and are not independent. An ordinary
+    standard error would then be too small and t too large. Newey-West
+    widens the standard error to allow for that correlation, with 3
+    lags because each window overlaps the next three.
+- **Descriptive, not tests:** the same four measures for 10- and
+  15-stock portfolios; the mean 12-month return difference (B minus
+  base, 20 stocks) with a 95% interval (Newey-West, 3 lags), expected
+  near zero because random sampling does not change a pool's average;
+  each measure by calendar year of the trade date (mean of that year's
+  quarters), including 2020 and 2022.
+- **Limitations, stated in advance.** Random picks, not how a real
+  analyst chooses stocks; survivorship (current tickers only); equal
+  weighting; years already studied in tests 1 to 14; overlapping
+  12-month windows (handled with Newey-West, but the effective sample
+  is smaller than 44); correlation, not cause; this is an analysis for a
+  class project, not investment advice.
+- **Outputs:** a "Test 15 results" section here, whatever the results;
+  a chart of the 20-stock portfolio return distributions, base vs B,
+  pooled across the 44 dates, `docs/screenshots/test15_concentrated.png`;
+  details in `data/logs/backtest_concentrated.csv`.
+
+### Test 15 results
+
+Run once, on 2026-11-23, with `python -m src.scores.concentrated` (seed
+20261123; code: `src/scores/concentrated.py`; tests in
+`tests/test_backtest.py`; one row per date, pool and size in
+`data/logs/backtest_concentrated.csv`).
+
+**Pools.** The base pool had 500 stocks on every date; overlay B's had
+335 to 431 (median 382). No stock had an unknown outcome.
+
+**Registered question** (20-stock portfolios, 44 quarters, Newey-West
+standard errors with 3 lags; pass: positive mean with t >= 3.0):
+
+| Measure | Base | Overlay B | B minus base | 95% interval | t | Result |
+| --- | --- | --- | --- | --- | --- | --- |
+| 5th-percentile 12-month return (mean of quarters) | 1.22% | 1.76% | +0.54 points | -0.33 to +1.42 | 1.22 | **Did not pass** |
+
+B's 5th percentile was higher in 24 of the 44 quarters. Failing to pass
+does not prove there is no effect: the interval allows anything from a
+0.3-point loss to a 1.4-point gain in the bad-year outcome.
+
+**All measures, by portfolio size** (descriptive; mean of the 44
+quarters; B minus base with a Newey-West 95% interval and t; these t
+values are not registered tests):
+
+| Size | Measure | Base | B | B minus base | 95% interval | t |
+| --- | --- | --- | --- | --- | --- | --- |
+| 20 | Mean 12-month return | 12.26% | 11.90% | -0.35 pts | -1.12 to +0.42 | -0.90 |
+| 20 | 5th-percentile return | 1.22% | 1.76% | +0.54 pts | -0.33 to +1.42 | 1.22 |
+| 20 | Holds at least one blowup | 51.8% | 44.9% | -6.9 pts | -10.1 to -3.6 | -4.17 |
+| 20 | Trails its pool by > 10 pts | 7.1% | 5.4% | -1.7 pts | -2.5 to -0.9 | -4.40 |
+| 15 | Mean 12-month return | 12.28% | 11.90% | -0.37 pts | -1.13 to +0.39 | -0.95 |
+| 15 | 5th-percentile return | -0.45% | 0.21% | +0.66 pts | -0.22 to +1.53 | 1.47 |
+| 15 | Holds at least one blowup | 44.9% | 38.6% | -6.3 pts | -9.6 to -3.0 | -3.71 |
+| 15 | Trails its pool by > 10 pts | 10.3% | 8.2% | -2.0 pts | -2.9 to -1.2 | -4.72 |
+| 10 | Mean 12-month return | 12.23% | 11.90% | -0.33 pts | -1.10 to +0.44 | -0.84 |
+| 10 | 5th-percentile return | -3.19% | -2.41% | +0.77 pts | -0.19 to +1.74 | 1.57 |
+| 10 | Holds at least one blowup | 36.1% | 30.5% | -5.7 pts | -8.8 to -2.5 | -3.52 |
+| 10 | Trails its pool by > 10 pts | 15.1% | 12.9% | -2.1 pts | -3.0 to -1.3 | -5.03 |
+
+As expected, random sampling did not change the average: the mean
+return difference is small and its interval includes zero. The
+"trails its pool" measure compares each portfolio with its own pool's
+average, so it measures how widely portfolios spread around their pool,
+not which pool did better.
+
+**Pooled distribution** (`docs/screenshots/test15_concentrated.png`):
+across all 440,000 20-stock portfolios per pool, the 5th percentile was
+-15.8% for the base and -14.7% for B, and the means 12.3% and 11.9%.
+These pooled figures mix good and bad years; the registered question
+compares the two pools within each quarter, where the 5th percentile
+averages +1.2% and +1.8%.
+
+**By calendar year of the trade date** (20 stocks; mean of that year's
+quarters; trade dates run from 2013-12-31 to 2024-09-30, so "2013" is
+one quarter and "2024" three):
+
+| Trade year | Base mean | B mean | Base 5th pct | B 5th pct | Base P(blowup) | B P(blowup) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2013 | 12.2% | 10.8% | 3.3% | 2.2% | 39.3% | 38.0% |
+| 2014 | 3.7% | 2.5% | -5.9% | -6.9% | 54.2% | 54.9% |
+| 2015 | 7.7% | 8.1% | -1.5% | -0.6% | 67.2% | 61.7% |
+| 2016 | 19.9% | 19.3% | 10.2% | 10.0% | 23.5% | 16.0% |
+| 2017 | 10.5% | 10.0% | 0.8% | 1.0% | 22.5% | 15.5% |
+| 2018 | 12.6% | 12.3% | 3.3% | 2.9% | 50.3% | 46.1% |
+| 2019 | 2.9% | 0.8% | -10.0% | -10.1% | 99.3% | 99.1% |
+| 2020 | 47.6% | 47.2% | 32.0% | 33.3% | 9.2% | 4.3% |
+| 2021 | -10.4% | -8.3% | -21.0% | -17.6% | 90.1% | 76.2% |
+| 2022 | 13.4% | 14.8% | 1.6% | 4.4% | 59.7% | 46.3% |
+| 2023 | 18.9% | 18.8% | 6.5% | 7.6% | 43.6% | 25.1% |
+| 2024 | 6.7% | 3.9% | -4.6% | -6.7% | 53.3% | 52.5% |
+
+Portfolios bought in 2019 ran into the March 2020 crash, so almost all
+of them held a blowup; those bought in 2020 (all after the crash's low on
+March 23) gained about 47%. In the 2021 and 2022 trade years the overlay's bad
+outcome was better (2021: -17.6% against -21.0%), but in 2014 and 2024
+it was worse, which is why the average gain is not reliable.
+
+**What the numbers say.**
+- The registered question did not pass: removing flagged stocks did not
+  reliably improve a 20-stock portfolio's bad-year outcome (+0.54
+  points, t = 1.22).
+- It did reliably cut the chance of holding a stock that halves, by
+  about 6 to 7 points at every size (20 stocks: 51.8% to 44.9%), and the
+  chance of trailing the pool by more than 10 points. But a single
+  blowup in a 20-stock portfolio costs at most 5% of it, and other
+  holdings offset it, so the effect on the bad-year return was small
+  and inconsistent.
+- The answer to "does it matter more in a concentrated portfolio?" is:
+  somewhat. The 5th-percentile gain grows slightly as portfolios shrink
+  (+0.54 points at 20 stocks, +0.66 at 15, +0.77 at 10), but none of
+  these differences is reliable.
+
+**Limitations** (as registered): random picks, not how a real analyst
+chooses stocks; survivorship (current tickers only); equal weighting;
+years already studied in tests 1 to 14; overlapping 12-month windows
+(handled with Newey-West standard errors, but the effective sample is
+smaller than 44 quarters); correlation, not cause. This is an analysis
+for a class project, not investment advice.
 
 ## Data coverage
 
