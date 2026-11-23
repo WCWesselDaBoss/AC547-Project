@@ -342,6 +342,7 @@ table still has exactly the same contents.
 | `python -m src.pipeline.quarterly_sample` | Copy the quarterly tables for the sample companies into `data/sample/` |
 | `python -m src.scores.tieout_quarterly` | Rebuild `verification/tieout_quarterly.xlsx` |
 | `python -m src.scores.crosscheck_quarterly` | Re-run the year-end cross-check and coverage (`verification/quarterly_*.csv`) |
+| `python -m src.scores.yearend_causes` | Give every year-end mismatch with the annual table its cause (`verification/quarterly_yearend_causes.csv`) |
 
 **What was kept and dropped** (November 17 download; every count is in
 `data/logs/`):
@@ -376,7 +377,8 @@ with the annual table for 99.35% to 99.79% of balance sheet values and
 89.78% to 99.36% of flows, and the Q4 verdicts agree with the annual
 ones for 99.51% of M flags, 99.85% of Z'' zones and 98.67% of F bands. Of 3,021
 year-end mismatches with no automatic cause, 2,824 are revisions of
-earlier quarters kept as reported and 197 are unexplained.
+earlier quarters kept as reported and 197 are unexplained
+(`python -m src.scores.yearend_causes`).
 
 Method, decisions and limitations: `docs/methodology.md`, "Quarterly
 (TTM) upgrade"; columns: `docs/data_dictionary.md`.

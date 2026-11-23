@@ -13,6 +13,7 @@ python -m src.pipeline.ttm                # financials_ttm, ttm_sources
 python -m src.scores.quarterly_scores     # scores_quarterly, drivers
 python -m src.scores.tieout_quarterly     # tieout_quarterly.xlsx
 python -m src.scores.crosscheck_quarterly # the three CSVs below
+python -m src.scores.yearend_causes     # year-end mismatch causes
 ```
 
 ## 1. Excel tie-out (`tieout_quarterly.xlsx`)
@@ -188,8 +189,9 @@ count includes cases fix A explains in its own log:
 Group (a) is attributed to revisions by the same-filing pattern above;
 each case is listed in `data/logs/ttm_overrides.csv` with both values
 and the filings, but individual cases have not been checked against the
-filings. The breakdown was computed with a diagnostic script run during
-verification (not part of the pipeline).
+filings. The breakdown is reproduced by `python -m
+src.scores.yearend_causes` (counts by line item, cause and split in
+`verification/quarterly_yearend_causes.csv`).
 
 ## 2b. Fix B: the earliest filing wins between two quarter-end dates (Nov 22)
 
