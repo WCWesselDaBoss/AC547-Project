@@ -184,10 +184,12 @@ def run_stages(monkeypatch, argv):
 
 
 def test_pipeline_adds_quarterly_stages_only_on_request(monkeypatch):
-    """Without --quarterly no quarterly stage runs; with it, the three
-    quarterly stages run after the annual returns stage and before the
-    sample, in order; --scores-only --quarterly rebuilds only the
-    quarterly scores."""
+    """Without --quarterly no quarterly stage runs. With it, Q1 to Q3 run
+    after the annual returns stage and before the sample, and the two
+    quarterly sample stages run last, after the annual sample stages;
+    the annual stages are unchanged. --scores-only rebuilds only the
+    quarterly scores (full and sample); --sample-only only the quarterly
+    sample."""
     plain = run_stages(monkeypatch, ["--skip-download"])
     assert not [name for name in plain if name.startswith("Q")]
     full = run_stages(monkeypatch, ["--skip-download", "--quarterly"])
@@ -196,11 +198,34 @@ def test_pipeline_adds_quarterly_stages_only_on_request(monkeypatch):
         "Q1. facts_quarterly",
         "Q2. financials_ttm and ttm_sources",
         "Q3. quarterly scores and drivers",
+        "Q4. quarterly sample tables",
+        "Q5. quarterly sample scores",
     ]
     assert full.index("8. returns") < full.index(quarterly[0])
-    assert full.index(quarterly[-1]) < full.index("9. sample")
+    assert full.index(quarterly[2]) < full.index("9. sample")
+    assert full.index("12. sample returns") < full.index(quarterly[3])
     assert [n for n in full if not n.startswith("Q")] == plain
     scores_only = run_stages(monkeypatch, ["--scores-only", "--quarterly"])
     assert [n for n in scores_only if n.startswith("Q")] == [
-        "Q3. quarterly scores and drivers"
+        "Q3. quarterly scores and drivers",
+        "Q5. quarterly sample scores",
     ]
+    sample_only = run_stages(monkeypatch, ["--sample-only", "--quarterly"])
+    assert [n for n in sample_only if n.startswith("Q")] == [
+        "Q4. quarterly sample tables",
+        "Q5. quarterly sample scores",
+    ]
+
+
+def test_sample_input_paths_use_the_sample_folder(tmp_path):
+    """With a sample folder, the four inputs are read from it under the
+    contract file names; data/processed/ keeps the pipeline's paths."""
+    paths = qs.input_paths(tmp_path)
+    assert [path.name for path in paths] == [
+        "financials_ttm.parquet",
+        "ttm_sources.parquet",
+        "facts_quarterly.parquet",
+        "companies.parquet",
+    ]
+    assert all(path.parent == tmp_path for path in paths)
+    assert qs.input_paths(qs.config.PROCESSED_DIR)[0] == qs.ttm.TTM_PATH

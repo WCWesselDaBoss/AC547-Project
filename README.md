@@ -321,6 +321,66 @@ missing XBRL inputs keep it from scoring several well-known cases. To add
 a case, add a row (see `docs/data_dictionary.md`), verify its source,
 then run `python run_pipeline.py --sample-only` and commit `data/sample/`.
 
+## Quarterly (TTM) mode
+
+Scores computed every quarter from 10-Q filings, on trailing-twelve-month
+(TTM) data: each flow (revenue, net income, cash flow...) is the sum of
+the four most recent quarters, and balance sheet items are quarter-end
+values. **Quarterly scores use unaudited 10-Q data, apply the annual
+formulas and cutoffs unchanged, and have NOT been backtested; the
+backtest results above (tests 1 to 12) apply to annual scores only.**
+Annual mode is unchanged: the quarterly work added new modules and new
+tables only, and `tests/test_annual_baseline.py` checks that every annual
+table still has exactly the same contents.
+
+| Command | What it does |
+| --- | --- |
+| `python run_pipeline.py --skip-download --quarterly` | Rebuild everything, then the quarterly tables and the quarterly sample (about 40 minutes more) |
+| `python -m src.pipeline.quarterly` | Rebuild `facts_quarterly` from `data/raw/` |
+| `python -m src.pipeline.ttm` | Rebuild `financials_ttm` and `ttm_sources` |
+| `python -m src.scores.quarterly_scores` | Rebuild `scores_quarterly` and `score_drivers_quarterly` (add `--sample` for `data/sample/`) |
+| `python -m src.pipeline.quarterly_sample` | Copy the quarterly tables for the sample companies into `data/sample/` |
+| `python -m src.scores.tieout_quarterly` | Rebuild `verification/tieout_quarterly.xlsx` |
+| `python -m src.scores.crosscheck_quarterly` | Re-run the year-end cross-check and coverage (`verification/quarterly_*.csv`) |
+
+**What was kept and dropped** (November 17 download; every count is in
+`data/logs/`):
+
+| Table | Rows | Main drops and blanks (with reasons in the logs) |
+| --- | --- | --- |
+| facts_quarterly | 11,190,976 facts, 10,063 companies (5,381,385 originals) | other tag in the same filing 956,726; before FY2011 577,769; not a 10-Q or 10-K 137,408; in a change of fiscal year end 102,614; length not 3, 6, 9 or 12 months 81,914; not at a quarter end 49,933; no fiscal year end 35,954; label used twice 2,118; filed before the period ended 776 (`facts_quarterly_drops.csv`) |
+| financials_ttm | 307,827 company-quarters (174,174 pass the size floor) | TTM values blank because a quarter is missing 1,325,825, quarters not consecutive 8,157, four quarters not a year 200; 10,648 quarters with no values at all (`financials_ttm_log.csv`) |
+| ttm_sources | 11,007,068 source rows | every computed value's rows add up to it |
+| scores_quarterly | 164,786 scored company-quarters | not scored: below the size floor 124,547, prior-year-only rows 18,494 (`scores_quarterly_log.csv`) |
+| score_drivers_quarterly | 144,863 rows | |
+
+Single quarters: 1,192,385 reported 3-month values, 230,361 year-to-date
+differences and 344,144 annual-minus-9-months; 643 reported values
+replaced as filing errors and 30,172 contradicting values kept as
+reported, each listed in `ttm_overrides.csv`.
+
+**Coverage** (share of scored rows with each score):
+
+| | M-Score | Z''-Score | F-Score |
+| --- | --- | --- | --- |
+| Annual | 41.7% | 83.5% | 33.7% |
+| Quarterly (all quarters) | 33.5% | 79.7% | 27.6% |
+| Quarterly, Q4 only | 36.7% | 81.6% | 31.1% |
+
+**Verification** (`verification/tieout_quarterly_notes.md`): Excel
+recomputes every quarterly score (140 of 140 outputs match) and rebuilds
+every TTM input from its filings (166 of 166 match) for five
+company-quarters, including 12/16-week calendars; Apple's FY2024 Q4
+equals the annual tie-out. Across every company-year, the Q4 TTM agrees
+with the annual table for 99.35% to 99.79% of balance sheet values and
+89.78% to 99.36% of flows, and the Q4 verdicts agree with the annual
+ones for 99.51% of M flags, 99.85% of Z'' zones and 98.67% of F bands. Of 3,021
+year-end mismatches with no automatic cause, 2,824 are revisions of
+earlier quarters kept as reported and 197 are unexplained.
+
+Method, decisions and limitations: `docs/methodology.md`, "Quarterly
+(TTM) upgrade"; columns: `docs/data_dictionary.md`.
+
 ## Limitations
 
 The About page lists these with coverage figures computed from the data

@@ -30,9 +30,11 @@ building blocks are reused, not changed):
   (t, t-1 and t-2), so a score never appears before all of its inputs
   were public.
 
-Run: python -m src.scores.quarterly_scores
+Run: python -m src.scores.quarterly_scores            (data/processed/)
+     python -m src.scores.quarterly_scores --sample   (data/sample/)
 """
 
+import argparse
 from collections import Counter
 
 import pandas as pd
@@ -271,37 +273,88 @@ def build_quarterly_scores(ttm_df, accessions_df, share_facts_df, companies):
     return scores_df, drivers_df, log
 
 
-def read_inputs():
+def input_paths(source_dir):
+    """Return the four input paths in source_dir: data/processed/ (the
+    pipeline's own paths) or data/sample/ (the same file names)."""
+    if source_dir == config.PROCESSED_DIR:
+        return (
+            ttm.TTM_PATH,
+            ttm.TTM_SOURCES_PATH,
+            quarterly.FACTS_QUARTERLY_PATH,
+            config.COMPANIES_PATH,
+        )
+    return tuple(
+        source_dir / f"{name}.parquet"
+        for name in (
+            "financials_ttm",
+            "ttm_sources",
+            "facts_quarterly",
+            "companies",
+        )
+    )
+
+
+def read_inputs(source_dir=config.PROCESSED_DIR):
     """Read financials_ttm, the share-count filings from ttm_sources, the
     share facts of every filing in facts_quarterly, and companies."""
-    ttm_df = pd.read_parquet(ttm.TTM_PATH)
+    ttm_path, sources_path, facts_path, companies_path = input_paths(
+        source_dir
+    )
+    ttm_df = pd.read_parquet(ttm_path)
     accessions_df = share_accessions(
         pd.read_parquet(
-            ttm.TTM_SOURCES_PATH,
+            sources_path,
             columns=["cik", "period_end", "line_item", "accession"],
             filters=[("line_item", "==", "shares_outstanding")],
         )
     )
     share_facts_df = pd.read_parquet(
-        quarterly.FACTS_QUARTERLY_PATH,
+        facts_path,
         columns=["cik", "line_item", "accession", "period_end", "value"],
         filters=[("line_item", "==", "shares_outstanding")],
     )
-    companies_df = pd.read_parquet(config.COMPANIES_PATH)
+    companies_df = pd.read_parquet(companies_path)
     return ttm_df, accessions_df, share_facts_df, companies_df
 
 
-def main():
-    """Build scores_quarterly and score_drivers_quarterly and the log."""
-    scores_df, drivers_df, log = build_quarterly_scores(*read_inputs())
-    scores_df.to_parquet(SCORES_QUARTERLY_PATH, index=False)
-    drivers_df.to_parquet(DRIVERS_QUARTERLY_PATH, index=False)
+def main(argv=None):
+    """Build scores_quarterly and score_drivers_quarterly and the log,
+    from data/processed/ or, with --sample, from data/sample/ (written
+    back to data/sample/, as the annual sample scores are)."""
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--sample",
+        action="store_true",
+        help="score the committed sample tables in data/sample/",
+    )
+    args = parser.parse_args(argv)
+    source_dir = config.SAMPLE_DIR if args.sample else config.PROCESSED_DIR
+    scores_path = (
+        config.SAMPLE_DIR / "scores_quarterly.parquet"
+        if args.sample
+        else SCORES_QUARTERLY_PATH
+    )
+    drivers_path = (
+        config.SAMPLE_DIR / "score_drivers_quarterly.parquet"
+        if args.sample
+        else DRIVERS_QUARTERLY_PATH
+    )
+    log_path = (
+        config.LOG_DIR / "scores_quarterly_sample_log.csv"
+        if args.sample
+        else SCORES_QUARTERLY_LOG
+    )
+    scores_df, drivers_df, log = build_quarterly_scores(
+        *read_inputs(source_dir)
+    )
+    scores_df.to_parquet(scores_path, index=False)
+    drivers_df.to_parquet(drivers_path, index=False)
     config.LOG_DIR.mkdir(parents=True, exist_ok=True)
     log_df = pd.DataFrame(sorted(log.items()), columns=["metric", "count"])
-    log_df.to_csv(SCORES_QUARTERLY_LOG, index=False)
+    log_df.to_csv(log_path, index=False)
     print(log_df.to_string(index=False))
-    print(f"Wrote {len(scores_df):,} rows to {SCORES_QUARTERLY_PATH}")
-    print(f"Wrote {len(drivers_df):,} rows to {DRIVERS_QUARTERLY_PATH}")
+    print(f"Wrote {len(scores_df):,} rows to {scores_path}")
+    print(f"Wrote {len(drivers_df):,} rows to {drivers_path}")
 
 
 if __name__ == "__main__":

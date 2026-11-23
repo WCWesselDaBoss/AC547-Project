@@ -218,6 +218,12 @@ each was first filed, the facts dropped and the reason:
 | of which missing or misaligned quarter | 38,324 | 38,469 |
 | Unexplained balance-sheet mismatches (10 items) | 68 | 42 |
 
+After fix C (which removed quarters in fiscal-year changes), 3,179
+company-quarters have a second date: 2,740 dropped dates were first
+filed later, 348 had fewer facts in the same first filing, 211 were not
+near a report date and 19 were earlier dates (the counts above are at
+the time of fix B).
+
 Total mismatches rose by 77 because a few more TTMs are blank: where
 the earliest-filed date is kept, a quarter's flows reported only on the
 later date are no longer used. That follows the original-values rule;

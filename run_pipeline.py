@@ -16,7 +16,8 @@ import argparse
 import time
 
 from src.pipeline import companies, download, facts, financials
-from src.pipeline import prices, quarterly, sample, ttm
+from src.pipeline import prices, quarterly, quarterly_sample, sample
+from src.pipeline import ttm
 from src.scores import build_scores, drivers, quarterly_scores, returns
 
 
@@ -78,7 +79,9 @@ def main(argv=None):
         run_stage("Q1. facts_quarterly", quarterly.main)
         run_stage("Q2. financials_ttm and ttm_sources", ttm.main)
     if args.quarterly and not args.sample_only:
-        run_stage("Q3. quarterly scores and drivers", quarterly_scores.main)
+        run_stage(
+            "Q3. quarterly scores and drivers", quarterly_scores.main, []
+        )
     if not args.scores_only:
         run_stage("9. sample", sample.main)
     # Scores for the sample are computed from the sample's own tables, so
@@ -87,6 +90,14 @@ def main(argv=None):
     run_stage("10. sample scores", build_scores.main, ["--sample"])
     run_stage("11. sample score drivers", drivers.main, ["--sample"])
     run_stage("12. sample returns", returns.main, ["--sample"])
+    # Quarterly sample: the same companies as the annual sample, with
+    # scores computed from the sample's own quarterly tables.
+    if args.quarterly and not args.scores_only:
+        run_stage("Q4. quarterly sample tables", quarterly_sample.main)
+    if args.quarterly:
+        run_stage(
+            "Q5. quarterly sample scores", quarterly_scores.main, ["--sample"]
+        )
 
 
 if __name__ == "__main__":
