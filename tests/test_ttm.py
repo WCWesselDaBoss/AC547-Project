@@ -11,9 +11,9 @@ from src.pipeline import ttm
 K_FILED = "2024-02-20"  # the FY2023 10-K
 
 
-def fact(item, start, end, value, year, quarter, accession, filed):
+def fact(item, start, end, value, year, quarter, accession, filed, tag="Tag"):
     """Return one original fact row as facts_quarterly holds it (start
-    None for a balance sheet instant)."""
+    None for a balance sheet instant; one XBRL tag unless given)."""
     end = pd.Timestamp(end)
     start = pd.Timestamp(start) if start else pd.NaT
     days = (end - start).days + 1 if start is not pd.NaT else pd.NA
@@ -26,6 +26,7 @@ def fact(item, start, end, value, year, quarter, accession, filed):
         "fiscal_year": year,
         "fiscal_quarter": quarter,
         "duration_days": days,
+        "xbrl_tag": tag,
         "accession": accession,
         "filed_date": pd.Timestamp(filed),
     }
@@ -313,3 +314,118 @@ def test_build_ttm_writes_sources_with_contract_types(tmp_path):
         assert sources[column].dtype == "string"
     assert list(wide.columns) == ttm.TTM_COLUMNS
     assert log["ttm_sources:rows"] == len(sources)
+
+
+def mixed_tag_company(with_q2_ytd=True):
+    """A FY2023 company reporting depreciation two ways (made-up values):
+
+    under "DDA" (cash flow, year to date): Q1 12, 6 months 24, 9 months
+    36, and the 10-K's 12 months 50, so the quarters are 12, 12, 12, 14;
+    under "Dep" (income statement, 3 months only): Q2 10 and Q3 10.
+    The 10-K's tag is "DDA", so that is the year tag and the TTM is 50
+    (it would be 12 + 10 + 10 + 14 = 46 if the 3-month "Dep" values were
+    used).
+    """
+    rows = [
+        fact(
+            "depreciation",
+            "2023-01-01",
+            "2023-03-31",
+            12,
+            2023,
+            1,
+            "q1",
+            "2023-05-01",
+            "DDA",
+        ),
+        fact(
+            "depreciation",
+            "2023-01-01",
+            "2023-06-30",
+            24,
+            2023,
+            2,
+            "q2",
+            "2023-08-01",
+            "DDA",
+        ),
+        fact(
+            "depreciation",
+            "2023-04-01",
+            "2023-06-30",
+            10,
+            2023,
+            2,
+            "q2",
+            "2023-08-01",
+            "Dep",
+        ),
+        fact(
+            "depreciation",
+            "2023-01-01",
+            "2023-09-30",
+            36,
+            2023,
+            3,
+            "q3",
+            "2023-11-01",
+            "DDA",
+        ),
+        fact(
+            "depreciation",
+            "2023-07-01",
+            "2023-09-30",
+            10,
+            2023,
+            3,
+            "q3",
+            "2023-11-01",
+            "Dep",
+        ),
+        fact(
+            "depreciation",
+            "2023-01-01",
+            "2023-12-31",
+            50,
+            2023,
+            4,
+            "k",
+            K_FILED,
+            "DDA",
+        ),
+    ]
+    if not with_q2_ytd:
+        rows = [r for r in rows if not (r["value"] == 24)]
+    table = pd.DataFrame(rows)
+    table["duration_days"] = table["duration_days"].astype("Int64")
+    return table
+
+
+def test_year_tag_is_the_10k_tag():
+    """The 12-month value's tag ("DDA") is the year tag."""
+    flows = mixed_tag_company().assign(
+        covered=lambda f: ttm.quarters_covered(f["duration_days"])
+    )
+    tags = ttm.year_tags(flows)
+    assert tags["year_tag"].tolist() == ["DDA"]
+
+
+def test_quarters_stay_on_one_tag():
+    """Q2 and Q3 come from the "DDA" year-to-date differences (24 - 12,
+    36 - 24), not the "Dep" 3-month values, so the TTM is 50, equal to
+    the 10-K's 12-month value."""
+    wide, sources, log = build(mixed_tag_company())
+    assert row(wide, 2023, 4)["depreciation"] == 50
+    assert log["single_quarters:fallback_to_another_tag"] == 0
+    q2 = sources[sources["component_period_end"] == pd.Timestamp("2023-06-30")]
+    assert set(q2["method"]) == {ttm.METHOD_YTD}
+
+
+def test_another_tag_is_used_only_when_the_year_tag_cannot_give_a_quarter():
+    """Without the 6-month "DDA" value, Q2 and Q3 cannot come from "DDA"
+    differences, so Q2 falls back to the "Dep" 3-month value (10) and is
+    counted; Q3 also falls back. The TTM still exists (12 + 10 + 10 + 14
+    = 46) rather than being blanked."""
+    wide, _, log = build(mixed_tag_company(with_q2_ytd=False))
+    assert row(wide, 2023, 4)["depreciation"] == 46
+    assert log["single_quarters:fallback_to_another_tag"] == 2

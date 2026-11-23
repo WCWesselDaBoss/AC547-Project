@@ -65,14 +65,14 @@ rounded quarters can miss the total by a few thousand dollars).
 | Line item | Pairs | Agree |
 | --- | --- | --- |
 | Balance sheet items and shares (10 items) | 26,447 to 73,926 each | 99.1% to 99.6% |
-| cfo | 68,984 | 99.2% |
-| revenue | 54,755 | 94.1% |
-| cost_of_revenue | 39,236 | 94.2% |
+| cfo | 68,986 | 99.2% |
+| revenue | 54,757 | 94.5% |
+| cost_of_revenue | 39,233 | 94.4% |
 | net_income | 65,062 | 93.7% |
 | sga | 27,760 | 93.2% |
+| depreciation | 58,277 | 93.2% (84.0% before the consistent-tag rule) |
 | operating_income | 61,860 | 92.3% |
 | income_continuing_ops | 65,694 | 89.3% |
-| depreciation | 58,226 | 84.0% |
 
 Every disagreement is assigned one cause from the `ttm_sources` rows
 (counts per item are in the CSV):
@@ -86,7 +86,7 @@ Every disagreement is assigned one cause from the `ttm_sources` rows
      reported (what investors saw), so a later restatement or a
      discontinued operation (Advance Auto's 2024 Worldpac sale) makes the
      TTM differ from the 10-K. This follows the "original values" rule.
-  2. **Mixed XBRL tags (a method issue; see below).**
+  2. **Mixed XBRL tags (a method issue, now mostly fixed; see below).**
 - **"Q4 reported 3 months"** and **"annual value differs"**: a Q4 or
   12-month value whose original filing or tag differs from the one
   `financials_annual` used.
@@ -94,37 +94,53 @@ Every disagreement is assigned one cause from the `ttm_sources` rows
   values (net income minus discontinued operations), the known 70 to 79%
   limitation of that derivation (CLAUDE.md section 4).
 
-**Mixed tags.** A 10-Q can report a 3-month value under one tag (for
-example depreciation only, on the income statement) and the year to date
-under another (depreciation and amortization, on the cash flow
-statement). Because a reported 3-month value is preferred, Q1 to Q3 can
-use one concept and Q4 (annual minus 9 months) the other:
+**Mixed tags, and the consistent-tag rule (Nov 22).** A 10-Q can report
+a 3-month value under one tag (for example depreciation only, on the
+income statement) and the year to date under another (depreciation and
+amortization, on the cash flow statement). When a reported 3-month value
+was always preferred, Q1 to Q3 could use one concept and Q4 (annual
+minus 9 months) the other. The first cross-check found this behind 70%
+of the depreciation disagreements.
 
-| Line item | TTMs mixing tags | Agree, one tag | Agree, mixed | Share of disagreements from mixing |
-| --- | --- | --- | --- | --- |
-| depreciation | 24.1% | 93.6% | 53.6% | 69.6% |
-| revenue | 9.4% | 94.8% | 87.6% | 19.8% |
-| cost_of_revenue | 5.5% | 94.8% | 84.4% | 14.8% |
-| cfo | 7.8% | 99.2% | 98.5% | 14.6% |
-| sga, operating_income, net_income | 0% | | | |
+Fix (`ttm.year_tags`, `ttm.single_quarters`): each company, line item
+and fiscal year gets one year tag (the 10-K's 12-month tag; else the
+most used year-to-date tag; else the most used tag), and single quarters
+are computed from that tag's facts first. A quarter falls back to
+another tag only when the year tag cannot give it, so no value is
+blanked (55,269 of 1,774,050 single quarters fell back; counted in
+`data/logs/financials_ttm_log.csv`). Some mixing cannot be removed:
+when a filing reports one period under two tags, step 2 keeps only the
+company's preferred tag (the facts_long rule), so the other tag's value
+for that quarter is not available.
 
-Status: open decision (see the step 5 report).
+| Line item | TTMs mixing tags (before -> after) | Agree with annual (before -> after) | Share of disagreements from mixing (after) |
+| --- | --- | --- | --- |
+| depreciation | 24.1% -> 9.4% | 84.0% -> 93.2% | 21.9% |
+| revenue | 9.4% -> 7.3% | 94.1% -> 94.5% | 13.0% |
+| cost_of_revenue | 5.5% -> 5.0% | 94.2% -> 94.4% | 11.0% |
+| cfo | 7.8% -> 7.7% | 99.2% -> 99.2% | 11.7% |
+| sga, operating_income, net_income | 0% | unchanged | 0% |
+
+Coverage did not change (section 4), and the Excel tie-out still matches
+140 of 140 scores and 166 of 166 TTM inputs after the rebuild.
 
 ## 3. Q4 scores vs annual scores (`quarterly_crosscheck_scores.csv`)
 
-39,701 company-years have both a Q4 quarterly row and an annual row.
+39,702 company-years have both a Q4 quarterly row and an annual row
+(after the consistent-tag rule; before it, M-Score 81.48% and m_flag
+99.40%).
 
 | Measure | Pairs | Agreement |
 | --- | --- | --- |
-| m_flag | 14,204 | 99.40% equal |
+| m_flag | 14,202 | 99.46% equal |
 | z_zone | 32,224 | 99.80% equal |
-| f_band | 12,157 | 98.55% equal |
-| flags_raised | 34,011 | 97.65% equal |
-| f_score | 12,157 | 96.13% equal |
+| f_band | 12,156 | 98.60% equal |
+| flags_raised | 34,011 | 97.68% equal |
+| f_score | 12,156 | 96.27% equal |
 | z_score | 32,224 | 95.14% within 0.01 |
 | accruals_ratio | 34,246 | 98.27% within 0.01 |
 | cash_conversion | 21,517 | 96.33% within 0.01 |
-| m_score | 14,204 | 81.48% within 0.01 |
+| m_score | 14,202 | 84.41% within 0.01 |
 
 The M-Score agrees least because it has the most flow inputs (eight
 indexes from up to eleven line items, for two years), so any input gap
@@ -135,10 +151,10 @@ company-years.
 
 | Basis | Rows | M-Score | Z'' | F-Score | Accruals | Option C rows |
 | --- | --- | --- | --- | --- | --- | --- |
-| Q1 | 42,158 | 32.4 | 78.7 | 25.9 | 81.3 | 24,046 |
+| Q1 | 42,156 | 32.4 | 78.7 | 25.9 | 81.3 | 24,044 |
 | Q2 | 41,844 | 32.4 | 79.0 | 26.7 | 83.9 | 24,549 |
-| Q3 | 41,077 | 32.3 | 79.1 | 26.7 | 84.2 | 24,145 |
-| Q4 | 40,014 | 36.6 | 81.5 | 31.1 | 86.5 | 0 |
+| Q3 | 41,078 | 32.3 | 79.1 | 26.7 | 84.2 | 24,146 |
+| Q4 | 40,014 | 36.6 | 81.5 | 31.0 | 86.5 | 0 |
 | Annual | 39,860 | 41.7 | 83.5 | 33.7 | 88.9 | |
 
 Quarterly coverage is lower than annual because every TTM flow needs

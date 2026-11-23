@@ -1,12 +1,12 @@
 line_item,pairs,agree,agree_pct,median_gap_pct_when_differ,annual_value_differs,derived_in_ttm,first_reported_in_another_filing,q4_reported_3_months,quarters_do_not_add_to_9_months,same_filing_other_tag
-revenue,54755,51545,94.14,8.2,95,0,0,1956,1159,0
-cost_of_revenue,39236,36965,94.21,7.6,142,0,0,539,1590,0
+revenue,54757,51751,94.51,8.3,101,0,0,1705,1200,0
+cost_of_revenue,39233,37048,94.43,7.3,145,0,0,452,1588,0
 sga,27760,25874,93.21,3.8,45,0,0,267,1574,0
-depreciation,58226,48880,83.95,15.6,1502,0,0,427,7417,0
+depreciation,58277,54305,93.18,15.1,1514,0,0,221,2237,0
 operating_income,61860,57112,92.32,10.0,2119,0,0,1848,781,0
-income_continuing_ops,65694,58658,89.29,15.9,487,5654,0,661,234,0
+income_continuing_ops,65694,58674,89.31,15.9,487,5638,0,661,234,0
 net_income,65062,60974,93.72,12.4,1870,0,0,1798,420,0
-cfo,68984,68422,99.19,43.3,358,0,0,109,95,0
+cfo,68986,68441,99.21,42.7,353,0,0,98,94,0
 receivables,49255,48940,99.36,25.7,0,0,301,0,0,14
 current_assets,71216,70695,99.27,25.4,0,0,516,0,0,5
 ppe_net,60802,60479,99.47,15.8,0,0,318,0,0,5

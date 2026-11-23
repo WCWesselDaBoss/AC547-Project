@@ -200,8 +200,8 @@ def source_rows(facts_df, method, sign=1.0, suffix=""):
     )
 
 
-def single_quarters(flow_facts_df, log):
-    """Return (quarters, sources) for flows.
+def quarters_from_facts(flow_facts_df, log):
+    """Return (quarters, sources) for flows, from the given facts only.
 
     quarters: one row per company, line item and fiscal quarter, with
     the quarter's value, start, end and method. sources: the facts used
@@ -260,9 +260,6 @@ def single_quarters(flow_facts_df, log):
     quarters = pd.concat(
         [reported[columns], differenced[columns]], ignore_index=True
     )
-    for method_name, count in quarters["method"].value_counts().items():
-        log[f"single_quarters:{method_name}"] += int(count)
-
     # Sources: the later YTD value counts +, the earlier one -, so a
     # quarter's source rows always add up to the quarter's value. Each
     # row is labeled with the single quarter it helps compute (the
@@ -285,6 +282,91 @@ def single_quarters(flow_facts_df, log):
         ),
         on=ITEM_QUARTER_KEY,
     )
+    return quarters, sources
+
+
+def year_tags(flow_facts_df):
+    """Return one XBRL tag per company, line item and fiscal year: the
+    tag that year's single quarters should all use.
+
+    Why: a 10-Q can report a 3-month value under one tag (for example
+    Depreciation, on the income statement) and the year to date under
+    another (DepreciationDepletionAndAmortization, on the cash flow
+    statement). Mixing them puts two concepts in one TTM; in the step 5
+    cross-check this caused 70% of the Q4 depreciation disagreements.
+
+    The year tag is, in order: the tag of the 10-K's 12-month value
+    (the figure that ties to financials_annual); else the tag used by
+    most of the year's year-to-date values; else the most used tag. A
+    remaining tie goes to the tag filed last (the company's newer
+    choice).
+    """
+    flows = flow_facts_df
+    is_annual = (flows["covered"] == 4) & (flows["fiscal_quarter"] == 4)
+    is_ytd = (flows["covered"] == flows["fiscal_quarter"]) & (
+        flows["covered"] >= 2
+    )
+    keys = ["cik", "line_item", "fiscal_year", "xbrl_tag"]
+    ranked = (
+        flows.assign(annual=is_annual, ytd=is_ytd)
+        .groupby(keys)
+        .agg(
+            annual=("annual", "any"),
+            ytd=("ytd", "sum"),
+            facts=("value", "size"),
+            last_filed=("filed_date", "max"),
+        )
+        .reset_index()
+        .sort_values(
+            ["annual", "ytd", "facts", "last_filed", "xbrl_tag"],
+            ascending=[False, False, False, False, True],
+        )
+    )
+    return ranked.drop_duplicates(subset=keys[:3], keep="first")[keys].rename(
+        columns={"xbrl_tag": "year_tag"}
+    )
+
+
+def single_quarters(flow_facts_df, log):
+    """Return (quarters, sources) for flows, keeping each fiscal year on
+    one XBRL tag where possible.
+
+    Single quarters are computed twice: from the facts under the year
+    tag (year_tags), and from all facts. A quarter uses the year-tag
+    result when it exists and falls back to the all-facts result (the
+    rule before Nov 22) only when the year tag cannot give one, so this
+    never blanks a value; fallbacks are counted.
+    """
+    tags = year_tags(flow_facts_df)
+    flows = flow_facts_df.merge(
+        tags, on=["cik", "line_item", "fiscal_year"], how="left"
+    )
+    on_tag = flows[flows["xbrl_tag"] == flows["year_tag"]].drop(
+        columns="year_tag"
+    )
+    # The YTD start-date check is counted from the all-facts pass only,
+    # so a fact is never counted twice.
+    tag_quarters, tag_sources = quarters_from_facts(on_tag, Counter())
+    all_quarters, all_sources = quarters_from_facts(flow_facts_df, log)
+
+    fallback = all_quarters.merge(
+        tag_quarters[ITEM_QUARTER_KEY],
+        on=ITEM_QUARTER_KEY,
+        how="left",
+        indicator=True,
+    )
+    fallback = fallback[fallback["_merge"] == "left_only"].drop(
+        columns="_merge"
+    )
+    fallback_sources = all_sources.merge(
+        fallback[ITEM_QUARTER_KEY], on=ITEM_QUARTER_KEY
+    )
+    quarters = pd.concat([tag_quarters, fallback], ignore_index=True)
+    sources = pd.concat([tag_sources, fallback_sources], ignore_index=True)
+    log["single_quarters:on_the_year_tag"] += len(tag_quarters)
+    log["single_quarters:fallback_to_another_tag"] += len(fallback)
+    for method_name, count in quarters["method"].value_counts().items():
+        log[f"single_quarters:{method_name}"] += int(count)
     return quarters, sources
 
 
@@ -519,6 +601,7 @@ FACT_COLUMNS = [
     "fiscal_year",
     "fiscal_quarter",
     "duration_days",
+    "xbrl_tag",
     "accession",
     "filed_date",
 ]
