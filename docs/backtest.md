@@ -243,6 +243,7 @@ every registered test is reported, whatever it shows.
 | 13 | Do quarterly (TTM) flags predict blowups, and do they add anything beyond the annual flags? Questions (a) and (b) below | Registered 2026-11-22 before any test-13 result was computed. Quarterly flags are new, but the years and outcomes were already studied with annual flags in tests 10 to 12, so this is supporting evidence | Run 2026-11-22: (a) passed (t = 11.56); (b) passed (t = 6.47, with annual-Flagged also significant, t = 6.09) |
 | 13a | Wording fix: test 13's entry rule (below) | Made 2026-11-22 before any test-13 result was computed: the registered entry is the first trading day strictly after `available_date`, as specified; the entry had wrongly called this "test 11's start rule" (test 11 starts on or after the filing date) | Definition unchanged |
 | 14 | Does excluding flagged companies from a large-company portfolio reduce blowups and drawdowns without hurting returns? Questions (a) and (b) below | Registered 2026-11-23 before any test-14 result was computed; years already studied in tests 1 to 13, so supporting evidence | Run 2026-11-23: (a) passed (t = -5.18, lower blowup exposure); (b) no return difference found (t = -1.06; 95% interval -0.29 to +0.09 points a quarter) |
+| 15 | Does excluding flagged stocks matter more in a concentrated (20-stock) portfolio? Question (a) below | Registered 2026-11-23 before any test-15 result was computed; years already studied in tests 1 to 14, so supporting evidence | Not yet run |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -1271,6 +1272,79 @@ already studied in tests 1 to 13, so this is supporting evidence, not
 confirmation; equal weighting rather than index (float) weighting;
 no risk-free rate; correlation, not cause. This is an analysis for a
 class project, not investment advice.
+
+### Test 15: concentrated portfolios, base vs overlay B (registered before running)
+
+Registered before any test-15 result was computed; years already studied
+in tests 1 to 14, so supporting evidence. The definitions below are
+fixed; pools, flags and price rules are test 14's (`src/scores/
+overlay.py`).
+
+- **Dates.** Test 14's first 44 rebalance dates (the ends of 2013Q4 to
+  2024Q3; trades on the last trading day on or before each), so the
+  holdings start in the quarters 2014Q1 to 2024Q4 and every draw has a
+  full 12-month follow-up in the price data.
+- **Pools.** On each date, test 14's base pool (the `large_500` pool,
+  500 stocks) and overlay B's pool (the base minus stocks flagged by the
+  annual or the quarterly flag, point in time).
+- **Holding.** Each stock is bought at its trade-date adjusted close and
+  held to the last trading day on or before the trade date + 12 months.
+  A stock whose prices stop is exited at its last real price and that
+  money earns nothing (test 14's rule). Its 12-month return is its last
+  real price on or before the end divided by its trade-date price,
+  minus 1. No trading costs (one purchase per portfolio, the same for
+  both pools).
+- **Random portfolios.** For each date and pool, 10,000 portfolios of
+  20 stocks, each drawn without replacement from the pool with equal
+  chance for every stock (portfolios drawn independently of each
+  other). A portfolio is equal-weighted at the trade date and bought
+  and held, so its 12-month return is the average of its 20 stocks'
+  returns. Random generator: `numpy.random.default_rng(20261123)`,
+  created once and used in this fixed order: dates oldest first; within
+  a date, sizes 20, then 10, then 15; within a size, the base pool, then
+  B. The same seed and order give the same draws every run.
+- **Measures, per date, pool and size.**
+  - Mean 12-month portfolio return.
+  - 5th percentile of the 10,000 portfolio returns (the "bad year"
+    outcome; `numpy.percentile`, linear interpolation).
+  - Probability that a portfolio holds at least one blowup: a stock
+    whose adjusted close falls to 50% or less of its trade-date close on
+    any trading day in its 12 months (test 10's rule, `blowups.
+    classify_window`). A stock with an unknown outcome (prices stop
+    with no blowup) counts as no blowup here; the number of such stocks
+    is reported (test 14 had none).
+  - Probability that a portfolio trails its own pool's equal-weighted
+    12-month return (the average of all the pool's stocks' returns) by
+    more than 10 percentage points.
+- **Registered question** (one question, pass mark t >= 3.0):
+  - (a) Is the 5th-percentile 12-month return of 20-stock portfolios
+    higher for overlay B than for the base? Quarterly differences (B
+    minus base) for the 44 dates; passes if the mean difference is
+    positive and t >= 3.0, with t = mean / Newey-West standard error, 3
+    lags.
+  - Why Newey-West: each 12-month holding window overlaps the next
+    three quarters' windows (a window starting in 2016Q1 shares 9 of its
+    12 months with the one starting in 2016Q2), so neighboring quarterly
+    differences move together and are not independent. An ordinary
+    standard error would then be too small and t too large. Newey-West
+    widens the standard error to allow for that correlation, with 3
+    lags because each window overlaps the next three.
+- **Descriptive, not tests:** the same four measures for 10- and
+  15-stock portfolios; the mean 12-month return difference (B minus
+  base, 20 stocks) with a 95% interval (Newey-West, 3 lags), expected
+  near zero because random sampling does not change a pool's average;
+  each measure by calendar year of the trade date (mean of that year's
+  quarters), including 2020 and 2022.
+- **Limitations, stated in advance.** Random picks, not how a real
+  analyst chooses stocks; survivorship (current tickers only); equal
+  weighting; years already studied in tests 1 to 14; overlapping
+  12-month windows (handled with Newey-West, but the effective sample
+  is smaller than 44); correlation, not cause; this is an analysis for a
+  class project, not investment advice.
+- **Outputs:** a "Test 15 results" section here, whatever the results;
+  a chart of the 20-stock portfolio return distributions, base vs B,
+  pooled across the 44 dates, `docs/screenshots/test15_concentrated.png`;
+  details in `data/logs/backtest_concentrated.csv`.
 
 ## Data coverage
 
