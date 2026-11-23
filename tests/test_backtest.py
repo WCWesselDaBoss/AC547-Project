@@ -1357,3 +1357,94 @@ def test_drop_sizes_on_the_test_11_example():
 def test_bonferroni_bar():
     """0.01 divided by nine drop sizes = 0.00111."""
     assert drop_sizes.bonferroni_bar() == pytest.approx(0.01 / 9)
+
+
+# ---------------------------------------------------------------------------
+# Test 13: quarterly flags and blowups (src/scores/quarterly_blowups.py)
+# ---------------------------------------------------------------------------
+def test13_entry_is_strictly_after_and_cohort_is_the_entry_quarter():
+    """A score available on Fri Mar 29, 2024 enters on the next trading
+    day, Mon Apr 1 (cohort 2024Q2, not 2024Q1); one available on a
+    non-trading Saturday enters on the Monday."""
+    from src.scores import quarterly_blowups as qb
+
+    calendar = pd.DatetimeIndex(
+        pd.to_datetime(["2024-03-28", "2024-03-29", "2024-04-01"])
+    )
+    entries = qb.entry_days(
+        pd.to_datetime(["2024-03-29", "2024-03-30"]), calendar
+    )
+    assert list(entries) == [pd.Timestamp("2024-04-01")] * 2
+    assert list(qb.cohort(entries)) == ["2024Q2", "2024Q2"]
+    assert list(qb.cohort(pd.to_datetime(["2024-03-28"]))) == ["2024Q1"]
+
+
+def test13_annual_flag_is_point_in_time():
+    """On entry 2024-03-01 the annual status comes from the FY2023 10-K
+    filed 2024-02-15 (1 flag); the FY2024 10-K filed 2025-02-15, after
+    entry, is ignored. On entry 2025-06-01 the FY2023 10-K is more than
+    15 months old, but the FY2024 one (0 flags) is used."""
+    from src.scores import quarterly_blowups as qb
+
+    scores = pd.DataFrame(
+        {
+            "cik": [1, 1],
+            "fiscal_year": [2023, 2024],
+            "flags_raised": pd.array([1, 0], dtype="Int64"),
+            "m_score": [-1.0, -2.5],
+            "z_score": [1.0, 3.0],
+            "f_score": pd.array([3, 7], dtype="Int64"),
+        }
+    )
+    financials = pd.DataFrame(
+        {
+            "cik": [1, 1],
+            "fiscal_year": [2023, 2024],
+            "period_end": pd.to_datetime(["2023-12-31", "2024-12-31"]),
+            "filed_date": pd.to_datetime(["2024-02-15", "2025-02-15"]),
+        }
+    )
+    entries = pd.DataFrame(
+        {
+            "cik": [1, 1],
+            "entry": pd.to_datetime(["2024-03-01", "2025-06-01"]),
+        }
+    )
+    annual = qb.annual_point_in_time(entries, scores, financials)
+    annual = annual.sort_values("entry")
+    assert annual["annual_flagged"].tolist() == [1.0, 0.0]
+    assert annual["annual_filed_date"].tolist() == list(
+        pd.to_datetime(["2024-02-15", "2025-02-15"])
+    )
+    assert annual["annual_usable"].tolist() == [True, True]
+
+
+def test13_newly_and_persistently_flagged():
+    """A fake company's quarters: FY2023 Q2 flagged; FY2024 Q1 clean;
+    FY2024 Q2 flagged. FY2024 Q2 is newly flagged (clean the quarter
+    before) AND persistently flagged (flagged in FY2023 Q2). FY2024 Q3 is
+    flagged but its previous quarter (FY2024 Q2) was flagged and its
+    year-ago quarter is missing: neither."""
+    from src.scores import quarterly_blowups as qb
+
+    quarters = [(2023, 2, 1), (2024, 1, 0), (2024, 2, 2), (2024, 3, 1)]
+    scores_q = pd.DataFrame(
+        {
+            "cik": 1,
+            "fiscal_year": [q[0] for q in quarters],
+            "fiscal_quarter": [q[1] for q in quarters],
+            "flags_raised": pd.array([q[2] for q in quarters], "Int64"),
+            "m_score": -2.0,
+            "z_score": 3.0,
+            "f_score": pd.array([5] * 4, dtype="Int64"),
+        }
+    )
+    obs = scores_q[scores_q["fiscal_year"] == 2024].assign(
+        quarterly_flagged=lambda f: (f["flags_raised"] >= 1).astype(int)
+    )
+    out = qb.earlier_status(obs, scores_q).set_index("fiscal_quarter")
+    assert bool(out.loc[2, "newly_flagged"]) is True
+    assert bool(out.loc[2, "persistently_flagged"]) is True
+    assert bool(out.loc[3, "newly_flagged"]) is False
+    assert bool(out.loc[3, "persistently_flagged"]) is False
+    assert bool(out.loc[1, "newly_flagged"]) is False

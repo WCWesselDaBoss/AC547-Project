@@ -240,6 +240,8 @@ every registered test is reported, whatever it shows.
 | 11 | After a 10-K becomes public, how fast do stocks fall 50%, by flag count? Question (a) below | Registered 2026-11-19 before any test-11 result was computed; all years already seen in earlier tests, so this is supporting evidence, not confirmation | Run 2026-11-19: (a) passed (log-rank p = 6.4 x 10^-56, Flagged faster) |
 | 11a | Method change: scipy instead of lifelines for test 11 (below) | Made 2026-11-19 before any test-11 result was computed, because lifelines cannot be installed with the project's pandas | Definitions unchanged |
 | 12 | Test 11 repeated for drops of 10% to 90% (below) | Registered 2026-11-19 after seeing test 11, before any test-12 result was computed | Run 2026-11-19 (exploratory): Flagged fell faster at every drop size, all nine log-rank p-values below the Bonferroni bar |
+| 13 | Do quarterly (TTM) flags predict blowups, and do they add anything beyond the annual flags? Questions (a) and (b) below | Registered 2026-11-22 before any test-13 result was computed. Quarterly flags are new, but the years and outcomes were already studied with annual flags in tests 10 to 12, so this is supporting evidence | Run 2026-11-22: (a) passed (t = 11.56); (b) passed (t = 6.47, with annual-Flagged also significant, t = 6.09) |
+| 13a | Wording fix: test 13's entry rule (below) | Made 2026-11-22 before any test-13 result was computed: the registered entry is the first trading day strictly after `available_date`, as specified; the entry had wrongly called this "test 11's start rule" (test 11 starts on or after the filing date) | Definition unchanged |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -885,6 +887,190 @@ What this shows (exploratory):
 Limitations: those of test 11 (survivorship, overlapping observations
 from 872 companies, weaker by construction, correlation not cause,
 years already studied), plus the small counts at 80-90% drops. This is
+an analysis for a class project, not investment advice.
+
+### Test 13: quarterly (TTM) flags and blowups (registered before running)
+
+Registered before any test-13 result was computed. Quarterly flags are
+new, but the years and outcomes were already studied with annual flags
+in tests 10 to 12, so this is supporting evidence. The definitions below
+are fixed; they reuse tests 10 and 11's code wherever a rule is the
+same.
+
+- **Observations.** Every company-quarter in `scores_quarterly` with an
+  M-Score, a Z'' and an F-Score (all three present), whose
+  `available_date` is from 2014-01-01 to 2025-10-31, so that every
+  observation has a full 12-month follow-up in the price data.
+- **Entry.** The first market trading day (SPY's calendar) strictly
+  after `available_date` (see 13a): the first full trading day after the
+  quarterly score became public.
+- **Eligibility** (test 10's, `backtest.price_status` on the entry day):
+  a current ticker; a price on each of the 20 market trading days
+  through the entry day; and an adjusted close of at least $5 on the
+  entry day. Ineligible observations are counted by reason.
+- **Outcome.** Test 10's blowup: the adjusted close falls to 50% or less
+  of the entry-day close on any trading day from entry to the last
+  trading day on or before entry + 12 months. Prices that stop
+  mid-window with no blowup are "unknown" (test 10's rule): counted and
+  left out of every rate and model, never treated as non-blowups.
+- **Quarterly flag status.** Quarterly-Clean: `flags_raised` = 0;
+  quarterly-Flagged: 1 or more (all three scores are present by the
+  observation rule).
+- **Cohorts.** The calendar quarter of the entry date (for example
+  2016-Q3), used as fixed effects.
+- **Annual flag at the same date (point in time).** The company's
+  latest annual `scores` row whose 10-K (`financials_annual`
+  `filed_date`) was filed strictly before the entry date, using test
+  10's rule (`backtest.latest_scores`): it is unusable if that 10-K was
+  filed more than 15 months before entry (stale), or if any of the
+  three annual scores is missing. Annual-Clean: 0 flags; annual-Flagged:
+  1 or more. A 10-K filed on or after the entry date is never used.
+- **Registered questions** (pass mark t >= 3.0 on the quarterly-Flagged
+  coefficient, positive, because 2 questions are tested and the years
+  were already studied):
+  - (a) Replication: is the 12-month blowup rate higher for
+    quarterly-Flagged than quarterly-Clean? A linear probability model
+    (OLS) of blowup (1 or 0) on quarterly-Flagged with entry-cohort
+    fixed effects; standard errors clustered by company.
+  - (b) Beyond annual: among observations that also have a usable
+    annual flag status, the same model with annual-Flagged added. Does
+    quarterly-Flagged keep t >= 3.0 with annual-Flagged included?
+- **Descriptive, not tests:**
+  - observations, blowups, unknowns and the blowup rate by quarterly
+    flag count (0, 1, 2 and 3), next to test 10's pooled annual rates
+    by flag count;
+  - a 2x2 table of annual flag status by quarterly flag status: count
+    and blowup rate in each cell;
+  - newly flagged (quarterly-Flagged now and quarterly-Clean in the
+    company's previous fiscal quarter) vs persistently flagged
+    (quarterly-Flagged now and in the same fiscal quarter one year
+    earlier): count and blowup rate; the earlier quarter must have all
+    three scores, or the observation is in neither group;
+  - the median age of the flag at entry, annual vs quarterly: days from
+    the end of the period the scores describe (annual: fiscal year end;
+    quarterly: quarter end) to entry, and days from when the flag became
+    public (annual: the 10-K's filing date; quarterly: `available_date`)
+    to entry.
+- **Limitations, stated in advance.**
+  - Survivorship: tickers are current ones, so companies that blew up
+    and delisted are likely missing, which would understate any
+    difference.
+  - Overlapping observations: a company appears up to four times a
+    year, with overlapping 12-month windows, so observations are not
+    independent; this is why standard errors are clustered by company
+    and cohorts are fixed effects.
+  - Quarterly coverage is lower than annual: requiring all three
+    quarterly scores shrinks the sample, so every count is reported.
+  - Quarterly data comes from unaudited 10-Q filings.
+  - Correlation, not cause; the years were already studied, so even a
+    pass is supporting evidence, not confirmation.
+  - This is an analysis for a class project, not investment advice.
+- **Outputs:** a "Test 13 results" section here, whatever the results;
+  a chart of the blowup rate by quarterly flag count next to test 10's
+  annual rates, `docs/screenshots/test13_blowups.png`; details in
+  `data/logs/backtest_quarterly_blowups.csv`.
+
+### Test 13 results
+
+Run once, on 2026-11-22, with `python -m src.scores.quarterly_blowups`
+(code: `src/scores/quarterly_blowups.py`; tests in
+`tests/test_backtest.py`; details per observation in
+`data/logs/backtest_quarterly_blowups.csv`).
+
+**Observations.** 26,761 company-quarters had all three quarterly
+scores and an `available_date` in the window. 15,968 were eligible on
+the entry day (880 companies, 48 entry cohorts, 2014Q1 to 2025Q4); the
+rest had no current ticker (8,998), a close under $5 (1,491), a missing
+price in the 20 days before entry (244) or no prices (60). Outcomes:
+2,260 blowups, 13,708 no blowup, 0 unknown. Test 10 also had no unknowns:
+with current tickers only, prices almost never stop mid-window, which is
+itself a sign of the survivorship limitation.
+
+**Registered questions** (linear probability model, entry-cohort fixed
+effects, standard errors clustered by company; pass: positive
+coefficient with t >= 3.0):
+
+| Question | Observations | Companies | Quarterly-Flagged coefficient | SE | t | Result |
+| --- | --- | --- | --- | --- | --- | --- |
+| (a) blowup ~ quarterly-Flagged | 15,968 | 880 | +0.141 | 0.012 | 11.56 | **Passed** |
+| (b) blowup ~ quarterly-Flagged + annual-Flagged | 14,942 | 834 | +0.072 | 0.011 | 6.47 | **Passed** |
+
+In (b) the annual-Flagged coefficient is +0.088 (t = 6.09): each flag
+keeps its own association with blowups when the other is in the model.
+(b) uses the 14,942 observations (94% of (a)) whose latest 10-K before
+entry was at most 15 months old and had all three annual scores.
+
+**By quarterly flag count** (descriptive), next to test 10's pooled
+annual rates (June 30 portfolios, a different design, so the levels are
+only roughly comparable):
+
+| Flags | Quarterly observations | Blowups | Quarterly rate | Test 10 annual rate |
+| --- | --- | --- | --- | --- |
+| 0 | 9,883 | 846 | 8.6% | 9.2% |
+| 1 | 4,289 | 779 | 18.2% | 18.8% |
+| 2 | 1,542 | 527 | 34.2% | 35.2% |
+| 3 | 254 | 108 | 42.5% | 44.0% |
+
+The rate rises with each quarterly flag, as it did with annual flags:
+quarterly-Flagged overall 23.2% against 8.6% for quarterly-Clean, about
+2.7 times. Chart: `docs/screenshots/test13_blowups.png`.
+
+**Annual by quarterly flag status** (observations with a usable annual
+status; descriptive):
+
+| | Quarterly-Clean | Quarterly-Flagged |
+| --- | --- | --- |
+| Annual-Clean | 8,372 obs, 7.7% | 966 obs, 13.9% |
+| Annual-Flagged | 898 obs, 14.6% | 4,706 obs, 24.4% |
+
+The two agree in 87.5% of observations (13,078 of 14,942). Where they
+disagree, a flag from either source goes with a blowup rate 1.8 to
+1.9 times that of a stock clean on both, and a stock flagged by both has the
+highest rate.
+
+**Newly vs persistently flagged** (descriptive):
+
+| Group | Observations | Blowups | Rate |
+| --- | --- | --- | --- |
+| Newly flagged (clean the quarter before) | 869 | 127 | 14.6% |
+| Persistently flagged (also flagged a year earlier) | 3,237 | 775 | 23.9% |
+| of which both newly and persistently | 200 | 35 | 17.5% |
+| Quarterly-Clean, for reference | 9,883 | 846 | 8.6% |
+
+A new flag goes with a higher rate than no flag, but a lasting flag
+goes with a much higher one. Observations whose earlier quarter lacked
+any of the three scores are in neither group.
+
+**Median age of the flag at entry** (descriptive):
+
+| Basis | Observations | Days since the period ended | Days since the flag became public |
+| --- | --- | --- | --- |
+| Quarterly | 15,968 | 41 | 1 |
+| Annual (same observations, usable status) | 14,942 | 131 | 76 |
+
+At the moment a quarterly flag becomes usable, the latest annual flag
+describes a period about three months older and has been public for
+about two and a half months.
+
+**What the numbers say.**
+- Both registered questions passed. Quarterly flags go with more
+  12-month blowups, at rates close to annual flags', and they keep
+  their own association after the annual flag known on the same day
+  is included.
+- They are fresher than annual flags at entry, but most of the time
+  they agree with them (87.5%), so they largely repeat the annual
+  signal, earlier, rather than finding a different set of companies.
+- A flag that lasts goes with more blowups than a new one.
+
+**Limitations** (as registered): current tickers only (survivorship;
+8,998 observations had no current ticker, and 0 unknown outcomes shows
+how few delisted stocks remain); overlapping observations from the
+same companies (clustered standard errors and cohort fixed effects
+address this, but the effective sample is the 880 companies, not
+15,968 observations); quarterly coverage is lower than annual
+(requiring all three quarterly scores); unaudited 10-Q data; the years
+were already studied with annual flags in tests 10 to 12, so this is
+supporting evidence, not confirmation; correlation, not cause. This is
 an analysis for a class project, not investment advice.
 
 ## Data coverage
