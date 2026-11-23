@@ -1448,3 +1448,92 @@ def test13_newly_and_persistently_flagged():
     assert bool(out.loc[3, "newly_flagged"]) is False
     assert bool(out.loc[3, "persistently_flagged"]) is False
     assert bool(out.loc[1, "newly_flagged"]) is False
+
+
+# ---------------------------------------------------------------------------
+# Test 14: large companies without flagged stocks (src/scores/overlay.py)
+# ---------------------------------------------------------------------------
+def test14_quarterly_flags_are_point_in_time():
+    """On trade date 2024-03-28: company 1's row available 2024-03-28
+    (the trade date itself) is ignored, so its 2023-11-01 row (flagged)
+    is used, and the same quarter a year earlier was flagged too
+    (persistent). Company 2's only row is from 2022, more than 15 months
+    old: no usable flag. Company 3's row is available after the date:
+    not listed."""
+    from src.scores import overlay
+
+    rows = [
+        (1, 2023, 3, "2023-11-01", 1),
+        (1, 2023, 4, "2024-03-28", 0),
+        (1, 2022, 3, "2022-11-01", 2),
+        (2, 2022, 1, "2022-05-01", 3),
+        (3, 2023, 4, "2024-04-15", 1),
+    ]
+    scores_q = pd.DataFrame(
+        {
+            "cik": [r[0] for r in rows],
+            "fiscal_year": [r[1] for r in rows],
+            "fiscal_quarter": [r[2] for r in rows],
+            "available_date": pd.to_datetime([r[3] for r in rows]),
+            "period_end": pd.to_datetime([r[3] for r in rows]),
+            "flags_raised": pd.array([r[4] for r in rows], dtype="Int64"),
+        }
+    )
+    flags = overlay.quarterly_flags(scores_q, pd.Timestamp("2024-03-28"))
+    assert flags["cik"].tolist() == [1]
+    assert bool(flags["quarterly_flagged"].iloc[0]) is True
+    assert bool(flags["persistent_flagged"].iloc[0]) is True
+
+
+def test14_exclusion_logic():
+    """Four pool stocks: W annual-flagged, X quarterly-flagged, Y clean on
+    both, Z with no usable flag at all. A drops W; B drops W and X; P
+    drops only persistent quarterly flags (X here); Z always stays."""
+    from src.scores import overlay
+
+    pool = pd.DataFrame(
+        {
+            "cik": [1, 2, 3, 4],
+            "ticker": ["W", "X", "Y", "Z"],
+            "flags_raised": pd.array([2, 0, 0, pd.NA], dtype="Int64"),
+        }
+    )
+    flags = pd.DataFrame(
+        {
+            "cik": [1, 2, 3],
+            "quarterly_flagged": [False, True, False],
+            "persistent_flagged": [False, True, False],
+            "quarterly_available": pd.to_datetime(["2024-01-01"] * 3),
+        }
+    )
+    held = overlay.members(pool, flags).set_index("ticker")
+    assert held["in_base"].all()
+    assert held.index[held["in_A"]].tolist() == ["X", "Y", "Z"]
+    assert held.index[held["in_B"]].tolist() == ["Y", "Z"]
+    assert held.index[held["in_P"]].tolist() == ["W", "Y", "Z"]
+
+
+def test14_maximum_drawdown_hand_checked():
+    """100, 120, 90, 110, 60, 130: the worst fall from a peak is 120 to
+    60, -50%."""
+    values = pd.Series([100.0, 120, 90, 110, 60, 130])
+    assert backtest.max_drawdown(values) == pytest.approx(-0.5)
+
+
+def test14_turnover_on_three_stocks():
+    """Held: 100 shares each of A, B, C bought at $1; at the trade date A
+    is $2, so the $400 portfolio is 50% A, 25% B, 25% C. Targets A, B, D
+    (one third each): weight changes 1/6 + 1/12 + 1/4 + 1/3 = 10/12,
+    turnover half of that (5/12), cost 10 bps x 10/12 x $400."""
+    from src.scores import overlay
+
+    positions = {"A": 100.0, "B": 100.0, "C": 100.0}
+    prices = pd.Series({"A": 2.0, "B": 1.0, "C": 1.0, "D": 1.0})
+    new, turnover, cost, after = overlay.rebalance(
+        positions, prices, 0.0, ["A", "B", "D"], 10
+    )
+    assert turnover == pytest.approx(5 / 12)
+    assert cost == pytest.approx(0.001 * 10 / 12 * 400)
+    assert after == pytest.approx(400 - cost)
+    assert new["A"] * 2.0 == pytest.approx(after / 3)
+    assert set(new) == {"A", "B", "D"}

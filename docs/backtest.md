@@ -242,7 +242,7 @@ every registered test is reported, whatever it shows.
 | 12 | Test 11 repeated for drops of 10% to 90% (below) | Registered 2026-11-19 after seeing test 11, before any test-12 result was computed | Run 2026-11-19 (exploratory): Flagged fell faster at every drop size, all nine log-rank p-values below the Bonferroni bar |
 | 13 | Do quarterly (TTM) flags predict blowups, and do they add anything beyond the annual flags? Questions (a) and (b) below | Registered 2026-11-22 before any test-13 result was computed. Quarterly flags are new, but the years and outcomes were already studied with annual flags in tests 10 to 12, so this is supporting evidence | Run 2026-11-22: (a) passed (t = 11.56); (b) passed (t = 6.47, with annual-Flagged also significant, t = 6.09) |
 | 13a | Wording fix: test 13's entry rule (below) | Made 2026-11-22 before any test-13 result was computed: the registered entry is the first trading day strictly after `available_date`, as specified; the entry had wrongly called this "test 11's start rule" (test 11 starts on or after the filing date) | Definition unchanged |
-| 14 | Does excluding flagged companies from a large-company portfolio reduce blowups and drawdowns without hurting returns? Questions (a) and (b) below | Registered 2026-11-23 before any test-14 result was computed; years already studied in tests 1 to 13, so supporting evidence | Not yet run |
+| 14 | Does excluding flagged companies from a large-company portfolio reduce blowups and drawdowns without hurting returns? Questions (a) and (b) below | Registered 2026-11-23 before any test-14 result was computed; years already studied in tests 1 to 13, so supporting evidence | Run 2026-11-23: (a) passed (t = -5.18, lower blowup exposure); (b) no return difference found (t = -1.06; 95% interval -0.29 to +0.09 points a quarter) |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -1171,6 +1171,106 @@ fixed.
   a chart of cumulative growth and drawdowns for the base and overlays A
   and B, `docs/screenshots/test14_overlay.png`; details in
   `data/logs/backtest_overlay_*.csv`.
+
+### Test 14 results
+
+Run once, on 2026-11-23, with `python -m src.scores.overlay` (code:
+`src/scores/overlay.py`; tests in `tests/test_backtest.py`; details in
+`data/logs/backtest_overlay_*.csv`).
+
+**Portfolios.** The base held the 500 pool stocks every quarter.
+Overlay A held 364 to 443 (median 394.5), overlay B 335 to 431 (median
+379.5) and overlay P 408 to 468 (median 425). The quarterly flags used
+were a median 58 days old at the rebalance. No outcome was unknown.
+
+**Summary, 2014Q1 to 2025Q4** ($100,000 start; return/volatility has no
+risk-free rate subtracted, so it is not a Sharpe ratio):
+
+| Portfolio | Cost | Annualized return | Volatility | Max drawdown | Return / volatility | Turnover per quarter* | Ending value |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Base | 0 bps | 11.03% | 18.46% | -38.4% | 0.60 | 7.4% | $351,447 |
+| Base | 10 bps | 10.97% | 18.46% | -38.4% | 0.59 | 7.4% | $348,306 |
+| A | 0 bps | 10.80% | 18.34% | -38.3% | 0.59 | 8.5% | $342,504 |
+| A | 10 bps | 10.72% | 18.34% | -38.3% | 0.58 | 8.5% | $339,086 |
+| B | 0 bps | 10.66% | 18.19% | -37.9% | 0.59 | 9.4% | $337,375 |
+| B | 10 bps | 10.58% | 18.19% | -37.9% | 0.58 | 9.4% | $333,740 |
+| P (exploratory) | 10 bps | 10.71% | 18.50% | -38.0% | 0.58 | 8.7% | $338,681 |
+
+\* One-way turnover, averaged over the 47 rebalances after the first
+purchase (including the first: base 9.4%, A 10.4%, B 11.3%).
+
+**Registered questions** (pass mark |t| >= 3.0):
+
+| Question | Quarters | Mean difference (B minus base) | t | Result |
+| --- | --- | --- | --- | --- |
+| (a) Blowup exposure | 47 (2014Q1 to 2025Q3) | -1.21 points (6.14% against 7.35%) | -5.18 | **Passed**: B lower in 40 quarters, higher in 6 |
+| (b) Quarterly return, after 10 bps | 48 | -0.10 points a quarter; 95% interval -0.29 to +0.09 | -1.06 | **No difference found** |
+
+For (b), failing to find a difference does not prove there is none.
+The interval shows what the data can rule out: a quarterly cost of more
+than about 0.29 points (about 1.2 points a year), or a gain of more than
+about 0.09 points (about 0.4 points a year). The point estimate is a
+small cost (about 0.4 points a year), and over the 12 years B ended at
+$333,740 against the base's $348,306.
+
+2025Q4 is left out of (a), as registered, because its 12-month
+follow-up runs past the end of the price data.
+
+**What the quarterly flags add** (descriptive, B against A): blowup
+exposure 0.19 points lower (t = -3.45 on the quarterly differences),
+and quarterly returns 0.05 points lower (t = -1.17; 95% interval -0.13
+to +0.03). Most of the blowup reduction comes from the annual flags
+(A: 6.33% against the base's 7.35%); the quarterly flags trim a little
+more.
+
+**Overlay P** (exploratory, chosen after test 13): excluding only
+persistent quarterly flags cut blowup exposure less than A or B (6.90%,
+against the base's 7.35%) and returned about the same as A (10.71% a
+year against 10.72%).
+
+**By calendar year** (returns after 10 bps; blowup exposure is the mean
+of each year's quarters):
+
+| Year | Base | A | B | P | Base blowup | B blowup |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2014 | 12.1% | 10.3% | 10.3% | 10.6% | 5.2% | 5.1% |
+| 2015 | -5.1% | -5.8% | -5.8% | -5.3% | 9.3% | 8.2% |
+| 2016 | 17.0% | 16.6% | 16.7% | 17.4% | 2.1% | 1.5% |
+| 2017 | 22.8% | 23.1% | 22.1% | 22.6% | 1.9% | 1.5% |
+| 2018 | -6.7% | -7.8% | -7.6% | -7.8% | 5.3% | 5.1% |
+| 2019 | 31.2% | 31.2% | 30.5% | 31.6% | 20.1% | 19.0% |
+| 2020 | 21.9% | 19.2% | 19.6% | 21.3% | 6.4% | 5.8% |
+| 2021 | 22.5% | 24.5% | 23.6% | 22.6% | 12.1% | 7.8% |
+| 2022 | -17.6% | -14.6% | -13.8% | -16.7% | 10.5% | 6.7% |
+| 2023 | 20.2% | 20.9% | 20.1% | 21.9% | 3.7% | 2.3% |
+| 2024 | 11.8% | 10.2% | 10.6% | 10.0% | 5.3% | 4.8% |
+| 2025 | 12.8% | 11.6% | 10.8% | 11.8% | 6.5% | 6.0% |
+
+(2019's high blowup share reflects holdings formed in 2019 whose
+12-month windows ran into the March 2020 crash.) In 2022 the overlays
+lost less than the base (B -13.8% against -17.6%); in 2020 they gained
+less (B +19.6% against +21.9%). 2025's blowup figures include 2025Q4,
+whose 12-month follow-up is cut short by the end of the price data.
+
+**What the numbers say.**
+- Excluding flagged companies lowered blowup exposure, reliably (t =
+  -5.18) but modestly: about 1.2 points, from 7.4% to 6.1% of holdings.
+- It did not reduce drawdowns in any meaningful way: the worst fall was
+  -37.9% against -38.4%, both in March 2020, and volatility was 18.2%
+  against 18.5%.
+- No return difference was found. The best estimate is a small cost
+  (about 0.4 points a year), and the data cannot rule out a cost of up
+  to about 1.2 points a year. Turnover rose from 7.4% to 9.4% a quarter,
+  which at 10 bps costs very little (0.08 points a year for B).
+- So in this test the overlay avoided some of the worst stocks without
+  improving the portfolio's overall risk or return.
+
+**Limitations** (as registered): survivorship (current tickers only, so
+companies that blew up and delisted are likely missing); the years were
+already studied in tests 1 to 13, so this is supporting evidence, not
+confirmation; equal weighting rather than index (float) weighting;
+no risk-free rate; correlation, not cause. This is an analysis for a
+class project, not investment advice.
 
 ## Data coverage
 
