@@ -326,9 +326,9 @@ then run `python run_pipeline.py --sample-only` and commit `data/sample/`.
 Scores computed every quarter from 10-Q filings, on trailing-twelve-month
 (TTM) data: each flow (revenue, net income, cash flow...) is the sum of
 the four most recent quarters, and balance sheet items are quarter-end
-values. **Quarterly scores use unaudited 10-Q data, apply the annual
-formulas and cutoffs unchanged, and have NOT been backtested; the
-backtest results above (tests 1 to 12) apply to annual scores only.**
+values. **Quarterly scores apply the same formulas and cutoffs as the annual
+scores to trailing-twelve-month data from unaudited 10-Q filings. They
+have not been backtested: tests 1 to 12 used annual scores only.**
 Annual mode is unchanged: the quarterly work added new modules and new
 tables only, and `tests/test_annual_baseline.py` checks that every annual
 table still has exactly the same contents.

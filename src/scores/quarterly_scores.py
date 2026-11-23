@@ -2,8 +2,9 @@
 
 Applies the annual score code, UNCHANGED, to the TTM rows in
 financials_ttm (CLAUDE.md section 4 and section 5, "Quarterly (TTM)
-scores"). Quarterly scores use unaudited 10-Q data and have NOT been
-backtested; tests 1 to 12 apply to annual scores only.
+scores"). Quarterly scores apply the same formulas and cutoffs as the
+annual scores to trailing-twelve-month data from unaudited 10-Q filings.
+They have not been backtested: tests 1 to 12 used annual scores only.
 
 How the annual code is reused without changing it. Every annual score
 function compares a row with the row for fiscal_year - 1 of the same

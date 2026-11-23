@@ -223,9 +223,11 @@ team member against the filing on sec.gov before it is committed.
 ## Quarterly (TTM) tables
 
 Built by the quarterly upgrade (`python run_pipeline.py --quarterly`).
-They never replace or change an annual table. Quarterly scores use TTM
-data from unaudited 10-Q filings, apply the annual formulas and cutoffs
-unchanged, and have NOT been backtested. Method and decisions:
+They never replace or change an annual table. Quarterly scores apply
+the same formulas and cutoffs as the annual scores to
+trailing-twelve-month data from unaudited 10-Q filings. They have not
+been backtested: tests 1 to 12 used annual scores only. Method and
+decisions:
 docs/methodology.md, "Quarterly (TTM) upgrade". The committed sample
 (`data/sample/`) holds all five for the annual sample's companies.
 

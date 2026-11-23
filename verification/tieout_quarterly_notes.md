@@ -1,8 +1,9 @@
 # Quarterly (TTM) verification notes (step 5)
 
-Quarterly scores use TTM data from unaudited 10-Q filings, apply the
-annual formulas and cutoffs unchanged, and have NOT been backtested;
-tests 1 to 12 apply to annual scores only (CLAUDE.md section 5).
+Quarterly scores apply the same formulas and cutoffs as the annual
+scores to trailing-twelve-month data from unaudited 10-Q filings. They
+have not been backtested: tests 1 to 12 used annual scores only. See
+CLAUDE.md section 5.
 
 Built Nov 22, 2026 from the November 17 SEC download, on branch
 `quarterly`. Reproduce with:

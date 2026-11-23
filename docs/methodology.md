@@ -686,9 +686,9 @@ facts).
 
 ## Quarterly (TTM) upgrade
 
-Quarterly scores use TTM data from unaudited 10-Q filings, apply the
-annual formulas and cutoffs unchanged, and have NOT been backtested;
-tests 1 to 12 apply to annual scores only.
+Quarterly scores apply the same formulas and cutoffs as the annual
+scores to trailing-twelve-month data from unaudited 10-Q filings. They
+have not been backtested: tests 1 to 12 used annual scores only.
 
 The upgrade adds new modules and new tables only. No annual table,
 function result or test changed: `tests/test_annual_baseline.py`
