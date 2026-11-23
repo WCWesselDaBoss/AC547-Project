@@ -622,3 +622,227 @@ added the same day (Phase 1, Tag mapping) then moved flags to 1,708.
 ADI FY2017 stays
 flagged (M -1.348 to -1.355) and AMD FY2018 stays flagged (-0.641 to
 -0.623; its FY2016-17 inputs were ASC 606 restatements).
+
+## Known data issues in the annual pipeline
+
+Found on 2026-11-22 while verifying the quarterly upgrade, by a
+read-only check of the annual tables. The annual tables were not
+changed before submission (the quarterly work changes no annual table,
+and `tests/test_annual_baseline.py` confirms it); the issues are
+recorded here so results can be read with them in mind. No case-study
+company (`data/case_studies.csv`) and none of the three tie-out
+companies (Apple, AMD, Analog Devices) is affected.
+
+### Two 10-Ks with the same fiscal-year label (167 company-years)
+
+`financials.annual_report_index` keeps one 10-K per company and fiscal
+year label and drops the later one (`dropped:duplicate_fiscal_year_label`
+in `data/logs/financials_annual_log.csv`: 167). By type:
+
+| Type | Company-years |
+| --- | --- |
+| Change of fiscal year end (the transition and the new year share a label) | 82 |
+| Two year ends within two weeks (a re-filed 10-K, or a 52/53-week date on either side of the May cutoff) | 68 |
+| Two real fiscal years about a year apart sharing one label (52/53-week years ending on May 31 and then June 1, as at Cal-Maine) | 17 |
+
+Effect on the annual scores:
+
+- 81 scored company-years across 25 companies use an affected year: 33
+  as year t, 26 as year t-1 and 22 only as year t-2.
+- For the 26 that use it as t-1, the "prior year" row is not always the
+  year before. For 23 of them the prior row is 12 to 24 months earlier
+  (10 exactly 24 months, 8 between 14 and 18 months, 5 at 12 months), so
+  their year-over-year indexes can span up to two years.
+- Verdicts near a cutoff in those 81 rows: 18 M-Scores within 0.5 of
+  the -1.78 cutoff, 8 Z'' scores within 0.5 of a zone edge, and 8
+  F-Scores one point from a band edge. The number of flags that would
+  actually change is likely smaller, fewer than about 20, but it has
+  not been computed, because that would require rebuilding those years.
+
+The quarterly tables avoid the problem: they drop and count a year
+whose label equals the previous year's (`fiscal_year_label_used_twice`,
+fix C).
+
+### Facts filed before their period ended (73 facts)
+
+73 facts in `facts_long` have a period end after their filing date,
+which no real report can have (mis-tagged contexts): 67 are originals,
+across 27 companies. 42 of their values, in 12 company-years, are used
+in `financials_annual`, and for 40 of those a later filing reports a
+different value.
+
+Only three scored company-years are touched, all Ligand
+Pharmaceuticals: FY2014 as year t, FY2015 as t-1 and FY2016 as t-2. The
+other affected companies are below the size floor. Ligand's FY2014 row
+repeats its FY2013 figures (for example total assets $104.7M, against
+$258.0M in its FY2014 10-K), taken from a 10-K filed on December 1,
+2014 that tags December 31, 2014 balances. Its FY2014 Z'' (-19.25,
+distress) and its F bands for FY2014 to FY2016 could change with the
+correct values; it has no M-Score.
+
+The quarterly tables avoid the problem: `facts_quarterly` drops such
+facts before choosing originals (`period_end_after_filed_date`, 776
+facts).
+
+## Quarterly (TTM) upgrade
+
+Quarterly scores apply the same formulas and cutoffs as the annual
+scores to trailing-twelve-month data from unaudited 10-Q filings. They
+have not been backtested: tests 1 to 12 used annual scores only.
+
+The upgrade adds new modules and new tables only. No annual table,
+function result or test changed: `tests/test_annual_baseline.py`
+compares every annual table with fingerprints taken before the work
+began. Build with `python run_pipeline.py --quarterly`; verification is
+in `verification/tieout_quarterly_notes.md`.
+
+### facts_quarterly (src/pipeline/quarterly.py)
+
+- **Same facts, same rules as facts_long.** The same companyfacts file,
+  tag map, tag choice per filing (with the revenue guard) and line
+  items, so a line item means the same thing in both modes. Forms 10-Q,
+  10-Q/A, 10-K and 10-K/A; the 10-Ks supply the full-year values needed
+  for the fourth quarter.
+- **Durations.** Flows of 3, 6, 9 and 12 months are kept (bins 80-115,
+  165-200, 250-290 and 350-380 days, counting both ends). The bins are
+  wider than 13-week quarters need because some companies use 12 and
+  16-week quarters (Costco: 12, 12, 12, 16 weeks; Advance Auto Parts:
+  16, 12, 12, 12), yet still exclude calendar 4, 5, 7 and 8-month
+  periods. 10-Q cash flow statements are usually year to date only,
+  which is why 6 and 9-month values are kept.
+- **Fiscal year and quarter.** From the period end, never the `fy`
+  field. Fiscal year ends are financials_annual's plus each company's
+  own 10-K year ends (the latest period end of each 10-K's 12-month
+  facts; fix C). A period end is a quarter end if it is within 7 days of
+  one of the company's own 10-Q or 10-K report dates, or on the 91-day
+  grid within 10 days; the quarter number is the days since the
+  previous year end divided by 91.3, rounded. The fiscal year label is
+  taken from the year end with the annual rule (January to May year
+  ends belong to the prior year).
+- **Years that are not years (fix C).** If two year ends are not 350 to
+  380 days apart, the interval is a change of fiscal year end and its
+  quarters are dropped (`quarter_in_a_fiscal_year_change`), never
+  rounded. If a year's label equals the previous year's (52/53-week
+  years ending on May 31 and then June 1), the annual table kept only
+  the earlier year, so this year's quarters are dropped
+  (`fiscal_year_label_used_twice`). SEC's submissions "reportDate" was
+  tried as a source of year ends and rejected: for some 10-Ks it is the
+  filing date.
+- **Facts filed before their period ended** are mis-tagged and dropped
+  (`period_end_after_filed_date`) before originals are chosen.
+- **Original.** The earliest filing of each company, line item and
+  period. The annual function treats every form other than 10-K as an
+  amendment in its tie-break, which would wrongly count a 10-Q as one,
+  so the quarterly version treats only forms ending in "/A" as
+  amendments.
+
+### Single quarters and TTM (src/pipeline/ttm.py)
+
+- **Quarter ends.** Each fiscal quarter has one quarter-end date. If its
+  facts carry two dates, the one near the company's report date is
+  kept; if both are, the one first filed (fix B, the is_original rule),
+  so a successor's or an amendment's later date never replaces that
+  year's own filing. Every dropped date is logged with its reason.
+- **One tag per year.** Each company, line item and fiscal year gets one
+  XBRL tag (the 10-K's 12-month tag; else the most used year-to-date
+  tag; else the most used tag), and its single quarters are computed
+  from that tag's facts first, falling back to another tag (counted)
+  only when the year tag cannot give a quarter. Without this, a 10-Q's
+  3-month "depreciation" and its year-to-date "depreciation and
+  amortization" were mixed in one TTM.
+- **A single quarter** is the reported 3-month value; else a
+  year-to-date difference (6 months minus Q1, 9 months minus 6 months);
+  Q4 is the 10-K's 12-month value minus the 9-month year to date. A
+  reported 3-month value that contradicts its year-to-date difference is
+  replaced only for two clear filing errors (fix A, below).
+- **TTM.** A flow is the sum of the four most recent single quarters,
+  only if all four exist, each starts the day after the previous one
+  ends (within 8 days), and together they cover 350 to 380 days.
+  Otherwise it is NaN and the reason is counted. Nothing is estimated.
+- **Balances** are the quarter-end value. **derived_items** and the
+  **size floor** use the annual functions unchanged (TTM revenue or
+  quarter-end total assets of at least $100M).
+- **available_date** is the latest filing date of any value in the row,
+  the first day an investor could compute it.
+- **ttm_sources** keeps one signed row per filing behind each value,
+  labeled with the quarter it computes, so every value can be traced to
+  its four quarters and their filings and the rows add up to it.
+
+### Quarterly scores (src/scores/quarterly_scores.py)
+
+- **The annual functions, unchanged, one fiscal quarter at a time.**
+  Every annual score compares a row with the row for fiscal_year - 1.
+  Scoring all Q1 rows together, then all Q2 rows, and so on, makes
+  "prior year" the same quarter one year earlier and the beginning-of-
+  year balance the balance four quarters earlier, as the spec requires,
+  and makes peer groups compare companies at the same fiscal year and
+  quarter.
+- **Years.** Every quarter from FY2012 to the latest filed is scored;
+  the annual FY2025 limit is not applied, because the newest quarters
+  are the point of quarterly mode.
+- **available_date** of a score is the latest of its t, t-1 and t-2
+  rows, so a score never appears before all its inputs were public.
+- **F-Score signal 7 in Q1 to Q3 (option C).** A 10-Q reports the
+  prior share count only at the last fiscal year end, so Q1 to Q3
+  compare the quarter-end count with that year-end count from the same
+  10-Q (split-safe, like the annual rule) and carry
+  `shares_compared_with_prior_year_end`. The window is 3, 6 or 9 months
+  instead of 12, so the signal can differ from a 12-month comparison in
+  either direction. At Q4 the annual rule applies unchanged.
+
+### Limitations of quarterly mode
+
+- Unaudited 10-Q data; NOT backtested (tests 1 to 12 are annual only).
+- Coverage is lower than annual (M 33%, Z'' 80%, F 28% of scored
+  quarters, against 42%, 84% and 34%): every TTM flow needs four
+  complete quarters, so one missing quarter blanks it.
+- Original values are kept, so a quarter later restated or reclassified
+  (for example a business sold and reported as discontinued) stays as
+  first reported; a TTM spanning such a change mixes the old and new
+  basis.
+- 30,172 reported 3-month values disagree with their year-to-date
+  difference and are kept (fix A); most look like revisions of earlier
+  quarters, but they are not checked one by one.
+- Quarters in a change of fiscal year end are dropped, not inferred
+  (Archer-Daniels-Midland has no FY2013 quarters).
+
+### Single quarters must agree with the year to date (fix A, 2026-11-22)
+
+A single quarter can come from a reported 3-month value or from the
+difference of two year-to-date (YTD) values (6 months minus 3, 9 minus
+6, 12 minus 9). The step 5 cross-check found 3-month values that
+contradict the same company's YTD figures: a Q4 "3-month" fact equal to
+the full-year total (AZZ's FY2024 10-K), a 3-month value with the
+opposite sign (U-Haul, quarter ending Dec 2025), and other differences.
+About 95% of the unexplained year-end mismatches had one of these.
+
+Rule (`src/pipeline/ttm.py`, `quarters_from_facts`): where a quarter has
+both, the two are compared (agreement = within 0.5% or $10,000, the
+cross-check tolerance; values reported in thousands can differ by a few
+thousand dollars through rounding). Two disagreements are clear filing
+errors, and the YTD difference replaces the reported value: a Q4
+"3-month" value equal to the full-year total, and a value with the
+opposite sign of the YTD difference. Any other disagreement keeps the
+reported 3-month value. Most of those are revisions, not errors: a later
+10-Q's YTD includes a corrected earlier quarter (in 86% of them the
+3-month value and the YTD come from the same filing), so replacing the
+3-month value would move that correction into the current quarter. That
+would break the original-values rule (what investors saw for the
+quarter). Every disagreement, replaced or kept, is counted by action and
+reason in `data/logs/financials_ttm_log.csv` and listed with both values
+and the filings in `data/logs/ttm_overrides.csv`. A first version
+(2026-11-22) replaced all 30,970 disagreements; it was narrowed the same
+day for this reason.
+
+What this means for verification: tying quarters to the YTD figures
+makes the year-end cross-check (Q4 TTM against `financials_annual`)
+partly automatic for the replaced cases. When Q2 to Q4 all come from
+YTD differences, the four quarters add up to the 12-month value by
+construction, so agreement there no longer shows that the quarters are
+right, only that the 12-month value matches the annual table. The
+cross-check therefore remains a check of the data, not of this rule.
+The independent check is the Excel tie-out
+(`verification/tieout_quarterly.xlsx`): its TTM sheets rebuild every
+input from the source filings with Excel formulas, and each source row
+links to the filing on EDGAR, so a reader can confirm each quarter
+against the 10-Q or 10-K itself.

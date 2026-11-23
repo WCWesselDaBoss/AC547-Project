@@ -219,3 +219,113 @@ team member against the filing on sec.gov before it is committed.
 | event_date | YYYY-MM-DD | Date of the FIRST public disclosure of the problem in a company filing (an investigation, a filing delay tied to an accounting review, or a non-reliance notice); not the later SEC action. A fiscal year counts as "before the event" only if its 10-K was filed before this date | the filing at source_url |
 | source_url | text | sec.gov link to the 8-K, press release exhibit or SEC order that documents the event | EDGAR |
 | note | text | What the source says, plus the later SEC action (release number, date, link, period of misconduct, penalty); only facts stated in the cited sources | SEC releases and filings |
+
+## Quarterly (TTM) tables
+
+Built by the quarterly upgrade (`python run_pipeline.py --quarterly`).
+They never replace or change an annual table. Quarterly scores apply
+the same formulas and cutoffs as the annual scores to
+trailing-twelve-month data from unaudited 10-Q filings. They have not
+been backtested: tests 1 to 12 used annual scores only. Method and
+decisions:
+docs/methodology.md, "Quarterly (TTM) upgrade". The committed sample
+(`data/sample/`) holds all five for the annual sample's companies.
+
+### facts_quarterly
+
+One row per company, line item, period and filing, from 10-Q, 10-Q/A,
+10-K and 10-K/A filings. Built by `src/pipeline/quarterly.py` with the
+same tag map, tag choice and revenue guard as facts_long. Flows of 3, 6,
+9 and 12 months and balance sheet instants; FY2011 onward, no upper
+limit. Drops are counted in `data/logs/facts_quarterly_drops.csv`.
+
+| Column | Type | Meaning | Source |
+| --- | --- | --- | --- |
+| cik | int64 | Company | companyfacts file name |
+| line_item | string | Standard line item or derivation component | `tag_map.ALL_ITEMS` |
+| xbrl_tag | string | us-gaap tag the value was reported under | companyfacts |
+| value | float64 | Reported value in whole dollars (or shares) | companyfacts `val` |
+| unit | string | `USD`, or `shares` for share counts | companyfacts unit |
+| period_start | datetime64[ns] | Start of a flow period; NaT for balance sheet instants | companyfacts `start` |
+| period_end | datetime64[ns] | End of the period or the balance sheet date | companyfacts `end` |
+| fiscal_year | int64 | Label of the fiscal year the period ends in, from that year's end date (same rule as annual; never the `fy` field) | `quarterly.place_quarter` |
+| fiscal_quarter | int64 | 1 to 4, counted from the previous fiscal year end (handles 52/53-week and 12/16-week calendars) | `quarterly.place_quarter` |
+| duration_days | Int64 (nullable) | Period length counting both ends; NA for instants | `periods.period_days` |
+| form | string | `10-Q`, `10-Q/A`, `10-K` or `10-K/A` | companyfacts `form` |
+| accession | string | SEC accession number, with dashes | companyfacts `accn` |
+| filed_date | datetime64[ns] | Date the filing was filed | companyfacts `filed` |
+| filing_url | string | EDGAR filing index page | `facts.edgar_filing_url` |
+| is_original | bool | True for the earliest filing of this company, line item and period (only forms ending in "/A" count as amendments in the tie-break) | `quarterly.mark_is_original_quarterly` |
+
+### financials_ttm
+
+One row per company and fiscal quarter end. Built by
+`src/pipeline/ttm.py` from original facts_quarterly values. Flows are
+trailing-twelve-month (TTM) sums of the four most recent consecutive
+single quarters (NaN, with the reason logged in
+`data/logs/financials_ttm_log.csv`, if any quarter is missing or they are
+not consecutive or do not cover 350 to 380 days); balance sheet items are
+the quarter-end values.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| cik | int64 | Company |
+| fiscal_year | int64 | Fiscal year label of the quarter |
+| fiscal_quarter | int64 | 1 to 4 |
+| period_end | datetime64[ns] | Quarter end (if a quarter has facts on two dates, the one near the company's report date, then first filed; `ttm.choose_quarter_ends`) |
+| available_date | datetime64[ns] | Latest filed_date among every value in the row: the first day an investor could compute it |
+| passes_size_floor | bool | TTM revenue or quarter-end total assets of at least $100M |
+| derived_items | string (nullable) | Line items calculated from other values in the row (`derived_items.apply_derivations`, unchanged) |
+| revenue ... shares_outstanding | float64 | The 18 standard line items: TTM sums for flows, quarter-end values for balances; NaN when missing |
+| income_discontinued_ops ... redeemable_nci | float64 | The 6 derivation components, on the same basis |
+
+### ttm_sources
+
+The filings behind every financials_ttm value, for click-to-trace. Built
+by `src/pipeline/ttm.py`. A flow has rows for each of its four quarters;
+a quarter computed by a difference has one row per filing it uses, with
+the earlier filing's value negative, so a value's rows always add up to
+it. A balance has one row.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| cik | int64 | Company |
+| period_end | datetime64[ns] | The financials_ttm row (quarter end) this source belongs to |
+| line_item | string | Line item or component |
+| component_period_start | datetime64[ns] | Start of the single quarter this row helps compute; NaT for a balance |
+| component_period_end | datetime64[ns] | End of that quarter, or the balance sheet date |
+| value | float64 | The filed value, signed: + as used, - when subtracted |
+| method | string | `reported 3 months`, `year-to-date difference`, `annual minus 9 months` or `quarter-end balance` |
+| accession | string | The filing the value comes from |
+| filing_url | string | Its EDGAR filing index page |
+
+### scores_quarterly
+
+One row per scored company and fiscal quarter end (every quarter from
+FY2012 to the latest filed that passes the size floor, from an included
+company). Built by `src/scores/quarterly_scores.py` with the annual
+score functions, unchanged, run one fiscal quarter at a time: "prior
+year" is the same quarter one year earlier, and peers are companies at
+the same fiscal year and quarter.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| cik, fiscal_year | int64 | Company and fiscal year label |
+| fiscal_quarter | int64 | 1 to 4 |
+| period_end | datetime64[ns] | Quarter end |
+| available_date | datetime64[ns] | Latest available_date of the rows the score uses (t, t-1 and t-2) |
+| basis | string | Always `TTM` |
+| m_score ... missing_inputs | as in `scores` | Every `scores` column, same meaning and type, computed on TTM data. F-Score signal 7 in Q1 to Q3 compares with the prior fiscal year-end share count in the same 10-Q; such rows carry `shares_compared_with_prior_year_end` in missing_inputs |
+
+### score_drivers_quarterly
+
+Zero to three rows per scored company-quarter with an M-Score, built by
+`drivers.build_score_drivers` (unchanged) on scores_quarterly.
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| cik, fiscal_year | int64 | Company and fiscal year label |
+| fiscal_quarter | int64 | 1 to 4 |
+| period_end, available_date | datetime64[ns] | As in scores_quarterly |
+| basis | string | Always `TTM` |
+| driver_rank ... explanation | as in `score_drivers` | Same meaning and type |

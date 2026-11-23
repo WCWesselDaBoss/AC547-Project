@@ -10,7 +10,8 @@ team checked each one against the source paper.
 import streamlit as st
 
 import config
-from app import about_view, company_view, data, labels
+from app import about_quarterly, about_view, basis, company_view, data
+from app import labels
 
 st.title("About and limitations")
 st.markdown(labels.APP_TAGLINE)
@@ -153,10 +154,56 @@ st.markdown("""
 Full details: `docs/methodology.md`.
 """)
 
+# ---- Quarterly (TTM) scores -------------------------------------------------
+# Shown only when the data on screen has the quarterly tables.
+if data.quarterly_available():
+    st.subheader("Quarterly (TTM) scores")
+    st.warning(basis.QUARTERLY_NOTE, icon=":material/warning:")
+    quarterly_df = data.scores_quarterly()
+    quarterly = about_quarterly.quarterly_summary(quarterly_df)
+    latest_end = company_view.long_date(quarterly["latest_quarter_end"])
+    latest_available = company_view.long_date(quarterly["latest_available"])
+    st.markdown(f"""
+Switch **Scores** in the sidebar to **Quarterly (TTM)** to see the same
+three checks every quarter. Each flow (revenue, net income, cash flow...)
+is the trailing twelve months: the sum of the four most recent quarters
+from 10-Q and 10-K filings, as first reported. Balance sheet items are
+quarter-end values. "Last year" means the same quarter one year earlier,
+and peers are companies at the same fiscal quarter. On the price chart,
+diamonds mark each quarterly score on the day its latest input was filed.
+
+On the data on screen: {quarterly['companies']:,} companies and
+{quarterly['company_quarters']:,} scored company-quarters; the latest
+quarter ends {latest_end}, and the latest quarterly score became
+available on {latest_available}.
+
+- **{basis.NOT_ENOUGH_DATA}.** Every flow needs four complete quarters,
+  this year and last, so quarterly scores are missing more often than
+  annual ones (coverage below).
+- **Unaudited, and not backtested.** 10-Q figures are reviewed, not
+  audited, and the warning rates in the backtests apply to annual
+  scores only.
+- **As first reported.** A quarter later restated or reclassified stays
+  as first reported. A reported 3-month value is replaced only for two
+  tagging errors: a fourth-quarter value equal to the full year, and a
+  value with the opposite sign of the year-to-date figures.
+- **New shares (F-Score test 7)** in the first three quarters compares
+  with the share count at the last fiscal year end, from the same 10-Q,
+  so the window is 3, 6 or 9 months instead of 12.
+- **Changes of fiscal year end:** quarters between two year ends that
+  are not a year apart are left out rather than guessed.
+""")
+    st.dataframe(
+        about_quarterly.quarterly_coverage_table(quarterly_df),
+        hide_index=True,
+        width="stretch",
+    )
+
 # ---- Keeping it current -----------------------------------------------------
 st.subheader("Keeping the data current")
 st.markdown(
     "After each 10-K season, rerun `python run_pipeline.py` to download "
-    "the latest SEC files and rebuild every table. The app picks up the "
-    "new tables the next time it starts."
+    "the latest SEC files and rebuild every table (add `--quarterly` for "
+    "the quarterly scores, which can be refreshed after every 10-Q "
+    "season). The app picks up the new tables the next time it starts."
 )

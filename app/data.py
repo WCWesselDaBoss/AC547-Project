@@ -15,12 +15,15 @@ import pandas as pd
 import streamlit as st
 
 import config
+from app import basis
 
 # Session-state keys that carry the company chosen on one page (screener,
 # case studies) to the company detail page. They are also the keys of the
 # company page's own pickers, so choosing there updates them directly.
 SELECTED_CIK = "selected_cik"
 SELECTED_YEAR = "selected_fiscal_year"
+# Quarterly mode also hands over the fiscal quarter (1 to 4).
+SELECTED_QUARTER = "selected_fiscal_quarter"
 
 # Screener widget keys. The company page reads SCREENER_CUTOFF so its
 # M-Score card uses the same cutoff the analyst chose in the screener.
@@ -32,6 +35,8 @@ SCREENER_KEYS = [
     SCREENER_CUTOFF,
     "screener_zones",
     "screener_f_range",
+    # Quarterly mode's period picker: (fiscal_year, fiscal_quarter).
+    "screener_quarter",
 ]
 
 # The case shown on the case studies page.
@@ -39,7 +44,13 @@ CASE_INDEX = "case_index"
 
 # Every widget value that must survive moving between pages (see
 # keep_widget_state).
-PERSISTENT_KEYS = SCREENER_KEYS + [SELECTED_CIK, SELECTED_YEAR, CASE_INDEX]
+PERSISTENT_KEYS = SCREENER_KEYS + [
+    SELECTED_CIK,
+    SELECTED_YEAR,
+    SELECTED_QUARTER,
+    CASE_INDEX,
+    basis.BASIS_KEY,
+]
 
 # The fixture source has its own made-up case file, so tests never depend
 # on the real, hand-curated data/case_studies.csv.
@@ -174,6 +185,74 @@ def company_facts(cik):
 def company_financials(cik):
     """Return financials_annual rows for one company in the source."""
     return load_company_financials(resolve_data_source()[1], cik)
+
+
+def quarterly_available():
+    """Return True if the current data source has the quarterly tables
+    (the test fixtures and an annual-only build do not)."""
+    return basis.quarterly_tables_present(resolve_data_source()[1])
+
+
+def current_basis():
+    """Return basis.QUARTERLY if the analyst chose it and the tables are
+    there, else basis.ANNUAL (the default, always)."""
+    chosen = st.session_state.get(basis.BASIS_KEY, basis.ANNUAL)
+    if chosen == basis.QUARTERLY and quarterly_available():
+        return basis.QUARTERLY
+    return basis.ANNUAL
+
+
+def scores_quarterly():
+    """Return the scores_quarterly table for the current data source."""
+    return load_table(resolve_data_source()[1], "scores_quarterly")
+
+
+def score_drivers_quarterly():
+    """Return score_drivers_quarterly for the current data source."""
+    return load_table(resolve_data_source()[1], "score_drivers_quarterly")
+
+
+def financials_ttm_size():
+    """Return the financials_ttm columns the quarterly screener needs:
+    quarter-end total assets (size band) and the size-floor flag."""
+    columns = (
+        "cik",
+        "fiscal_year",
+        "fiscal_quarter",
+        "total_assets",
+        "passes_size_floor",
+    )
+    return load_table(resolve_data_source()[1], "financials_ttm", columns)
+
+
+@st.cache_data(show_spinner="Loading filing details...", max_entries=64)
+def load_company_quarterly(data_dir, cik, table):
+    """Return one quarterly table's rows for one company (financials_ttm,
+    ttm_sources or facts_quarterly), read with a Parquet filter: these
+    tables are millions of rows, and the trace needs one company."""
+    path = Path(data_dir) / f"{table}.parquet"
+    return pd.read_parquet(path, filters=[("cik", "==", int(cik))])
+
+
+def company_ttm(cik):
+    """Return financials_ttm rows for one company."""
+    return load_company_quarterly(
+        resolve_data_source()[1], cik, "financials_ttm"
+    )
+
+
+def company_ttm_sources(cik):
+    """Return ttm_sources rows (the filings behind each TTM value) for one
+    company."""
+    return load_company_quarterly(resolve_data_source()[1], cik, "ttm_sources")
+
+
+def company_facts_quarterly(cik):
+    """Return facts_quarterly rows for one company (the quarterly trace
+    reads its share counts for F-Score test 7)."""
+    return load_company_quarterly(
+        resolve_data_source()[1], cik, "facts_quarterly"
+    )
 
 
 def case_studies_path():

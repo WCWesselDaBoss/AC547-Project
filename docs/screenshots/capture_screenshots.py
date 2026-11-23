@@ -102,6 +102,33 @@ SHOTS = [
         True,
     ),
     ("08_about.png", "/about", "Keeping the data current", None, None, True),
+    # Quarterly (TTM) mode, opened by the ?basis=quarterly deep link.
+    # Under Armour FY2015 Q3: M-Score flagged, no F-Score (the "not
+    # enough quarterly data" card).
+    (
+        "11_screener_quarterly.png",
+        "/?basis=quarterly",
+        "match your filters",
+        None,
+        None,
+        True,
+    ),
+    (
+        "12_company_quarterly.png",
+        "/company?basis=quarterly&cik=1336917&year=2015&quarter=3",
+        "checks raised concerns",
+        None,
+        None,
+        True,
+    ),
+    (
+        "13_trace_popup_quarterly.png",
+        "/company?basis=quarterly&cik=1336917&year=2015&quarter=3",
+        "checks raised concerns",
+        "Trace to the filings",
+        "The quarters and filings behind each input",
+        False,
+    ),
 ]
 
 # Close-ups of the price chart for the backup slides: (file name, path,
@@ -120,6 +147,12 @@ CHART_SHOTS = [
         "/case-studies?case=1",
         "earnings manipulation check",
         CHART_HEADING,
+    ),
+    (
+        "14_price_chart_quarterly.png",
+        "/company?basis=quarterly&cik=1336917&year=2015&quarter=3",
+        "checks raised concerns",
+        "Stock price, 10-K and quarterly warnings",
     ),
 ]
 

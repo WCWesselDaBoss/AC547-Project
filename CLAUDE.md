@@ -60,6 +60,11 @@ Phases hand off only through these Parquet tables in `data/processed/`. Column n
 | `score_drivers` | Phase 2 | 3 | company, fiscal year, driver | cik, fiscal_year, driver_rank (1 to 3), component (for example DSRI), component_value, contribution, explanation (plain-English sentence) |
 | `returns` (stretch) | Phase 2 | 3 | company, fiscal year | cik, fiscal_year, filed_date, ticker, ret_12m, mkt_ret_12m, excess_ret_12m, has_full_price_history |
 | `case_studies.csv` | Phase 3 | 3 | case | cik, name, event_type, event_date, source_url, note |
+| `facts_quarterly` | Quarterly upgrade | Quarterly upgrade, 3 | company, line item, period, filing | cik, line_item, xbrl_tag, value, unit, period_start, period_end, fiscal_year, fiscal_quarter, duration_days, form, accession, filed_date, filing_url, is_original |
+| `financials_ttm` | Quarterly upgrade | Quarterly upgrade | company, fiscal quarter end | cik, fiscal_year, fiscal_quarter, period_end, available_date, passes_size_floor, derived_items, then the same line-item and component columns as `financials_annual` (TTM sums for flows, quarter-end values for balance sheet items) |
+| `ttm_sources` | Quarterly upgrade | 3 (click-to-trace) | company, quarter end, line item, component | cik, period_end, line_item, component_period_start, component_period_end, value, method, accession, filing_url |
+| `scores_quarterly` | Quarterly upgrade | 3 | company, fiscal quarter end | the `scores` columns, plus fiscal_quarter, period_end, available_date, basis |
+| `score_drivers_quarterly` | Quarterly upgrade | 3 | company, fiscal quarter end, driver | the `score_drivers` columns, plus fiscal_quarter, period_end, available_date, basis |
 
 Verdict columns in `scores`. `f_band` is "weak" (F-Score 0 to 3), "middle" (4 to 6) or "strong" (7 to 9). These bands are our team's convention for display, not Piotroski's; his paper compared the highest and lowest scores. `flags_raised` counts how many of the three checks show a warning (0 to 3): M-Score above the cutoff, Z'' in the distress zone, or F-Score in the weak band. We deliberately do not combine the three models into one weighted score, because no published method supports a weighting. Band edges and the cutoff live in `config.py`.
 
@@ -76,6 +81,13 @@ How `score_drivers` ranks the M-Score components. Each index's contribution is i
 - **score_drivers:** zero to three rows per company-year with an M-Score (none when no component has a positive contribution); driver_rank `int64` (1 = largest contribution); component `string` (`DSRI`, `GMI`, `AQI`, `SGI`, `DEPI`, `SGAI`, `TATA`, `LVGI`); component_value, contribution `float64` (contribution always > 0); explanation `string`.
 - **returns:** filed_date `datetime64[ns]`; ticker `string`; ret_12m, mkt_ret_12m, excess_ret_12m `float64` (decimals); has_full_price_history `bool`.
 - **case_studies.csv:** cik integer; name, event_type, source_url, note text; event_date `YYYY-MM-DD`.
+
+**Quarterly (TTM) tables.** Built by the quarterly upgrade (`src/pipeline/quarterly.py` and new modules only) and used by the app's quarterly mode. They never replace or change an annual table, function result or test; `tests/test_annual_baseline.py` fails if any annual table changes. Types follow the general rules above, plus:
+
+- **facts_quarterly:** the `facts_long` types, plus fiscal_quarter `int64` (1 to 4) and duration_days nullable `Int64` (days from period_start to period_end; NA for balance sheet instants). unit is `USD`, or `shares` for share counts (the F-Score's new-shares signal needs them). Facts come from 10-Qs, plus the 10-K facts needed for the fourth quarter. fiscal_year comes from period_end (never the `fy` field) and fiscal_quarter from the company's fiscal year end in its 10-Ks, allowing for 52/53-week years. is_original follows the `facts_long` rule (earliest filing wins).
+- **financials_ttm:** fiscal_year, fiscal_quarter `int64`; period_end, available_date `datetime64[ns]` (available_date = the latest filed_date among all of the row's components, the first day an investor could compute it); passes_size_floor `bool` (TTM revenue or quarter-end total assets of at least $100M); derived_items `string`; line-item and component columns `float64`, as in `financials_annual`. A flow is the sum of the four most recent consecutive single quarters; if one is missing or they are not consecutive, it is NaN and the reason is logged.
+- **ttm_sources:** period_end, component_period_start, component_period_end `datetime64[ns]`; line_item, method, accession, filing_url `string`; value `float64`. method is one of "reported 3 months", "year-to-date difference", "annual minus 9 months" or "quarter-end balance". A component computed by a difference has one row per filing it uses.
+- **scores_quarterly and score_drivers_quarterly:** the `scores` and `score_drivers` types, plus fiscal_quarter `int64`, period_end and available_date `datetime64[ns]`, and basis `string` (always "TTM"). In the scores, "prior year" is the TTM ending four quarters earlier and a "beginning of year" balance is the balance sheet four quarters earlier; peer percentiles compare companies at the same fiscal year and quarter.
 
 **Rules for `facts_long` (these are where XBRL data goes wrong):**
 
@@ -96,6 +108,7 @@ How `score_drivers` ranks the M-Score components. Each index's contribution is i
 
 - `data/sample/` is committed and holds the four Phase 1 tables (`companies`, `facts_long`, `financials_annual`, `prices`) for 50 real companies plus SPY, with exactly the columns and types above, plus `scores.parquet`, `score_drivers.parquet` and `returns.parquet` computed from those sample tables (`python -m src.scores.build_scores --sample`, `python -m src.scores.drivers --sample`, `python -m src.scores.returns --sample`; `run_pipeline.py` does all three after every sample rebuild). Phases 2 and 3 develop and demo against it whenever `data/processed/` is not present locally. Unit tests still use small hand-checkable fixtures in `tests/fixtures/` with the same columns and types, because sample values can change when the data is refreshed.
 - Peer groups and percentile ranks computed on the 50-company sample are illustrative only; real rankings need the full tables.
+- The quarterly upgrade adds `facts_quarterly`, `financials_ttm` and `ttm_sources` for the same sample companies (`python -m src.pipeline.quarterly_sample`, which reads `data/sample/companies.parquet`), plus `scores_quarterly` and `score_drivers_quarterly` computed from those sample tables (`python -m src.scores.quarterly_scores --sample`). `python run_pipeline.py --quarterly` rebuilds them after the annual sample; a run without `--quarterly` leaves them as they are.
 - Every CIK in `data/case_studies.csv` is automatically included in the sample (`src/pipeline/sample.py` reads that file). After adding or changing a case study, rebuild the sample with `python run_pipeline.py --sample-only` and commit `data/sample/`. Do not add case-study CIKs to Phase 1 code or `config.py`.
 - Rebuilding the sample needs the full tables in `data/processed/`, which are gitignored. If they are missing, do not edit Phase 1 code to work around it: either run `python run_pipeline.py` (downloads about 3 GB; needs `SEC_USER_AGENT` set) or ask the Phase 1 owner to rebuild and push the sample.
 
@@ -163,6 +176,13 @@ Nine pass/fail signals, one point each (0 to 9):
 - Each signal is True, False, or NA (cannot be determined). Following section 2, `f_score` is NA if any signal is NA. The one exception is signal 5: if long-term debt is missing in any year it needs, signal 5 is NA but counts as 0 points, `f_score` is still computed, and the row is flagged in `missing_inputs`. This matches the LVGI rule. A missing value never earns a point, so the exception can only understate a score.
 - Missing cost of revenue gets no exception. A company that reports no COGS (services, software) has no gross margin to compare, so GMI, M-Score, signal 8 and F-Score are NA.
 - "Higher" and "lower" are strict. A tie earns no point, because Piotroski awards points only for improvement. Two ratios count as tied when they differ by no more than `config.F_SCORE_TIE_TOLERANCE` (relative). This keeps floating-point rounding from deciding a signal.
+
+### Quarterly (TTM) scores
+
+Quarterly scores apply the same formulas and cutoffs as the annual scores to trailing-twelve-month data from unaudited 10-Q filings. They have not been backtested: tests 1 to 12 used annual scores only.
+
+- **F-Score signal 7 in Q1 to Q3 (decided Nov 22, option C).** A 10-Q reports the prior share count only at the last fiscal year end, not at the same quarter a year earlier. So in Q1 to Q3, signal 7 compares the quarter-end count with the prior fiscal year-end count reported in the same 10-Q (split-safe, like the annual rule), and the row carries `shares_compared_with_prior_year_end` in `missing_inputs`. The window is 3, 6 or 9 months instead of 12, so the signal can differ from a 12-month comparison in either direction (for example, a buyback early in the trailing year is not seen). At Q4 the annual rule applies unchanged.
+- **Years and dates.** Every quarter from FY2012 to the latest filed is scored (no FY2025 limit). A score's `available_date` is the latest `available_date` of the rows it uses (t, t-1, t-2).
 
 ### Accruals and cash conversion
 

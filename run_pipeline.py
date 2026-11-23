@@ -5,6 +5,7 @@ Usage:
     python run_pipeline.py --skip-download  # build from data/raw only
     python run_pipeline.py --sample-only    # rebuild data/sample/ only
     python run_pipeline.py --scores-only    # rebuild scores + returns only
+    python run_pipeline.py --quarterly      # also build the TTM tables
 
 Stages run in dependency order; each one reads the previous one's output
 from data/processed/ (CLAUDE.md section 4), so any stage can also be run
@@ -15,8 +16,9 @@ import argparse
 import time
 
 from src.pipeline import companies, download, facts, financials
-from src.pipeline import prices, sample
-from src.scores import build_scores, drivers, returns
+from src.pipeline import prices, quarterly, quarterly_sample, sample
+from src.pipeline import ttm
+from src.scores import build_scores, drivers, quarterly_scores, returns
 
 
 def run_stage(name, function, *args, **kwargs):
@@ -45,6 +47,11 @@ def parse_args(argv=None):
         action="store_true",
         help="only rebuild scores and returns from existing Phase 1 tables",
     )
+    parser.add_argument(
+        "--quarterly",
+        action="store_true",
+        help="also build the quarterly (TTM) tables, after the annual ones",
+    )
     return parser.parse_args(argv)
 
 
@@ -65,6 +72,16 @@ def main(argv=None):
         run_stage("7. score drivers", drivers.main, [])
         # Stretch goal (section 7): 12-month returns after each 10-K.
         run_stage("8. returns", returns.main, [])
+    # Quarterly upgrade: NEW tables only, built after every annual table
+    # and only on request (--quarterly), so a run without the option does
+    # exactly what it did before (tests/test_annual_baseline.py).
+    if args.quarterly and not (args.sample_only or args.scores_only):
+        run_stage("Q1. facts_quarterly", quarterly.main)
+        run_stage("Q2. financials_ttm and ttm_sources", ttm.main)
+    if args.quarterly and not args.sample_only:
+        run_stage(
+            "Q3. quarterly scores and drivers", quarterly_scores.main, []
+        )
     if not args.scores_only:
         run_stage("9. sample", sample.main)
     # Scores for the sample are computed from the sample's own tables, so
@@ -73,6 +90,14 @@ def main(argv=None):
     run_stage("10. sample scores", build_scores.main, ["--sample"])
     run_stage("11. sample score drivers", drivers.main, ["--sample"])
     run_stage("12. sample returns", returns.main, ["--sample"])
+    # Quarterly sample: the same companies as the annual sample, with
+    # scores computed from the sample's own quarterly tables.
+    if args.quarterly and not args.scores_only:
+        run_stage("Q4. quarterly sample tables", quarterly_sample.main)
+    if args.quarterly:
+        run_stage(
+            "Q5. quarterly sample scores", quarterly_scores.main, ["--sample"]
+        )
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ sys.path.insert(0, PROJECT_ROOT)
 
 import streamlit as st  # noqa: E402
 
-from app import data, labels, style  # noqa: E402
+from app import basis, data, labels, style  # noqa: E402
 
 st.set_page_config(
     page_title=labels.APP_TITLE,
@@ -88,5 +88,30 @@ with st.sidebar:
         labels.data_source_note(source, company_count),
         icon=":material/database:",
     )
+    # Annual or quarterly (TTM) scores. Annual is the first option, so
+    # it is always the default in a new session.
+    if data.quarterly_available():
+        # A deep link (?basis=quarterly) opens quarterly mode once (demo
+        # bookmarks and the screenshot script); afterwards the radio is
+        # in charge. Read before the radio is drawn, as Streamlit needs.
+        linked_basis = st.query_params.get("basis")
+        if linked_basis is not None:
+            del st.query_params["basis"]
+            if linked_basis in basis.BASIS_LABELS:
+                st.session_state[basis.BASIS_KEY] = linked_basis
+        st.radio(
+            "Scores",
+            list(basis.BASIS_LABELS),
+            format_func=basis.BASIS_LABELS.get,
+            key=basis.BASIS_KEY,
+            help=(
+                "Annual: from each 10-K. Quarterly: trailing twelve months "
+                "from 10-Q filings, updated every quarter."
+            ),
+        )
+        if data.current_basis() == basis.QUARTERLY:
+            st.warning(basis.QUARTERLY_NOTE, icon=":material/warning:")
+    else:
+        st.caption("Quarterly scores are not in this data source.")
 
 navigation.run()
