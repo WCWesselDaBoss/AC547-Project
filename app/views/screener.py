@@ -9,7 +9,7 @@ using Phase 2's own function (see app/screening.py).
 import streamlit as st
 
 import config
-from app import data, labels, screening
+from app import basis, data, labels, screening
 
 st.title("Screener")
 st.markdown(
@@ -18,21 +18,47 @@ st.markdown(
     "most concerns are listed first."
 )
 
-scores_df = data.scores()
 companies_df = data.companies()
-financials_df = data.financials_size()
 source, _ = data.resolve_data_source()
+quarterly = data.current_basis() == basis.QUARTERLY
+if quarterly:
+    st.info(basis.QUARTERLY_NOTE, icon=":material/warning:")
 
 # ---- Filters, row 1: which companies -------------------------------------
-years = sorted(scores_df["fiscal_year"].unique(), reverse=True)
 year_column, industry_column, size_column = st.columns([1, 3, 2])
-fiscal_year = year_column.selectbox(
-    "Fiscal year",
-    years,
-    format_func=lambda year: f"FY{year}",
-    key="screener_year",
-    help="Scores use the numbers as first reported in that year's 10-K.",
-)
+if quarterly:
+    # One fiscal quarter at a time: inside a quarter each company has one
+    # row per fiscal year, so the annual screening functions apply as is.
+    all_quarterly = data.scores_quarterly()
+    fiscal_year, fiscal_quarter = year_column.selectbox(
+        "Fiscal quarter",
+        basis.quarter_options(all_quarterly),
+        format_func=lambda period: basis.period_label(*period),
+        key="screener_quarter",
+        help=(
+            "Scores use the trailing twelve months ending that quarter, "
+            "as first reported in 10-Q and 10-K filings."
+        ),
+    )
+    scores_df = basis.one_quarter(all_quarterly, fiscal_year, fiscal_quarter)
+    financials_df = basis.one_quarter(
+        data.financials_ttm_size(), fiscal_year, fiscal_quarter
+    )
+    period_text = basis.period_label(fiscal_year, fiscal_quarter)
+    size_text = "Size (total assets at quarter end)"
+else:
+    scores_df = data.scores()
+    financials_df = data.financials_size()
+    years = sorted(scores_df["fiscal_year"].unique(), reverse=True)
+    fiscal_year = year_column.selectbox(
+        "Fiscal year",
+        years,
+        format_func=lambda year: f"FY{year}",
+        key="screener_year",
+        help="Scores use the numbers as first reported in that year's 10-K.",
+    )
+    period_text = f"FY{fiscal_year}"
+    size_text = "Size (total assets that year)"
 screen_df = screening.screen_table(
     scores_df, companies_df, financials_df, fiscal_year
 )
@@ -43,7 +69,7 @@ industries = industry_column.multiselect(
     key="screener_industries",
 )
 sizes = size_column.multiselect(
-    "Size (total assets that year)",
+    size_text,
     list(config.APP_SIZE_BANDS),
     placeholder="All sizes",
     key="screener_sizes",
@@ -97,7 +123,7 @@ shown_df = screening.sort_by_risk(
 
 st.markdown(
     f"**{len(shown_df):,}** of {len(screen_df):,} companies scored in "
-    f"FY{fiscal_year} match your filters."
+    f"{period_text} match your filters."
 )
 
 if shown_df.empty:
@@ -107,8 +133,14 @@ if shown_df.empty:
         icon=":material/filter_alt_off:",
     )
 else:
+    table_df = screening.display_table(shown_df)
+    if quarterly:
+        # A missing quarterly score says why, never just "No score".
+        table_df = basis.label_missing_quarterly(
+            table_df, list(labels.CHECK_NAMES.values())
+        )
     selection = st.dataframe(
-        screening.display_table(shown_df),
+        table_df,
         hide_index=True,
         width="stretch",
         on_select="rerun",
@@ -130,11 +162,15 @@ else:
     st.caption(
         "Select a row to open that company's detail page. " + labels.SCOPE_NOTE
     )
+    if quarterly:
+        st.caption(f"{basis.NOT_ENOUGH_DATA_SHORT}: {basis.NOT_ENOUGH_DATA}.")
     # Hand the chosen company to the detail page through session state.
     if selection.selection.rows:
         chosen = shown_df.iloc[selection.selection.rows[0]]
         st.session_state[data.SELECTED_CIK] = int(chosen["cik"])
         st.session_state[data.SELECTED_YEAR] = int(fiscal_year)
+        if quarterly:
+            st.session_state[data.SELECTED_QUARTER] = int(fiscal_quarter)
         st.switch_page("views/company.py")
 
 # ---- Who is not in this list, and why ------------------------------------
@@ -158,7 +194,7 @@ else:
     )
 st.caption(
     f"**Not in this list:** {excluded_text} {below_floor:,} companies "
-    f"fell below the {floor_text} size floor in FY{fiscal_year}."
+    f"fell below the {floor_text} size floor in {period_text}."
 )
 
 with st.expander("Why are some companies or scores missing?"):
@@ -175,13 +211,20 @@ with st.expander("Why are some companies or scores missing?"):
     st.markdown(
         f"**Companies below the size floor.** A company-year is scored "
         f"only if revenue or total assets is at least {floor_text}. "
-        f"FY{fiscal_year}: {below_floor:,}."
+        f"{period_text}: {below_floor:,}."
     )
 
+    blank_reason = (
+        f"{basis.NOT_ENOUGH_DATA}: a quarterly score is left out rather "
+        "than estimated when an input is missing for any of the quarters "
+        "it needs."
+        if quarterly
+        else "A score is left blank rather than estimated when an input "
+        "was not reported in the 10-K."
+    )
     st.markdown(
-        f"**Scores that could not be calculated in FY{fiscal_year}.** "
-        "A score is left blank rather than estimated when an input was "
-        "not reported in the 10-K."
+        f"**Scores that could not be calculated in {period_text}.** "
+        + blank_reason
     )
     for check, count in screening.blank_score_counts(screen_df).items():
         st.markdown(f"- {check}: {count:,} of {len(screen_df):,} blank")
