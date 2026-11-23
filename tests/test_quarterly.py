@@ -214,6 +214,15 @@ def fake_company():
             "filed": "2024-04-15",
             "fy": 2024,
         },
+        {
+            "start": "2024-07-01",
+            "end": "2024-09-30",
+            "val": 999.0,
+            "accn": "f1",
+            "form": "10-Q",
+            "filed": "2024-08-01",
+            "fy": 2024,
+        },
     ]
     return {"facts": {"us-gaap": {"Revenues": {"units": {"USD": revenue}}}}}
 
@@ -234,6 +243,8 @@ def test_company_rows_keep_quarterly_facts():
     assert kept["duration_days"].tolist() == [91, 182, 366]
     assert drops[quarterly.DROP_DURATION] == 1
     assert drops[quarterly.DROP_FORM] == 1
+    # The Q3 value filed Aug 1, before Q3 ended (Sept 30), is dropped.
+    assert drops[quarterly.DROP_AFTER_FILING] == 1
 
 
 def test_company_without_a_10k_year_end_is_counted():

@@ -74,6 +74,7 @@ DROP_DURATION = "duration_not_3_6_9_or_12_months"
 DROP_YEAR = "fiscal_year_before_2011"
 DROP_NO_YEAR_END = "no_fiscal_year_end_from_10k"
 DROP_OFF_QUARTER = "period_end_not_at_a_quarter_end"
+DROP_AFTER_FILING = "period_end_after_filed_date"
 
 FACTS_QUARTERLY_COLUMNS = [
     "cik",
@@ -131,6 +132,14 @@ def quarterly_facts_from_company(cik, company_facts, tag_regex, drops):
                     drops[DROP_FORM] += 1
                     continue
                 end = periods.to_date(fact["end"])
+                filed = periods.to_date(fact["filed"])
+                # A filing cannot report a period that has not ended yet;
+                # such facts are mis-tagged contexts (635 found). Dropped
+                # before the original is chosen, so the real, later
+                # filing becomes the original.
+                if end > filed:
+                    drops[DROP_AFTER_FILING] += 1
+                    continue
                 start = periods.to_date(fact.get("start"))
                 duration = None
                 if start is not None:
@@ -154,7 +163,7 @@ def quarterly_facts_from_company(cik, company_facts, tag_regex, drops):
                         "value": float(fact["val"]),
                         "form": fact["form"],
                         "accession": fact["accn"],
-                        "filed_date": periods.to_date(fact["filed"]),
+                        "filed_date": filed,
                     }
                 )
     return rows
