@@ -242,6 +242,7 @@ every registered test is reported, whatever it shows.
 | 12 | Test 11 repeated for drops of 10% to 90% (below) | Registered 2026-11-19 after seeing test 11, before any test-12 result was computed | Run 2026-11-19 (exploratory): Flagged fell faster at every drop size, all nine log-rank p-values below the Bonferroni bar |
 | 13 | Do quarterly (TTM) flags predict blowups, and do they add anything beyond the annual flags? Questions (a) and (b) below | Registered 2026-11-22 before any test-13 result was computed. Quarterly flags are new, but the years and outcomes were already studied with annual flags in tests 10 to 12, so this is supporting evidence | Run 2026-11-22: (a) passed (t = 11.56); (b) passed (t = 6.47, with annual-Flagged also significant, t = 6.09) |
 | 13a | Wording fix: test 13's entry rule (below) | Made 2026-11-22 before any test-13 result was computed: the registered entry is the first trading day strictly after `available_date`, as specified; the entry had wrongly called this "test 11's start rule" (test 11 starts on or after the filing date) | Definition unchanged |
+| 14 | Does excluding flagged companies from a large-company portfolio reduce blowups and drawdowns without hurting returns? Questions (a) and (b) below | Registered 2026-11-23 before any test-14 result was computed; years already studied in tests 1 to 13, so supporting evidence | Not yet run |
 
 Tests 3, 4 and 6 were chosen after seeing results, so they are
 exploratory: they suggest ideas but cannot confirm them.
@@ -1072,6 +1073,104 @@ address this, but the effective sample is the 880 companies, not
 were already studied with annual flags in tests 10 to 12, so this is
 supporting evidence, not confirmation; correlation, not cause. This is
 an analysis for a class project, not investment advice.
+
+### Test 14: large companies without flagged stocks, quarterly (registered before running)
+
+Registered before any test-14 result was computed; years already studied
+in tests 1 to 13, so supporting evidence. The definitions below are
+fixed.
+
+- **Rebalance dates.** The end of each calendar quarter from 2013-12-31
+  to 2025-09-30 (48 dates); trades on the last trading day on or before
+  each date (`backtest.holding_periods`), so the portfolios are held
+  through the 48 calendar quarters 2014Q1 to 2025Q4. The last holding
+  period ends on the last trading day on or before 2025-12-31.
+- **Base portfolio.** On each rebalance date, the test-9 `large_500`
+  pool, built by the same code (`backtest.universe_picks`,
+  `book_to_market` with data fixes 9a and 9b, `large_cap_picks`): the
+  500 companies in the comparison group (latest annual score usable, a
+  current ticker, a price on each of the last 20 trading days, an
+  adjusted close of at least $5) with the largest plausible public
+  float. Unlike test 9, every portfolio here is **equal-weighted** over
+  the stocks it holds.
+- **Flags known at each rebalance (point in time).**
+  - Annual: the company's latest annual score whose 10-K was filed
+    strictly before the trade date and at most 15 months before it
+    (`backtest.latest_scores`, the same row the pool uses); flagged if
+    `flags_raised` >= 1.
+  - Quarterly: the company's latest `scores_quarterly` row whose
+    `available_date` is strictly before the trade date and at most 15
+    months before it (the annual flag's age limit, so a company that
+    stopped filing 10-Qs does not keep an old flag); flagged if
+    `flags_raised` >= 1. The median age is reported.
+  - A stock with no usable flag (no flag count, or no quarterly row)
+    stays in.
+- **Portfolios**, rebalanced on the same dates, equal-weighted over the
+  stocks that remain:
+  - Base: the `large_500` pool;
+  - A: the pool minus stocks with an annual flag;
+  - B: the pool minus stocks flagged by either the annual or the
+    quarterly flag;
+  - P (descriptive, **chosen after seeing test 13**, exploratory): the
+    pool minus stocks persistently quarterly-flagged: the latest
+    quarterly row flagged and the same company's quarter one year
+    earlier (four fiscal quarters back) also flagged.
+- **Simulation** (written for this test, because the earlier tests sell
+  everything each period while this test charges actual turnover):
+  $100,000 starting value; on each trade date the portfolio is reset to
+  equal weights over its stocks, and between trade dates each position
+  moves with its own adjusted close (buy and hold). A stock whose prices
+  stop is exited at its last real price, and that money earns nothing
+  until the next trade date (the earlier tests' rule). Nothing is ever
+  invented.
+- **Turnover and costs.** At each trade date, turnover = half the sum,
+  over all stocks, of the absolute difference between the new target
+  weight and the weight just before trading (each stock's drifted value
+  over the portfolio's value; cash from an exited stock counts as a
+  weight to be traded). The first date is a full purchase (turnover 1).
+  Cost = c x (sum of absolute weight changes) x portfolio value, so
+  every dollar bought or sold pays c; results at c = 0 and 10 basis
+  points.
+- **Measures, per portfolio, over 2014-01-02 to 2025-12-31.**
+  Annualized return (geometric, from daily values); annualized
+  volatility (standard deviation of daily returns x square root of
+  252); maximum drawdown (largest fall from a previous peak in the
+  daily value); return divided by volatility (no risk-free rate is
+  subtracted, so this is not a Sharpe ratio); average quarterly
+  turnover; and blowup exposure: each quarter, the share of the stocks
+  held at the trade date whose adjusted close fell to 50% or less of
+  the trade-date close on any trading day from the trade date to the
+  last trading day on or before the holding quarter's end + 12 months
+  (test 10's rule, `blowups.classify_window`; unknowns, if any, are
+  counted and left out of the share).
+- **Registered questions** (pass mark t >= 3.0 in absolute value, 2
+  questions, years already studied):
+  - (a) Does overlay B lower blowup exposure versus the base? Quarterly
+    differences (B's share minus the base's share) for the 47 quarters
+    2014Q1 to 2025Q3; t = mean difference / its standard error. Passes
+    if the mean is negative and t <= -3.0. 2025Q4 is reported but not
+    used, because its 12-month follow-up runs past the end of the price
+    data (2026-11-10).
+  - (b) Does overlay B change returns versus the base? Quarterly
+    return differences (B minus base, after 10 bps), 48 quarters: the
+    mean, its 95% confidence interval (t distribution, 47 degrees of
+    freedom) and t. A difference is found only if |t| >= 3.0. Failing to
+    find a difference does not prove there is none; the interval shows
+    how large a difference the data can rule out.
+- **Descriptive, not tests:** overlay A against B (what the quarterly
+  flags add); overlay P, labeled exploratory (chosen after test 13);
+  each portfolio's return and blowup exposure by calendar year,
+  including 2020 and 2022; the number of stocks held and excluded each
+  quarter; and the median age of the quarterly flags used.
+- **Limitations, stated in advance.** Survivorship (current tickers
+  only); years already studied in tests 1 to 13; equal weighting rather
+  than index (float) weighting, so smaller members of the pool count as
+  much as the largest; no risk-free rate; correlation, not cause; this
+  is an analysis for a class project, not investment advice.
+- **Outputs:** a "Test 14 results" section here, whatever the results;
+  a chart of cumulative growth and drawdowns for the base and overlays A
+  and B, `docs/screenshots/test14_overlay.png`; details in
+  `data/logs/backtest_overlay_*.csv`.
 
 ## Data coverage
 
