@@ -225,6 +225,36 @@ def financials_ttm_size():
     return load_table(resolve_data_source()[1], "financials_ttm", columns)
 
 
+@st.cache_data(show_spinner="Loading filing details...", max_entries=64)
+def load_company_quarterly(data_dir, cik, table):
+    """Return one quarterly table's rows for one company (financials_ttm,
+    ttm_sources or facts_quarterly), read with a Parquet filter: these
+    tables are millions of rows, and the trace needs one company."""
+    path = Path(data_dir) / f"{table}.parquet"
+    return pd.read_parquet(path, filters=[("cik", "==", int(cik))])
+
+
+def company_ttm(cik):
+    """Return financials_ttm rows for one company."""
+    return load_company_quarterly(
+        resolve_data_source()[1], cik, "financials_ttm"
+    )
+
+
+def company_ttm_sources(cik):
+    """Return ttm_sources rows (the filings behind each TTM value) for one
+    company."""
+    return load_company_quarterly(resolve_data_source()[1], cik, "ttm_sources")
+
+
+def company_facts_quarterly(cik):
+    """Return facts_quarterly rows for one company (the quarterly trace
+    reads its share counts for F-Score test 7)."""
+    return load_company_quarterly(
+        resolve_data_source()[1], cik, "facts_quarterly"
+    )
+
+
 def case_studies_path():
     """Return the case studies CSV for the current data source.
 

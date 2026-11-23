@@ -93,8 +93,8 @@ MISSING_F = {"cik": 8858, "fiscal_year": 2027, "fiscal_quarter": 1}
 def test_quarterly_company_page_shows_why_a_score_is_missing(sample_source):
     """In quarterly mode the company page draws one quarter: the note,
     a quarter picker starting on the quarter handed over, a card saying
-    "Not enough quarterly data" for the missing F-Score, and no annual
-    trace buttons (quarterly trace comes later)."""
+    "Not enough quarterly data" for the missing F-Score, and the
+    quarterly trace buttons in place of the annual ones."""
     app_test = run()
     basis_radio(app_test).set_value(basis.QUARTERLY)
     app_test = run(app_test)
@@ -112,7 +112,7 @@ def test_quarterly_company_page_shows_why_a_score_is_missing(sample_source):
     assert picker.value == (2027, 1)
     page_text = " ".join(m.value for m in app_test.markdown)
     assert basis.NOT_ENOUGH_DATA in page_text
-    assert not [b for b in app_test.button if "Trace" in b.label]
+    assert not [b for b in app_test.button if "Trace to the 10-K" in b.label]
 
 
 def test_annual_company_page_keeps_its_trace_buttons(sample_source):
@@ -122,3 +122,44 @@ def test_annual_company_page_keeps_its_trace_buttons(sample_source):
     app_test.run()
     assert not app_test.exception
     assert len([b for b in app_test.button if "Trace" in b.label]) == 3
+
+
+def open_quarterly_company(app_test=None):
+    """Switch to Quarterly and open the MISSING_F company-quarter."""
+    app_test = run(app_test)
+    basis_radio(app_test).set_value(basis.QUARTERLY)
+    app_test = run(app_test)
+    app_test.session_state["selected_cik"] = MISSING_F["cik"]
+    app_test.session_state["selected_fiscal_year"] = MISSING_F["fiscal_year"]
+    app_test.session_state["selected_fiscal_quarter"] = MISSING_F[
+        "fiscal_quarter"
+    ]
+    app_test.switch_page("views/company.py")
+    app_test.run()
+    return app_test
+
+
+def test_quarterly_trace_tab_shows_the_quarters_and_filings(sample_source):
+    """In quarterly mode the trace tab draws the quarterly panel: the
+    inputs table and the quarters-and-filings table, with no error."""
+    app_test = open_quarterly_company()
+    assert not app_test.exception
+    assert not app_test.error
+    page_text = " ".join(m.value for m in app_test.markdown)
+    assert "Inputs (trailing twelve months, or quarter-end values)" in (
+        page_text
+    )
+    assert "The quarters and filings behind each input" in page_text
+    assert len(app_test.dataframe) >= 2
+
+
+def test_quarterly_trace_buttons_open_the_quarterly_pop_up(sample_source):
+    """Each card has a quarterly trace button, and clicking one opens
+    the pop-up without an error."""
+    app_test = open_quarterly_company()
+    buttons = [b for b in app_test.button if "Trace to the filings" in b.label]
+    assert len(buttons) == 3
+    buttons[0].click()
+    app_test.run()
+    assert not app_test.exception
+    assert not app_test.error

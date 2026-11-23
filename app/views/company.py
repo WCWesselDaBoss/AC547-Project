@@ -18,6 +18,7 @@ import streamlit as st
 import config
 from app import basis, charts, company_quarterly, company_view, data
 from app import labels, screening, style, trace, trace_panel
+from app import trace_panel_quarterly
 from app.components import price_chart
 
 # The score behind each verdict card, in card order (M, Z'', F).
@@ -127,21 +128,30 @@ for column, card in zip(st.columns(len(cards)), cards):
     column.markdown(style.verdict_card_html(*card), unsafe_allow_html=True)
 
 # One trace button per card, right under it, so the source of every
-# verdict is one click away (the headline traceability feature).
+# verdict is one click away (the headline traceability feature). In
+# quarterly mode the panel shows each TTM input's four quarters and the
+# 10-Q and 10-K filings behind them.
+panel = trace_panel_quarterly if quarterly else trace_panel
 if quarterly:
-    # Annual trace would show the 10-K's numbers, not the quarterly
-    # inputs, so it is not offered here until it can trace TTM values.
-    st.caption("Click-to-trace for quarterly scores is not available yet.")
+    button_text = "🔎 Trace to the filings"
+    button_help = (
+        "Show the formula, every input, its four quarters and a link to "
+        "each 10-Q or 10-K it came from."
+    )
 else:
-    for column, score in zip(st.columns(len(cards)), CARD_SCORES):
-        if column.button(
-            "🔎 Trace to the 10-K",
-            key=f"trace_button_{score}",
-            help="Show the formula, every input, its XBRL tag and a link "
-            "to the SEC filing it came from.",
-            width="stretch",
-        ):
-            trace_panel.trace_dialog(score, row)
+    button_text = "🔎 Trace to the 10-K"
+    button_help = (
+        "Show the formula, every input, its XBRL tag and a link to the "
+        "SEC filing it came from."
+    )
+for column, score in zip(st.columns(len(cards)), CARD_SCORES):
+    if column.button(
+        button_text,
+        key=f"trace_button_{score}",
+        help=button_help,
+        width="stretch",
+    ):
+        panel.trace_dialog(score, row)
 # Shown on every company page (Phase 3 brief).
 st.caption(labels.SCOPE_NOTE)
 if cutoff != config.BENEISH_FLAG_CUTOFF:
@@ -215,11 +225,14 @@ st.subheader("Detail")
 # the warnings that 10-K raised (app/components/price_chart.py).
 st.markdown("**Stock price and 10-K warnings**")
 price_chart.render_price_chart(cik, key="company")
-tab_names = ["Trends over time", "Peer ranks", "All score components"]
-if not quarterly:
-    tab_names.append("🔎 Trace to SEC filing")
-tabs = st.tabs(tab_names)
-trends_tab, peers_tab, components_tab = tabs[:3]
+trends_tab, peers_tab, components_tab, trace_tab = st.tabs(
+    [
+        "Trends over time",
+        "Peer ranks",
+        "All score components",
+        "🔎 Trace to SEC filing",
+    ]
+)
 with trends_tab:
     # A score with no value in any year gets a sentence, not an empty
     # chart, so a blank plot is never mistaken for a loading problem.
@@ -290,12 +303,11 @@ with components_tab:
     st.markdown(f"**Financial strength score: {f_text}**")
     st.dataframe(company_view.f_signal_table(row), hide_index=True)
 
-if not quarterly:
-    with tabs[3]:
-        trace_score = st.selectbox(
-            "Which score?",
-            list(trace.SCORE_LABELS),
-            format_func=trace.SCORE_LABELS.get,
-            key="trace_tab_score",
-        )
-        trace_panel.render_trace(trace_score, row, key_prefix="tab")
+with trace_tab:
+    trace_score = st.selectbox(
+        "Which score?",
+        list(trace.SCORE_LABELS),
+        format_func=trace.SCORE_LABELS.get,
+        key="trace_tab_score",
+    )
+    panel.render_trace(trace_score, row, key_prefix="tab")
