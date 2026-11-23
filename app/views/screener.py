@@ -163,7 +163,7 @@ else:
         "Select a row to open that company's detail page. " + labels.SCOPE_NOTE
     )
     if quarterly:
-        st.caption(f"{basis.NOT_ENOUGH_DATA_SHORT}: {basis.NOT_ENOUGH_DATA}.")
+        st.caption(f"⚪ {basis.NOT_ENOUGH_DATA}.")
     # Hand the chosen company to the detail page through session state.
     if selection.selection.rows:
         chosen = shown_df.iloc[selection.selection.rows[0]]

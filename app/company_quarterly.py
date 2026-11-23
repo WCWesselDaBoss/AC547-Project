@@ -123,3 +123,15 @@ def peer_sentences(row):
         score: sentence.replace("this year", "this quarter")
         for score, sentence in company_view.peer_sentences(row).items()
     }
+
+
+def unscored_note(cards):
+    """Return the note on checks without a score (company_view.
+    unscored_note), giving the quarterly reason."""
+    note = company_view.unscored_note(cards)
+    if note is None:
+        return None
+    return note.replace(
+        "because an input was not reported",
+        "because there is not enough quarterly data",
+    )

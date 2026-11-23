@@ -174,3 +174,30 @@ def test_quarterly_company_page_draws_the_price_chart(sample_source):
     assert "Stock price, 10-K and quarterly warnings" in page_text
     captions = " ".join(c.value for c in app_test.caption)
     assert "Diamonds: quarterly (TTM) scores" in captions
+
+
+def test_deep_link_opens_quarterly_mode_once(sample_source):
+    """?basis=quarterly&quarter=3 on the company page opens quarterly
+    mode on FY2015 Q3; the parameters are removed once read."""
+    app_test = AppTest.from_file(APP_SCRIPT, default_timeout=60)
+    app_test.query_params["basis"] = "quarterly"
+    app_test.query_params["cik"] = "1336917"
+    app_test.query_params["year"] = "2015"
+    app_test.query_params["quarter"] = "3"
+    app_test.switch_page("views/company.py")
+    app_test.run()
+    assert not app_test.exception
+    assert basis_radio(app_test).value == basis.QUARTERLY
+    picker = next(s for s in app_test.selectbox if s.label == "Fiscal quarter")
+    assert picker.value == (2015, 3)
+    assert "basis" not in app_test.query_params
+
+
+def test_about_page_has_the_quarterly_section(sample_source):
+    """The About page explains quarterly scores, with the note."""
+    app_test = run()
+    app_test.switch_page("views/about.py")
+    app_test.run()
+    assert not app_test.exception
+    assert "Quarterly (TTM) scores" in [h.value for h in app_test.subheader]
+    assert basis.QUARTERLY_NOTE in [w.value for w in app_test.warning]

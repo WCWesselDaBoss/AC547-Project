@@ -46,6 +46,10 @@ if not choices:
 # A deep link (?cik=...&year=...) picks the company-year once.
 linked_cik = data.pop_int_param("cik")
 linked_year = data.pop_int_param("year")
+# Quarterly mode: ?quarter=3 picks the fiscal quarter once.
+linked_quarter = data.pop_int_param("quarter")
+if linked_quarter is not None:
+    st.session_state[data.SELECTED_QUARTER] = linked_quarter
 if linked_cik is not None:
     st.session_state[data.SELECTED_CIK] = linked_cik
 if linked_year is not None:
@@ -121,7 +125,11 @@ if quarterly:
 else:
     cards = company_view.verdict_cards(row, cutoff)
     st.subheader(company_view.verdict_summary(row))
-unscored_text = company_view.unscored_note(cards)
+unscored_text = (
+    company_quarterly.unscored_note(cards)
+    if quarterly
+    else company_view.unscored_note(cards)
+)
 if unscored_text:
     st.caption(unscored_text)
 for column, card in zip(st.columns(len(cards)), cards):

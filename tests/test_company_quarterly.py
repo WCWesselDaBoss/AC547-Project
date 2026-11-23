@@ -127,3 +127,16 @@ def test_quarterly_wording_says_this_quarter():
         row[f"{score}_pctile"] = float("nan")
     sentences = company_quarterly.peer_sentences(row)
     assert set(sentences.values()) == {"Not ranked: no score this quarter."}
+
+
+def test_unscored_note_gives_the_quarterly_reason():
+    """One of three checks unscored: the note names the quarterly
+    reason; all scored: no note."""
+    history = company_quarterly.company_quarters(quarter_rows(), 1, -1.78)
+    cards = company_quarterly.quarterly_cards(history.iloc[-1], -1.78)
+    assert company_quarterly.unscored_note(cards) == (
+        "1 check could not be scored, because there is not enough "
+        "quarterly data; see the cards below."
+    )
+    scored = company_quarterly.quarterly_cards(history.iloc[0], -1.78)
+    assert company_quarterly.unscored_note(scored[:2]) is None

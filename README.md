@@ -380,6 +380,18 @@ year-end mismatches with no automatic cause, 2,824 are revisions of
 earlier quarters kept as reported and 197 are unexplained
 (`python -m src.scores.yearend_causes`).
 
+**In the dashboard.** The sidebar's **Scores** switch chooses Annual
+(10-K, always the default) or Quarterly (TTM); it appears only when the
+quarterly tables are present (the committed sample has them). In
+quarterly mode the screener picks a fiscal quarter, the company page
+shows one quarter (with "Not enough quarterly data (needs four complete
+quarters this year and last)" wherever a score is missing), click-to-trace
+opens each input into its four quarters and their 10-Q and 10-K filings,
+and the price chart adds a diamond for each quarterly score on the day
+it became available. Links can open quarterly mode directly, e.g.
+`/company?basis=quarterly&cik=1336917&year=2015&quarter=3`. Screenshots:
+`docs/screenshots/11_` to `14_`.
+
 Method, decisions and limitations: `docs/methodology.md`, "Quarterly
 (TTM) upgrade"; columns: `docs/data_dictionary.md`.
 

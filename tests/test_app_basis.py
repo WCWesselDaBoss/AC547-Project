@@ -70,3 +70,34 @@ def test_required_texts():
         "Not enough quarterly data (needs four complete quarters this "
         "year and last)"
     )
+
+
+def test_about_quarterly_summary_and_coverage():
+    """Three company-quarters of two companies; the latest quarter end
+    and available date; coverage counted per company-quarter."""
+    from app import about_quarterly
+
+    scores = pd.DataFrame(
+        {
+            "cik": [1, 1, 2],
+            "period_end": pd.to_datetime(
+                ["2025-03-31", "2025-06-30", "2025-05-31"]
+            ),
+            "available_date": pd.to_datetime(
+                ["2025-05-01", "2025-08-01", "2025-07-10"]
+            ),
+            "m_score": [-2.0, float("nan"), -1.0],
+            "z_score": [3.0, 2.0, 1.0],
+            "f_score": pd.array([5, pd.NA, pd.NA], dtype="Int64"),
+            "accruals_ratio": [0.1, 0.1, 0.1],
+            "cash_conversion": [1.0, 1.0, 1.0],
+        }
+    )
+    summary = about_quarterly.quarterly_summary(scores)
+    assert summary["companies"] == 2
+    assert summary["company_quarters"] == 3
+    assert summary["latest_quarter_end"] == pd.Timestamp("2025-06-30")
+    assert summary["latest_available"] == pd.Timestamp("2025-08-01")
+    table = about_quarterly.quarterly_coverage_table(scores)
+    assert about_quarterly.QUARTERS_COLUMN in table.columns
+    assert table[about_quarterly.QUARTERS_COLUMN].iloc[0] == "2 of 3"

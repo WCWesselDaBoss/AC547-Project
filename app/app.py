@@ -91,6 +91,14 @@ with st.sidebar:
     # Annual or quarterly (TTM) scores. Annual is the first option, so
     # it is always the default in a new session.
     if data.quarterly_available():
+        # A deep link (?basis=quarterly) opens quarterly mode once (demo
+        # bookmarks and the screenshot script); afterwards the radio is
+        # in charge. Read before the radio is drawn, as Streamlit needs.
+        linked_basis = st.query_params.get("basis")
+        if linked_basis is not None:
+            del st.query_params["basis"]
+            if linked_basis in basis.BASIS_LABELS:
+                st.session_state[basis.BASIS_KEY] = linked_basis
         st.radio(
             "Scores",
             list(basis.BASIS_LABELS),
