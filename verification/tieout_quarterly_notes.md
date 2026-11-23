@@ -39,7 +39,7 @@ Five company-quarters, two sheets each:
 | AAP FY25 Q2 | 16/12/12/12-week calendar; after a discontinued operation | -3.158 | 1.774 | 3 | 28 of 28 (1 both blank) | 34 of 34 |
 
 **Result: 140 of 140 score outputs and 166 of 166 TTM inputs match, with
-no Excel errors** (re-checked after fixes A and B). Recalculated in Microsoft Excel 16.0 (through its
+no Excel errors** (re-checked after fixes A, B and C). Recalculated in Microsoft Excel 16.0 (through its
 automation interface) on Nov 22, 2026. The committed file stores the
 formulas without cached values, so Excel calculates them on opening.
 
@@ -198,23 +198,65 @@ the earliest-filed date is kept, a quarter's flows reported only on the
 later date are no longer used. That follows the original-values rule;
 the cost is small (about 0.2% of the missing-or-misaligned count).
 
+## 2c. Fix C: fiscal year ends from each company's own 10-Ks (Nov 22)
+
+Quarters are numbered from the previous fiscal year end, so a missing
+or wrong year end shifted a whole year's labels: Southwestern Energy's
+calendar-2017 quarters were labeled FY2018 (no FY2017 row in
+`financials_annual`), Archer-Daniels-Midland's July 2012 to June 2013
+quarters FY2013 (a change from June to December year ends), and
+Cal-Maine's June 2013 to May 2014 quarters FY2014 (two 52/53-week year
+ends, June 1, 2013 and May 31, 2014, share label 2013).
+
+Now (`quarterly.place_quarter`, `ten_k_year_ends`):
+
+- Year ends are `financials_annual`'s plus each company's own 10-K year
+  ends, taken as the latest period end of each 10-K's 12-month facts.
+  SEC's submissions "reportDate" was tried first and rejected: for some
+  10-Ks it is the filing date (Southwestern's FY2017 10-K shows
+  2018-03-01), which created false two-month fiscal years.
+- A "year" whose ends are not 350 to 380 days apart is a change of
+  fiscal year end; its quarters are dropped (`quarter_in_a_fiscal_year_
+  change`), never rounded into a quarter number.
+- A year whose label equals the previous year's is dropped
+  (`fiscal_year_label_used_twice`), because the annual table kept only
+  the earlier year under that label.
+
+| Check | Before fix C | After fix C |
+| --- | --- | --- |
+| Q4 rows whose label is not the period-end rule | 100 | 5 |
+| Same label as annual but year ends more than 7 days apart | 351 | 8 |
+| financials_ttm rows | 309,546 | 307,827 |
+| Scored company-quarters | 165,084 | 164,786 |
+| Year-end mismatches | 63,238 | 63,005 |
+| of which unexplained | 3,020 | 3,021 |
+
+Southwestern now has FY2016, FY2017 and FY2018 Q4 rows at Dec 31 of
+each year; Cal-Maine's FY2014 Q4 is May 30, 2015, as in the annual
+table. Archer-Daniels-Midland has no FY2013 row: its June 2012 and
+December 2013 year ends are 549 days apart (the July to December 2012
+transition 10-KT has no 12-month facts), so all quarters in between,
+including calendar 2013, are dropped and counted rather than guessed.
+Facts dropped as `quarter_in_a_fiscal_year_change`: 102,614;
+`fiscal_year_label_used_twice`: 2,118 (`data/logs/facts_quarterly_drops.csv`).
+
 ## 3. Q4 scores vs annual scores (`quarterly_crosscheck_scores.csv`)
 
 39,702 company-years have both a Q4 quarterly row and an annual row
-(after the consistent-tag rule and fixes A and B; before both, M-Score 81.48%
+(after the consistent-tag rule and fixes A, B and C; before both, M-Score 81.48%
 and m_flag 99.40%).
 
 | Measure | Pairs | Agreement |
 | --- | --- | --- |
-| m_flag | 14,194 | 99.48% equal |
-| z_zone | 32,217 | 99.81% equal |
-| f_band | 12,151 | 98.66% equal |
-| flags_raised | 34,004 | 97.70% equal |
-| f_score | 12,151 | 96.35% equal |
-| z_score | 32,217 | 95.24% within 0.01 |
-| accruals_ratio | 34,241 | 98.38% within 0.01 |
-| cash_conversion | 21,513 | 96.40% within 0.01 |
-| m_score | 14,194 | 84.59% within 0.01 |
+| m_flag | 14,186 | 99.51% equal |
+| z_zone | 32,179 | 99.85% equal |
+| f_band | 12,126 | 98.67% equal |
+| flags_raised | 33,962 | 97.73% equal |
+| f_score | 12,126 | 96.40% equal |
+| z_score | 32,179 | 95.44% within 0.01 |
+| accruals_ratio | 34,165 | 98.45% within 0.01 |
+| cash_conversion | 21,518 | 96.47% within 0.01 |
+| m_score | 14,186 | 84.80% within 0.01 |
 
 The M-Score agrees least because it has the most flow inputs (eight
 indexes from up to eleven line items, for two years), so any input gap
@@ -225,10 +267,10 @@ company-years.
 
 | Basis | Rows | M-Score | Z'' | F-Score | Accruals | Option C rows |
 | --- | --- | --- | --- | --- | --- | --- |
-| Q1 | 42,152 | 32.4 | 78.7 | 25.9 | 81.3 | 24,047 |
-| Q2 | 41,844 | 32.4 | 79.0 | 26.7 | 83.9 | 24,553 |
-| Q3 | 41,075 | 32.3 | 79.1 | 26.7 | 84.3 | 24,150 |
-| Q4 | 40,013 | 36.6 | 81.5 | 31.0 | 86.5 | 0 |
+| Q1 | 42,063 | 32.5 | 78.9 | 26.0 | 81.5 | 24,044 |
+| Q2 | 41,760 | 32.5 | 79.2 | 26.8 | 84.1 | 24,559 |
+| Q3 | 40,997 | 32.5 | 79.3 | 26.8 | 84.5 | 24,175 |
+| Q4 | 39,966 | 36.7 | 81.6 | 31.1 | 86.5 | 0 |
 | Annual | 39,860 | 41.7 | 83.5 | 33.7 | 88.9 | |
 
 Quarterly coverage is lower than annual because every TTM flow needs

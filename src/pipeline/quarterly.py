@@ -33,6 +33,18 @@ FACTS_QUARTERLY_PATH = config.PROCESSED_DIR / "facts_quarterly.parquet"
 DROP_LOG = config.LOG_DIR / "facts_quarterly_drops.csv"
 
 QUARTERLY_FORMS = ("10-Q", "10-Q/A", "10-K", "10-K/A")
+# Fix C (Nov 22): fiscal year ends also come from the company's own
+# 10-Ks: each 10-K's year end is the latest period end of its 12-month
+# facts, so a year that financials_annual lacks still has its year end.
+# SEC's submissions "reportDate" is not used for this: for some 10-Ks it
+# is the filing date (Southwestern Energy's FY2017 10-K shows
+# 2018-03-01), which created false 2-month "fiscal years".
+# A real fiscal year lasts 350 to 380 days between year ends (52/53-week
+# years are 364 or 371). A shorter or longer interval is a change of
+# fiscal year end (a transition period, or a gap with no report); its
+# quarters belong to no fiscal year and are dropped and counted, never
+# rounded into a quarter number.
+FISCAL_YEAR_DAYS = (350, 380)
 # Facts start two fiscal years before the first quarterly score year
 # (FY2013): a FY2013 Q1 TTM needs the four prior quarters, and its prior
 # year needs four more. There is no upper limit: the most recent 10-Qs
@@ -46,6 +58,8 @@ FIRST_FACT_YEAR = 2011
 # Auto's 16-week first quarter is 112 days. They still exclude calendar
 # 4, 5, 7 and 8-month periods (about 120, 151, 212 and 243 days).
 DURATION_BINS = {3: (80, 115), 6: (165, 200), 9: (250, 290), 12: (350, 380)}
+# Fix C: the 12-month bin, used to find each 10-K's year end.
+TWELVE_MONTH_DAYS = DURATION_BINS[12]
 
 # A quarter end is about 91.3 days (a quarter of 365.25) after the
 # previous one. 52/53-week years have 13 or 14-week quarters (91 or 98
@@ -75,6 +89,8 @@ DROP_YEAR = "fiscal_year_before_2011"
 DROP_NO_YEAR_END = "no_fiscal_year_end_from_10k"
 DROP_OFF_QUARTER = "period_end_not_at_a_quarter_end"
 DROP_AFTER_FILING = "period_end_after_filed_date"
+DROP_TRANSITION = "quarter_in_a_fiscal_year_change"
+DROP_LABEL_TWICE = "fiscal_year_label_used_twice"
 
 FACTS_QUARTERLY_COLUMNS = [
     "cik",
@@ -172,36 +188,89 @@ def quarterly_facts_from_company(cik, company_facts, tag_regex, drops):
 # ---------------------------------------------------------------------------
 # Fiscal years and quarters, from each company's own fiscal year ends
 # ---------------------------------------------------------------------------
-def fiscal_year_ends(financials_df):
-    """Return {cik: sorted fiscal year end dates}, from the 10-K year ends
-    in financials_annual (read only), extended EXTEND_YEARS years before
-    the first and after the last by whole years, so 10-Qs filed before a
-    company's first 10-K or after its latest one still get quarters."""
+def annual_year_end_dates(financials_df):
+    """Return {cik: sorted year end dates} from financials_annual (read
+    only), before any 10-K dates are added or the list is extended."""
+    return {
+        int(cik): [
+            pd.Timestamp(d)
+            for d in sorted(pd.to_datetime(group["period_end"]).dropna())
+        ]
+        for cik, group in financials_df.groupby("cik")
+    }
+
+
+def ten_k_year_ends(rows_df):
+    """Return the year ends of a company's own 10-Ks (fix C): for each
+    10-K or 10-K/A, the latest period end among its 12-month facts. A
+    10-K's most recent 12-month period is the fiscal year it reports;
+    earlier 12-month facts are comparatives of other years."""
+    twelve = rows_df[
+        rows_df["form"].str.startswith("10-K")
+        & rows_df["duration_days"].between(*TWELVE_MONTH_DAYS).fillna(False)
+    ]
+    ends = twelve.groupby("accession")["period_end"].max()
+    return pd.DatetimeIndex(sorted(pd.to_datetime(ends).unique()))
+
+
+def combine_year_ends(annual_dates, ten_k_dates):
+    """Return one company's fiscal year ends: financials_annual's dates
+    plus its own 10-K year ends that are not within
+    YEAR_END_TOLERANCE_DAYS of one of them (where both give a date,
+    financials_annual's is kept, so labels match the annual table),
+    extended EXTEND_YEARS years before the first and after the last by
+    whole years, so 10-Qs filed before a company's first 10-K or after
+    its latest one still get quarters. Empty if there are no dates."""
+    tolerance = pd.Timedelta(days=YEAR_END_TOLERANCE_DAYS)
+    annual = [pd.Timestamp(d) for d in annual_dates]
+    extra = [
+        pd.Timestamp(d)
+        for d in ten_k_dates
+        if not any(abs(pd.Timestamp(d) - a) <= tolerance for a in annual)
+    ]
+    dates = sorted(set(annual + extra))
+    if not dates:
+        return pd.DatetimeIndex([])
+    first, last = dates[0], dates[-1]
+    before = [
+        first - pd.DateOffset(years=k) for k in range(EXTEND_YEARS, 0, -1)
+    ]
+    after = [last + pd.DateOffset(years=k) for k in range(1, EXTEND_YEARS + 1)]
+    return pd.DatetimeIndex(before + dates + after)
+
+
+def fiscal_year_ends(financials_df, ten_k_dates=None):
+    """Return {cik: sorted fiscal year end dates}: financials_annual's
+    year ends plus, if given, 10-K year ends ({cik: dates}), combined
+    and extended by combine_year_ends. A year missing from
+    financials_annual (Southwestern Energy FY2017) then still has its
+    year end; a transition period (Archer-Daniels-Midland, July to
+    December 2012) has none, so it shows as a gap that is not a fiscal
+    year (see place_quarter)."""
+    ten_k_dates = ten_k_dates or {}
+    annual = annual_year_end_dates(financials_df)
     ends = {}
-    for cik, group in financials_df.groupby("cik"):
-        dates = sorted(pd.to_datetime(group["period_end"]).dropna().unique())
-        if not dates:
-            continue
-        first, last = pd.Timestamp(dates[0]), pd.Timestamp(dates[-1])
-        before = [
-            first - pd.DateOffset(years=k) for k in range(EXTEND_YEARS, 0, -1)
-        ]
-        after = [
-            last + pd.DateOffset(years=k) for k in range(1, EXTEND_YEARS + 1)
-        ]
-        ends[int(cik)] = pd.DatetimeIndex(
-            before + [pd.Timestamp(d) for d in dates] + after
+    for cik in sorted(set(annual) | set(ten_k_dates)):
+        combined = combine_year_ends(
+            annual.get(cik, []), ten_k_dates.get(cik, [])
         )
+        if len(combined):
+            ends[cik] = combined
     return ends
 
 
 def report_period_ends(submissions_zip, ciks):
     """Return {cik: sorted unique report dates} of each company's 10-Q,
     10-Q/A, 10-K and 10-K/A filings, from SEC's submissions file (read
-    only). Reads the "recent" filings and the overflow files, as
-    financials.annual_reports_from_submission does. Companies with no
-    submissions record are left out (assign_quarter then uses the grid
-    rule alone)."""
+    only). Companies with no submissions record are left out
+    (assign_quarter then uses the grid rule alone)."""
+    return report_dates_for_forms(submissions_zip, ciks, QUARTERLY_FORMS)
+
+
+def report_dates_for_forms(submissions_zip, ciks, forms):
+    """Return {cik: sorted unique report dates} of the filings of the
+    given forms. Reads the "recent" filings and the overflow files, as
+    financials.annual_reports_from_submission does."""
     ends = {}
     with zipfile.ZipFile(submissions_zip) as archive:
         names = set(archive.namelist())
@@ -221,7 +290,7 @@ def report_period_ends(submissions_zip, ciks):
                 for form, report_date in zip(
                     table["form"], table["reportDate"]
                 )
-                if form in QUARTERLY_FORMS and report_date
+                if form in forms and report_date
             }
             if dates:
                 ends[int(cik)] = pd.DatetimeIndex(
@@ -242,7 +311,15 @@ def near_a_report_date(period_end, report_ends):
 
 
 def assign_quarter(period_end, year_ends, report_ends=None):
-    """Return (fiscal_year, fiscal_quarter) for a period end, or None.
+    """Return (fiscal_year, fiscal_quarter) for a period end, or None
+    when it cannot be placed (place_quarter gives the reason)."""
+    placed = place_quarter(period_end, year_ends, report_ends)
+    return None if isinstance(placed, str) else placed
+
+
+def place_quarter(period_end, year_ends, report_ends=None):
+    """Return (fiscal_year, fiscal_quarter) for a period end, or the drop
+    reason (a string) when it cannot be placed.
 
     The fiscal year is the one closing at the first fiscal year end on or
     after the period end (within YEAR_END_TOLERANCE_DAYS), labeled from
@@ -258,22 +335,40 @@ def assign_quarter(period_end, year_ends, report_ends=None):
     the company's own report dates (report_ends, optional), or within
     QUARTER_TOLERANCE_DAYS of the 91-day grid. Either is enough, so
     adding report dates can only place more facts, never fewer.
-    Otherwise it returns None.
+    Otherwise the reason is DROP_OFF_QUARTER.
+
+    Fix C adds two checks on the fiscal year itself. If its year ends
+    are not 350 to 380 days apart, it is a change of fiscal year end
+    (DROP_TRANSITION): its quarters belong to no fiscal year. If its
+    label equals the previous year's (a 52/53-week year ending in the
+    first days of June after one ending at the end of May, so both fall
+    in the same label under the January-May rule), the annual table kept
+    only the earlier year, so this year's quarters cannot carry a label
+    that matches it (DROP_LABEL_TWICE).
     """
     period_end = pd.Timestamp(period_end)
     tolerance = pd.Timedelta(days=YEAR_END_TOLERANCE_DAYS)
     position = year_ends.searchsorted(period_end - tolerance, side="left")
     if position == 0 or position >= len(year_ends):
-        return None
+        return DROP_OFF_QUARTER
     year_end, previous = year_ends[position], year_ends[position - 1]
+    if (
+        not FISCAL_YEAR_DAYS[0]
+        <= (year_end - previous).days
+        <= (FISCAL_YEAR_DAYS[1])
+    ):
+        return DROP_TRANSITION
+    label = config.fiscal_year_from_period_end(year_end.date())
+    if label == config.fiscal_year_from_period_end(previous.date()):
+        return DROP_LABEL_TWICE
     days = (period_end - previous).days
     quarter = int(round(days / DAYS_PER_QUARTER))
     if not 1 <= quarter <= 4:
-        return None
+        return DROP_OFF_QUARTER
     on_grid = abs(days - quarter * DAYS_PER_QUARTER) <= QUARTER_TOLERANCE_DAYS
     if not (on_grid or near_a_report_date(period_end, report_ends)):
-        return None
-    return config.fiscal_year_from_period_end(year_end.date()), quarter
+        return DROP_OFF_QUARTER
+    return label, quarter
 
 
 def add_quarters(raw_df, year_ends, drops, report_ends=None):
@@ -287,14 +382,16 @@ def add_quarters(raw_df, year_ends, drops, report_ends=None):
         return raw_df.iloc[0:0].assign(fiscal_year=[], fiscal_quarter=[])
     company_reports = (report_ends or {}).get(cik)
     placed = [
-        assign_quarter(end, company_ends, company_reports)
+        place_quarter(end, company_ends, company_reports)
         for end in raw_df["period_end"]
     ]
-    keep = np.array([p is not None for p in placed])
-    drops[DROP_OFF_QUARTER] += int((~keep).sum())
+    keep = np.array([not isinstance(p, str) for p in placed])
+    for reason in placed:
+        if isinstance(reason, str):
+            drops[reason] += 1
     out = raw_df[keep].copy()
-    out["fiscal_year"] = [p[0] for p in placed if p is not None]
-    out["fiscal_quarter"] = [p[1] for p in placed if p is not None]
+    out["fiscal_year"] = [p[0] for p in placed if not isinstance(p, str)]
+    out["fiscal_quarter"] = [p[1] for p in placed if not isinstance(p, str)]
     too_early = out["fiscal_year"] < FIRST_FACT_YEAR
     drops[DROP_YEAR] += int(too_early.sum())
     return out[~too_early]
@@ -322,14 +419,30 @@ def mark_is_original_quarterly(chosen_df):
 
 
 def company_rows(
-    cik, company_facts, tag_regex, year_ends, drops, report_ends=None
+    cik,
+    company_facts,
+    tag_regex,
+    year_ends,
+    drops,
+    report_ends=None,
+    annual_dates=None,
 ):
     """Return one company's quarterly facts with fiscal year and quarter,
-    before line items and tag choice (those run on a whole batch)."""
+    before line items and tag choice (those run on a whole batch).
+
+    If annual_dates ({cik: financials_annual year ends}) is given, the
+    company's year ends are built from them plus its own 10-K year ends
+    (fix C); otherwise year_ends ({cik: dates}) is used as given."""
     rows = quarterly_facts_from_company(cik, company_facts, tag_regex, drops)
     if not rows:
         return pd.DataFrame()
-    return add_quarters(pd.DataFrame(rows), year_ends, drops, report_ends)
+    raw_df = pd.DataFrame(rows)
+    if annual_dates is not None:
+        combined = combine_year_ends(
+            annual_dates.get(cik, []), ten_k_year_ends(raw_df)
+        )
+        year_ends = {cik: combined} if len(combined) else {}
+    return add_quarters(raw_df, year_ends, drops, report_ends)
 
 
 def choose_and_mark(raw_df, drops):
@@ -381,7 +494,9 @@ def to_contract_types(chosen_df):
     ).reset_index(drop=True)
 
 
-def build_facts_quarterly(companyfacts_zip, ciks, year_ends, report_ends=None):
+def build_facts_quarterly(
+    companyfacts_zip, ciks, year_ends, report_ends=None, annual_dates=None
+):
     """Return (facts_quarterly, drop Counter) for the given companies.
 
     Companies are processed in batches of facts.BATCH_COMPANIES, as the
@@ -405,6 +520,7 @@ def build_facts_quarterly(companyfacts_zip, ciks, year_ends, report_ends=None):
                     year_ends,
                     drops,
                     report_ends,
+                    annual_dates,
                 )
                 if not rows.empty:
                     batch.append(rows)
@@ -435,6 +551,7 @@ def main():
         ciks,
         fiscal_year_ends(financials_df),
         report_ends,
+        annual_year_end_dates(financials_df),
     )
     table.to_parquet(FACTS_QUARTERLY_PATH, index=False)
     config.LOG_DIR.mkdir(parents=True, exist_ok=True)

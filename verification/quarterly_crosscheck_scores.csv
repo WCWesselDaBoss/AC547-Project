@@ -1,10 +1,10 @@
 measure,pairs,test,agree_pct,present_in_only_one
-m_score,14194,within 0.01,84.59,2759.0
-z_score,32217,within 0.01,95.24,1224.0
-accruals_ratio,34241,within 0.01,98.38,
-cash_conversion,21513,within 0.01,96.4,
-m_flag,14194,equal,99.48,
-z_zone,32217,equal,99.81,
-f_score,12151,equal,96.35,1443.0
-f_band,12151,equal,98.66,
-flags_raised,34004,equal,97.7,
+m_score,14186,within 0.01,84.8,2751.0
+z_score,32179,within 0.01,95.44,1204.0
+accruals_ratio,34165,within 0.01,98.45,
+cash_conversion,21518,within 0.01,96.47,
+m_flag,14186,equal,99.51,
+z_zone,32179,equal,99.85,
+f_score,12126,equal,96.4,1470.0
+f_band,12126,equal,98.67,
+flags_raised,33962,equal,97.73,

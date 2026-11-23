@@ -339,3 +339,160 @@ def test_excluded_companies_are_left_out():
         {"cik": [1, 2, 3], "is_excluded": [False, True, False]}
     )
     assert quarterly.included_ciks(companies) == [1, 3]
+
+
+# ---------------------------------------------------------------------------
+# Fix C: fiscal year ends from the company's own 10-K report dates
+# ---------------------------------------------------------------------------
+def annual_rows(cik, dates):
+    """Return financials_annual-style rows (cik, fiscal_year, period_end)."""
+    ends = pd.to_datetime(dates)
+    return pd.DataFrame(
+        {
+            "cik": cik,
+            "fiscal_year": [
+                quarterly.config.fiscal_year_from_period_end(d.date())
+                for d in ends
+            ],
+            "period_end": ends,
+        }
+    )
+
+
+def test_fiscal_year_end_change_quarters_are_dropped_and_counted():
+    """An Archer-Daniels-Midland-style change from June to December year
+    ends: 10-Ks for June 2011 and June 2012, a six-month transition to
+    Dec 31, 2012, then December 10-Ks. Even with a year end on Dec 31,
+    2012, the 184 days from June 30 are not a fiscal year, so the Sep
+    30, 2012 quarter is dropped with its reason; the Mar 31, 2013
+    quarter is Q1 of FY2013, matching the annual table (calendar 2013)."""
+    annual = annual_rows(
+        5, ["2011-06-30", "2012-06-30", "2013-12-31", "2014-12-31"]
+    )
+    ten_k_dates = {5: pd.DatetimeIndex(pd.to_datetime(["2012-12-31"]))}
+    year_ends = quarterly.fiscal_year_ends(annual, ten_k_dates)[5]
+    assert quarterly.place_quarter("2012-09-30", year_ends) == (
+        quarterly.DROP_TRANSITION
+    )
+    assert quarterly.assign_quarter("2013-03-31", year_ends) == (2013, 1)
+    raw = pd.DataFrame(
+        {
+            "cik": [5, 5],
+            "period_end": pd.to_datetime(["2012-09-30", "2013-03-31"]),
+        }
+    )
+    drops = Counter()
+    placed = quarterly.add_quarters(raw, {5: year_ends}, drops)
+    assert placed["fiscal_year"].tolist() == [2013]
+    assert drops[quarterly.DROP_TRANSITION] == 1
+
+
+def test_a_gap_with_no_10kt_is_not_rounded_across():
+    """With no year end in between (the usual case: a transition 10-KT
+    has no 12-month facts), the June 2012 and December 2013 year ends are 549
+    days apart: not a fiscal year, so quarters in the gap are dropped
+    (counted) instead of being rounded into a quarter number."""
+    annual = annual_rows(
+        5, ["2011-06-30", "2012-06-30", "2013-12-31", "2014-12-31"]
+    )
+    year_ends = quarterly.fiscal_year_ends(annual)[5]
+    assert quarterly.place_quarter("2012-09-30", year_ends) == (
+        quarterly.DROP_TRANSITION
+    )
+    assert quarterly.place_quarter("2013-06-30", year_ends) == (
+        quarterly.DROP_TRANSITION
+    )
+
+
+def test_a_missing_annual_year_is_filled_from_the_10k_report_date():
+    """A Southwestern Energy-style gap: financials_annual has Dec 2016 and
+    Dec 2018 but no Dec 2017 row, while the company's 10-K for 2017 is in
+    the submissions file. The Jun 30, 2017 quarter is Q2 of FY2017 (not
+    FY2018, as before), and Jun 30, 2018 is Q2 of FY2018."""
+    annual = annual_rows(7, ["2015-12-31", "2016-12-31", "2018-12-31"])
+    ten_k_dates = {7: pd.DatetimeIndex(pd.to_datetime(["2017-12-31"]))}
+    year_ends = quarterly.fiscal_year_ends(annual, ten_k_dates)[7]
+    assert quarterly.assign_quarter("2017-06-30", year_ends) == (2017, 2)
+    assert quarterly.assign_quarter("2018-06-30", year_ends) == (2018, 2)
+
+
+def test_a_fiscal_year_label_used_twice_is_dropped_and_counted():
+    """A Cal-Maine-style 52/53-week calendar: year ends Jun 1, 2013 and
+    May 31, 2014 both map to label 2013 under the January-May rule, so
+    the annual table keeps only the first. Quarters of the year ending
+    May 31, 2014 cannot carry a label that matches the annual table, so
+    they are dropped (counted); the next year's quarters are FY2014, as
+    is the annual FY2014 (year ending May 30, 2015)."""
+    annual = annual_rows(9, ["2012-06-02", "2013-06-01", "2015-05-30"])
+    ten_k_dates = {9: pd.DatetimeIndex(pd.to_datetime(["2014-05-31"]))}
+    year_ends = quarterly.fiscal_year_ends(annual, ten_k_dates)[9]
+    assert quarterly.place_quarter("2014-03-01", year_ends) == (
+        quarterly.DROP_LABEL_TWICE
+    )
+    assert quarterly.assign_quarter("2014-08-30", year_ends) == (2014, 1)
+    assert quarterly.assign_quarter("2015-05-30", year_ends) == (2014, 4)
+
+
+def test_10k_year_ends_come_from_each_10k_s_own_12_month_facts():
+    """Each 10-K's year end is the latest period end of its 12-month
+    facts: a 10-K filed in 2018 with 12-month values for 2016 and 2017
+    gives Dec 31, 2017 (not the filing date, which SEC's submissions
+    index sometimes shows as the report date). 10-Q facts and shorter
+    periods are ignored."""
+    rows = pd.DataFrame(
+        {
+            "cik": 7,
+            "form": ["10-K", "10-K", "10-K", "10-Q", "10-K/A"],
+            "accession": ["k18", "k18", "k18", "q1", "ka"],
+            "duration_days": pd.array([365, 365, 92, 365, 366], "Int64"),
+            "period_end": pd.to_datetime(
+                [
+                    "2016-12-31",
+                    "2017-12-31",
+                    "2017-12-31",
+                    "2018-03-31",
+                    "2020-12-31",
+                ]
+            ),
+        }
+    )
+    assert quarterly.ten_k_year_ends(rows).strftime("%Y-%m-%d").tolist() == [
+        "2017-12-31",
+        "2020-12-31",
+    ]
+
+
+def test_company_rows_fill_a_missing_annual_year_from_its_own_10k():
+    """financials_annual has Dec 2016 and Dec 2018 but no Dec 2017 row;
+    the company's 10-K for 2017 reports a 12-month value ending Dec 31,
+    2017, so its Jun 30, 2017 quarter is placed in FY2017, not FY2018."""
+
+    def value(start, end, val, accn, form, filed):
+        return {
+            "start": start,
+            "end": end,
+            "val": val,
+            "accn": accn,
+            "form": form,
+            "filed": filed,
+            "fy": 2017,
+        }
+
+    revenue = [
+        value("2017-01-01", "2017-12-31", 400.0, "k17", "10-K", "2018-02-20"),
+        value("2017-04-01", "2017-06-30", 90.0, "q2", "10-Q", "2017-08-01"),
+    ]
+    company = {"facts": {"us-gaap": {"Revenues": {"units": {"USD": revenue}}}}}
+    annual = annual_rows(7, ["2015-12-31", "2016-12-31", "2018-12-31"])
+    annual_dates = quarterly.annual_year_end_dates(annual)
+    drops = Counter()
+    rows = quarterly.company_rows(
+        7,
+        company,
+        facts.mapped_tag_regex(),
+        quarterly.fiscal_year_ends(annual),
+        drops,
+        annual_dates=annual_dates,
+    )
+    q2 = rows[pd.to_datetime(rows["period_end"]) == "2017-06-30"]
+    assert q2[["fiscal_year", "fiscal_quarter"]].values.tolist() == [[2017, 2]]
