@@ -125,6 +125,26 @@ REPLACED_REASONS = (OVERRIDE_FULL_YEAR, OVERRIDE_SIGN)
 ACTION_REPLACED = "replaced_by_ytd_difference"
 ACTION_KEPT = "kept_as_reported"
 TTM_OVERRIDES_LOG = config.LOG_DIR / "ttm_overrides.csv"
+
+# Fix B (Nov 22): when one fiscal quarter has facts on two dates, the
+# date kept is the one near the company's report date; if both are, the
+# one FIRST FILED (the same earliest-filing rule as is_original), so a
+# successor's or an amendment's later date (Onto Innovation, HireQuest,
+# URS) never replaces that year's own 10-K date. Every dropped date is
+# logged with one of these reasons:
+DATE_REASON_NOT_NEAR = "not_near_a_report_date"
+DATE_REASON_LATER_FILING = "first_filed_later"
+DATE_REASON_FEWER_FACTS = "same_first_filing_fewer_facts"
+DATE_REASON_EARLIER_DATE = "same_filing_and_facts_earlier_date"
+TTM_DROPPED_DATES_LOG = config.LOG_DIR / "ttm_dropped_quarter_end_dates.csv"
+DROPPED_DATE_COLUMNS = QUARTER_KEY + [
+    "kept_period_end",
+    "kept_first_filed",
+    "dropped_period_end",
+    "dropped_first_filed",
+    "dropped_facts",
+    "reason",
+]
 OVERRIDE_COLUMNS = ITEM_QUARTER_KEY + [
     "reported_value",
     "reported_accession",
@@ -170,20 +190,49 @@ def earliest_per_key(facts_df, key):
 # ---------------------------------------------------------------------------
 # Quarter ends
 # ---------------------------------------------------------------------------
-def choose_quarter_ends(facts_df, report_ends, log):
+def dropped_date_reason(kept_df, dropped_df):
+    """Return why each dropped quarter-end date lost to the kept one, in
+    the order of the tie-break (see choose_quarter_ends)."""
+    return pd.Series(
+        np.select(
+            [
+                kept_df["near_report"].to_numpy()
+                & ~dropped_df["near_report"].to_numpy(),
+                kept_df["first_filed"].to_numpy()
+                < dropped_df["first_filed"].to_numpy(),
+                kept_df["facts"].to_numpy() > dropped_df["facts"].to_numpy(),
+            ],
+            [
+                DATE_REASON_NOT_NEAR,
+                DATE_REASON_LATER_FILING,
+                DATE_REASON_FEWER_FACTS,
+            ],
+            DATE_REASON_EARLIER_DATE,
+        ),
+        index=dropped_df.index,
+    )
+
+
+def choose_quarter_ends(facts_df, report_ends, log, dropped_dates=None):
     """Return one period_end per company and fiscal quarter.
 
     Rarely (about 0.2% of quarters, usually around a change of fiscal
-    year end), facts with two different period ends are labeled the same
-    fiscal quarter. The one within 7 days of the company's own 10-Q or
-    10-K report date is kept; then the one with more facts; then the
-    later date. Facts on the other date are left out and counted, never
-    mixed into the chosen quarter.
+    year end or a merger), facts with two different period ends are
+    labeled the same fiscal quarter. The date kept is, in order: the one
+    within 7 days of the company's own 10-Q or 10-K report date; then
+    the one first filed (fix B: the earliest-filing rule of is_original,
+    so a later successor's or amendment's date never replaces that
+    year's own filing); then the one with more facts; then the later
+    date. Facts on the other date are left out and counted, never mixed
+    into the chosen quarter, and each dropped date is appended to the
+    dropped_dates list (if given) with its reason.
     """
     dates = (
         facts_df.groupby(QUARTER_KEY + ["period_end"])
-        .size()
-        .rename("facts")
+        .agg(
+            facts=("value", "size"),
+            first_filed=("filed_date", "min"),
+        )
         .reset_index()
     )
     dates["near_report"] = [
@@ -191,11 +240,23 @@ def choose_quarter_ends(facts_df, report_ends, log):
         for cik, end in zip(dates["cik"], dates["period_end"])
     ]
     dates = dates.sort_values(
-        QUARTER_KEY + ["near_report", "facts", "period_end"],
-        ascending=[True, True, True, False, False, False],
+        QUARTER_KEY + ["near_report", "first_filed", "facts", "period_end"],
+        ascending=[True, True, True, False, True, False, False],
     )
     chosen = dates.drop_duplicates(subset=QUARTER_KEY, keep="first")
     others = dates.drop(chosen.index)
+    if dropped_dates is not None and not others.empty:
+        kept = others[QUARTER_KEY].merge(chosen, on=QUARTER_KEY, how="left")
+        kept.index = others.index
+        detail = others[QUARTER_KEY].assign(
+            kept_period_end=kept["period_end"],
+            kept_first_filed=kept["first_filed"],
+            dropped_period_end=others["period_end"],
+            dropped_first_filed=others["first_filed"],
+            dropped_facts=others["facts"],
+            reason=dropped_date_reason(kept, others),
+        )
+        dropped_dates.append(detail[DROPPED_DATE_COLUMNS])
     log["quarters:with_a_second_period_end"] += len(
         others.drop_duplicates(subset=QUARTER_KEY)
     )
@@ -596,11 +657,16 @@ def quarter_end_balances(balance_facts_df):
 # ---------------------------------------------------------------------------
 # One batch of companies
 # ---------------------------------------------------------------------------
-def build_batch(facts_df, report_ends, log, overrides=None):
+def build_batch(
+    facts_df, report_ends, log, overrides=None, dropped_dates=None
+):
     """Return (financials_ttm rows, ttm_sources rows) for the companies in
     facts_df (original facts from facts_quarterly). Fix A override
-    details are appended to the overrides list, if one is given."""
-    quarter_ends_df = choose_quarter_ends(facts_df, report_ends, log)
+    details are appended to the overrides list, if one is given, and
+    fix B's dropped quarter-end dates to the dropped_dates list."""
+    quarter_ends_df = choose_quarter_ends(
+        facts_df, report_ends, log, dropped_dates
+    )
     on_chosen = facts_df.merge(
         quarter_ends_df[QUARTER_KEY + ["period_end"]],
         on=QUARTER_KEY + ["period_end"],
@@ -749,13 +815,21 @@ def load_original_facts(path=quarterly.FACTS_QUARTERLY_PATH):
     )
 
 
-def build_ttm(facts_df, report_ends, sources_path, overrides_path=None):
+def build_ttm(
+    facts_df,
+    report_ends,
+    sources_path,
+    overrides_path=None,
+    dropped_dates_path=None,
+):
     """Return (financials_ttm, log Counter); ttm_sources is written to
     sources_path batch by batch, because it is too large to hold in
     memory at once on a laptop. Every fix A override is written to
-    overrides_path (CSV), if one is given."""
+    overrides_path (CSV), and every dropped quarter-end date (fix B) to
+    dropped_dates_path, if given."""
     log = Counter()
     overrides = []
+    dropped_dates = []
     ciks = sorted(facts_df["cik"].unique())
     pieces = []
     writer = None
@@ -763,7 +837,9 @@ def build_ttm(facts_df, report_ends, sources_path, overrides_path=None):
         for start in range(0, len(ciks), BATCH_COMPANIES):
             batch_ciks = ciks[start : start + BATCH_COMPANIES]
             batch = facts_df[facts_df["cik"].isin(batch_ciks)]
-            wide_df, sources = build_batch(batch, report_ends, log, overrides)
+            wide_df, sources = build_batch(
+                batch, report_ends, log, overrides, dropped_dates
+            )
             pieces.append(ttm_to_contract_types(wide_df))
             sources = sources_to_contract_types(sources)
             log["ttm_sources:rows"] += len(sources)
@@ -779,6 +855,15 @@ def build_ttm(facts_df, report_ends, sources_path, overrides_path=None):
     finally:
         if writer is not None:
             writer.close()
+    if dropped_dates_path is not None:
+        detail = (
+            pd.concat(dropped_dates, ignore_index=True)
+            if dropped_dates
+            else pd.DataFrame(columns=DROPPED_DATE_COLUMNS)
+        )
+        detail.sort_values(QUARTER_KEY).to_csv(dropped_dates_path, index=False)
+        for reason, count in detail["reason"].value_counts().items():
+            log[f"dropped_quarter_end_dates:{reason}"] += int(count)
     if overrides_path is not None:
         detail = (
             pd.concat(overrides, ignore_index=True)
@@ -809,7 +894,11 @@ def main():
     )
     config.LOG_DIR.mkdir(parents=True, exist_ok=True)
     ttm_df, log = build_ttm(
-        facts_df, report_ends, TTM_SOURCES_PATH, TTM_OVERRIDES_LOG
+        facts_df,
+        report_ends,
+        TTM_SOURCES_PATH,
+        TTM_OVERRIDES_LOG,
+        TTM_DROPPED_DATES_LOG,
     )
     ttm_df.to_parquet(TTM_PATH, index=False)
     log_df = summary_log(ttm_df, log)

@@ -595,3 +595,99 @@ def test_an_agreeing_3_month_value_is_kept():
     assert q2["method"].tolist() == [ttm.METHOD_REPORTED]
     assert q2["value"].tolist() == [110]
     assert not [key for key in log if "override" in key]
+
+
+# ---------------------------------------------------------------------------
+# Fix B: two quarter-end dates in one quarter; the earliest filing wins
+# ---------------------------------------------------------------------------
+def two_date_company():
+    """FY2018 Q4 with two balance-sheet dates, both within 7 days of the
+    company's 10-K report date (Dec 29, 2018), as for Onto Innovation:
+
+    Dec 29, 2018: total assets 375 and current assets 200, from that
+    year's 10-K filed Feb 25, 2019 (2 facts);
+    Dec 31, 2018: total assets 418, current assets 250 and receivables
+    60, from a successor's 10-K filed Feb 25, 2020 (3 facts).
+
+    The old tie-break (more facts) picked Dec 31; the earliest filing
+    (Feb 25, 2019) must win, so the quarter end is Dec 29 and total
+    assets are 375.
+    """
+    rows = [
+        fact(
+            "total_assets",
+            None,
+            "2018-12-29",
+            375,
+            2018,
+            4,
+            "k19",
+            "2019-02-25",
+        ),
+        fact(
+            "current_assets",
+            None,
+            "2018-12-29",
+            200,
+            2018,
+            4,
+            "k19",
+            "2019-02-25",
+        ),
+        fact(
+            "total_assets",
+            None,
+            "2018-12-31",
+            418,
+            2018,
+            4,
+            "k20",
+            "2020-02-25",
+        ),
+        fact(
+            "current_assets",
+            None,
+            "2018-12-31",
+            250,
+            2018,
+            4,
+            "k20",
+            "2020-02-25",
+        ),
+        fact(
+            "receivables", None, "2018-12-31", 60, 2018, 4, "k20", "2020-02-25"
+        ),
+    ]
+    table = pd.DataFrame(rows)
+    table["duration_days"] = table["duration_days"].astype("Int64")
+    return table
+
+
+def test_earliest_filing_wins_between_two_quarter_end_dates():
+    """Both dates are near the report date; the Dec 29 date, first filed
+    in Feb 2019, is kept, and the 3 facts on Dec 31 are dropped and
+    counted."""
+    report_ends = {1: pd.DatetimeIndex([pd.Timestamp("2018-12-29")])}
+    log = Counter()
+    wide, _ = ttm.build_batch(two_date_company(), report_ends, log)
+    wide = ttm.ttm_to_contract_types(wide)
+    assert wide["period_end"].tolist() == [pd.Timestamp("2018-12-29")]
+    assert wide["total_assets"].tolist() == [375]
+    assert pd.isna(wide["receivables"].iloc[0])
+    assert log["quarters:with_a_second_period_end"] == 1
+    assert log["dropped_facts:on_the_second_period_end"] == 3
+
+
+def test_every_dropped_quarter_end_date_is_logged():
+    """The detail names the quarter, both dates, when each was first
+    filed, the facts dropped and the reason."""
+    report_ends = {1: pd.DatetimeIndex([pd.Timestamp("2018-12-29")])}
+    dropped = []
+    ttm.build_batch(two_date_company(), report_ends, Counter(), None, dropped)
+    detail = pd.concat(dropped).iloc[0]
+    assert detail["kept_period_end"] == pd.Timestamp("2018-12-29")
+    assert detail["kept_first_filed"] == pd.Timestamp("2019-02-25")
+    assert detail["dropped_period_end"] == pd.Timestamp("2018-12-31")
+    assert detail["dropped_first_filed"] == pd.Timestamp("2020-02-25")
+    assert detail["dropped_facts"] == 3
+    assert detail["reason"] == ttm.DATE_REASON_LATER_FILING

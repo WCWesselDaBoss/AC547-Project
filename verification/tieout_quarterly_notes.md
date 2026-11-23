@@ -39,7 +39,7 @@ Five company-quarters, two sheets each:
 | AAP FY25 Q2 | 16/12/12/12-week calendar; after a discontinued operation | -3.158 | 1.774 | 3 | 28 of 28 (1 both blank) | 34 of 34 |
 
 **Result: 140 of 140 score outputs and 166 of 166 TTM inputs match, with
-no Excel errors** (re-checked after fix A). Recalculated in Microsoft Excel 16.0 (through its
+no Excel errors** (re-checked after fixes A and B). Recalculated in Microsoft Excel 16.0 (through its
 automation interface) on Nov 22, 2026. The committed file stores the
 formulas without cached values, so Excel calculates them on opening.
 
@@ -166,23 +166,55 @@ The remaining unexplained flow cases are mostly kept "other
 difference" quarters; they cannot be told apart from revisions
 automatically and are listed in the override log for review.
 
+## 2b. Fix B: the earliest filing wins between two quarter-end dates (Nov 22)
+
+3,244 company-quarters have facts on two dates. When both were near the
+company's report date, the old tie-break kept the date with more facts,
+then the later date. For Onto Innovation FY2018, HireQuest FY2018 and
+URS FY2012 that was Dec 31, taken from a later successor's 10-K or a
+10-K/A, instead of the company's own year end (Dec 29, Dec 28, Dec 28)
+from that year's 10-K. Now the date first filed wins (the is_original
+rule). All three now equal the annual table (for example Onto total
+assets $375.6M, was $418.0M). Every dropped date is logged in
+`data/logs/ttm_dropped_quarter_end_dates.csv` with both dates, when
+each was first filed, the facts dropped and the reason:
+
+| Reason the other date lost | Dates |
+| --- | --- |
+| Not near a report date | 228 |
+| First filed later | 2,785 |
+| Same first filing, fewer facts | 351 |
+| Same filing and facts, earlier date | 19 |
+
+| Measure | Before fix B | After fix B |
+| --- | --- | --- |
+| Year-end mismatches | 63,161 | 63,238 |
+| of which unexplained | 3,060 | 3,020 |
+| of which missing or misaligned quarter | 38,324 | 38,469 |
+| Unexplained balance-sheet mismatches (10 items) | 68 | 42 |
+
+Total mismatches rose by 77 because a few more TTMs are blank: where
+the earliest-filed date is kept, a quarter's flows reported only on the
+later date are no longer used. That follows the original-values rule;
+the cost is small (about 0.2% of the missing-or-misaligned count).
+
 ## 3. Q4 scores vs annual scores (`quarterly_crosscheck_scores.csv`)
 
 39,702 company-years have both a Q4 quarterly row and an annual row
-(after the consistent-tag rule and fix A; before both, M-Score 81.48%
+(after the consistent-tag rule and fixes A and B; before both, M-Score 81.48%
 and m_flag 99.40%).
 
 | Measure | Pairs | Agreement |
 | --- | --- | --- |
-| m_flag | 14,202 | 99.48% equal |
-| z_zone | 32,224 | 99.81% equal |
-| f_band | 12,156 | 98.65% equal |
-| flags_raised | 34,011 | 97.70% equal |
-| f_score | 12,156 | 96.34% equal |
-| z_score | 32,224 | 95.22% within 0.01 |
-| accruals_ratio | 34,246 | 98.36% within 0.01 |
-| cash_conversion | 21,517 | 96.39% within 0.01 |
-| m_score | 14,202 | 84.57% within 0.01 |
+| m_flag | 14,194 | 99.48% equal |
+| z_zone | 32,217 | 99.81% equal |
+| f_band | 12,151 | 98.66% equal |
+| flags_raised | 34,004 | 97.70% equal |
+| f_score | 12,151 | 96.35% equal |
+| z_score | 32,217 | 95.24% within 0.01 |
+| accruals_ratio | 34,241 | 98.38% within 0.01 |
+| cash_conversion | 21,513 | 96.40% within 0.01 |
+| m_score | 14,194 | 84.59% within 0.01 |
 
 The M-Score agrees least because it has the most flow inputs (eight
 indexes from up to eleven line items, for two years), so any input gap
@@ -193,10 +225,10 @@ company-years.
 
 | Basis | Rows | M-Score | Z'' | F-Score | Accruals | Option C rows |
 | --- | --- | --- | --- | --- | --- | --- |
-| Q1 | 42,154 | 32.4 | 78.7 | 25.9 | 81.3 | 24,042 |
-| Q2 | 41,842 | 32.4 | 79.0 | 26.7 | 83.9 | 24,547 |
-| Q3 | 41,076 | 32.3 | 79.1 | 26.7 | 84.2 | 24,144 |
-| Q4 | 40,012 | 36.6 | 81.5 | 31.0 | 86.5 | 0 |
+| Q1 | 42,152 | 32.4 | 78.7 | 25.9 | 81.3 | 24,047 |
+| Q2 | 41,844 | 32.4 | 79.0 | 26.7 | 83.9 | 24,553 |
+| Q3 | 41,075 | 32.3 | 79.1 | 26.7 | 84.3 | 24,150 |
+| Q4 | 40,013 | 36.6 | 81.5 | 31.0 | 86.5 | 0 |
 | Annual | 39,860 | 41.7 | 83.5 | 33.7 | 88.9 | |
 
 Quarterly coverage is lower than annual because every TTM flow needs
