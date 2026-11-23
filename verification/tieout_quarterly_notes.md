@@ -136,17 +136,28 @@ the full year (AZZ's FY2024 10-K), a value with the opposite sign
 (U-Haul, quarter ending Dec 2025), or another difference.
 
 Each 3-month value is now compared with its YTD difference (within 0.5%
-or $10,000). The two clear filing errors are replaced by the YTD
-difference; any other difference keeps the reported value, because most
-are revisions of an earlier quarter carried in a later YTD (see
-`docs/methodology.md`). Every disagreement is logged with its reason and
-action in `data/logs/ttm_overrides.csv`:
+or $10,000). Every disagreement is logged with its reason and action in
+`data/logs/ttm_overrides.csv` (counts after fixes B and C):
 
 | Reason | Action | Single quarters |
 | --- | --- | --- |
 | Q4 "3-month" value equals the full year | replaced by the YTD difference | 218 |
 | Opposite sign of the YTD difference | replaced by the YTD difference | 425 |
-| Other difference from the YTD difference | kept as reported | 30,327 |
+| Other difference from the YTD difference | kept as reported | 30,172 |
+
+Why only two kinds are replaced. The reported 3-month value is the
+original figure: what the company filed for that quarter, when it filed
+it, which is what the scores use everywhere (CLAUDE.md section 4). The
+year-to-date difference is not a clean measure of the quarter, because
+each YTD is re-reported in the next filing, and when an earlier quarter
+is revised (a restatement, or a business reclassified as discontinued),
+the later YTD carries the revision, so subtracting the earlier YTD puts
+the revision of an earlier quarter into the current one. In 86.7% of the
+kept disagreements (26,154 of 30,172), the 3-month value and the later
+YTD come from the same filing, the pattern of such a revision. A Q4
+"3-month" value equal to the full-year total and a value with the
+opposite sign of its YTD difference are different: no revision produces
+them, they are tagging errors, so only they are replaced.
 
 A first version replaced all 30,970. That raised the Q4 agreement with
 annual to about 99% for most flows, but mostly by construction: the
@@ -162,9 +173,23 @@ Effect of the narrowed fix, all 18 line items used in the scores:
 | Q4 m_flag equal to annual | 99.46% | 99.48% |
 | Q4 M-Score within 0.01 of annual | 84.41% | 84.57% |
 
-The remaining unexplained flow cases are mostly kept "other
-difference" quarters; they cannot be told apart from revisions
-automatically and are listed in the override log for review.
+**"Unexplained", split (after fixes A, B and C).** A year-end mismatch
+was counted as unexplained when none of the automatic causes applied
+(missing or misaligned quarter, 52/53-week alignment, derived value, tag
+mixing, or a period later re-reported with a different value). That
+count includes cases fix A explains in its own log:
+
+| Unexplained year-end mismatches (all 18 items) | Count |
+| --- | --- |
+| (a) Revisions of earlier quarters kept as reported under fix A: a quarter of that fiscal year has a 3-month value that differs from its YTD difference and was kept | 2,824 |
+| (b) Truly unexplained: no cause found | 197 (155 flows, 42 balance-sheet items) |
+| Total | 3,021 |
+
+Group (a) is attributed to revisions by the same-filing pattern above;
+each case is listed in `data/logs/ttm_overrides.csv` with both values
+and the filings, but individual cases have not been checked against the
+filings. The breakdown was computed with a diagnostic script run during
+verification (not part of the pipeline).
 
 ## 2b. Fix B: the earliest filing wins between two quarter-end dates (Nov 22)
 
