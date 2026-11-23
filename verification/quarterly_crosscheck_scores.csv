@@ -1,0 +1,10 @@
+measure,pairs,test,agree_pct,present_in_only_one
+m_score,14204,within 0.01,81.48,2751.0
+z_score,32224,within 0.01,95.14,1215.0
+accruals_ratio,34246,within 0.01,98.27,
+cash_conversion,21517,within 0.01,96.33,
+m_flag,14204,equal,99.4,
+z_zone,32224,equal,99.8,
+f_score,12157,equal,96.13,1442.0
+f_band,12157,equal,98.55,
+flags_raised,34011,equal,97.65,
