@@ -163,3 +163,14 @@ def test_quarterly_trace_buttons_open_the_quarterly_pop_up(sample_source):
     app_test.run()
     assert not app_test.exception
     assert not app_test.error
+
+
+def test_quarterly_company_page_draws_the_price_chart(sample_source):
+    """The quarterly company page draws the price chart heading and its
+    diamond caption without an error (the company has prices)."""
+    app_test = open_quarterly_company()
+    assert not app_test.exception
+    page_text = " ".join(m.value for m in app_test.markdown)
+    assert "Stock price, 10-K and quarterly warnings" in page_text
+    captions = " ".join(c.value for c in app_test.caption)
+    assert "Diamonds: quarterly (TTM) scores" in captions

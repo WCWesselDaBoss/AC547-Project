@@ -15,8 +15,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from app import data, style
-from src.pipeline import price_markers
+from app import basis, data, style
+from src.pipeline import price_markers, price_markers_quarterly
 
 CHART_HEIGHT = 360
 LINE_COLOR = style.SERIES_COLORS[0]  # blue, the app's first series color
@@ -46,6 +46,14 @@ NO_DATA_MESSAGE = (
     "no price data)."
 )
 MARKET_TOGGLE_LABEL = "Compare with SPY (both rebased to 100)"
+# Quarterly (TTM) score markers: a different SHAPE from the round 10-K
+# markers, the same colors for the flag count, so shape says annual or
+# quarterly and color still says how many warnings.
+QUARTERLY_SYMBOL = "diamond"
+QUARTERLY_CAPTION = (
+    "Diamonds: quarterly (TTM) scores, each on the date the latest filing "
+    "it uses became public. " + basis.QUARTERLY_NOTE
+)
 EVENT_LABEL_WIDTH = 40  # characters per line of the event label
 PRICE_AXIS_TITLE = "Adjusted close ($)"
 REBASED_AXIS_TITLE = "Value (first date shown = 100)"
@@ -57,6 +65,14 @@ def load_chart_data(data_dir, cik):
     last 64 companies viewed stay in memory, like the other per-company
     loaders in app/data.py)."""
     return price_markers.price_markers(data_dir, cik)
+
+
+@st.cache_data(show_spinner="Loading prices...", max_entries=64)
+def load_quarterly_markers(data_dir, cik):
+    """Return (markers, skipped) for one company's quarterly scores, on
+    its price history (src/pipeline/price_markers_quarterly.py)."""
+    prices = load_chart_data(data_dir, cik).prices
+    return price_markers_quarterly.quarterly_markers(data_dir, cik, prices)
 
 
 @st.cache_data(show_spinner="Loading prices...")
@@ -112,7 +128,66 @@ def marker_hover(marker):
     )
 
 
-def price_figure(result, market_df=None, event=None):
+def quarterly_hover(marker):
+    """Return the hover text for one quarterly marker (HTML breaks)."""
+    available = marker["available_date"]
+    shown = marker["marker_date"]
+    available_line = f"Available {available:%Y-%m-%d}"
+    if shown != available:
+        available_line += (
+            f" (shown on the next trading day, {shown:%a %Y-%m-%d})"
+        )
+    if pd.isna(marker["m_score"]):
+        m_line = "M-Score: no score"
+    else:
+        is_flagged = pd.notna(marker["m_flag"]) and bool(marker["m_flag"])
+        flagged = "flagged" if is_flagged else "not flagged"
+        m_line = f"M-Score: {marker['m_score']:.2f} ({flagged})"
+    period = basis.period_label(
+        marker["fiscal_year"], marker["fiscal_quarter"]
+    )
+    return "<br>".join(
+        [
+            f"<b>{period}, trailing twelve months</b>",
+            available_line,
+            f"Flags raised: {flag_label(marker['flags_raised'])}",
+            m_line,
+            f"Z'' zone: {_text_or_no_score(marker['z_zone'])}",
+            f"F-Score band: {_text_or_no_score(marker['f_band'])}",
+        ]
+    )
+
+
+def _add_quarterly_markers(figure, markers, y_column):
+    """Add the quarterly markers: one trace per flag count, diamonds.
+
+    No text label on each diamond (there are four a year, so labels
+    would cover the price line); the legend names each color and the
+    hover gives the details."""
+    labels = markers["flags_raised"].map(flag_label)
+    for label in sorted(labels.unique(), key=_label_order):
+        group = markers[labels == label]
+        figure.add_trace(
+            go.Scatter(
+                x=group["marker_date"],
+                y=group[y_column],
+                mode="markers",
+                name=f"Quarterly (TTM): {label}",
+                marker={
+                    "size": 9,
+                    "symbol": QUARTERLY_SYMBOL,
+                    "color": flag_color(group["flags_raised"].iloc[0]),
+                    "line": {"color": style.INK_PRIMARY, "width": 1},
+                },
+                hovertext=[
+                    quarterly_hover(row) for _, row in group.iterrows()
+                ],
+                hoverinfo="text",
+            )
+        )
+
+
+def price_figure(result, market_df=None, event=None, quarterly_markers=None):
     """Return the price chart for a PriceMarkers result with status "ok".
 
     market_df (SPY prices) is given only when the comparison toggle is
@@ -120,6 +195,9 @@ def price_figure(result, market_df=None, event=None):
     (price_markers.rebase_to_100) and the y-axis says so. event is an
     optional (date, label) pair, drawn as a dashed vertical line (case
     study mode: the date the problem first became public).
+    quarterly_markers (from price_markers_quarterly), when given, adds
+    diamond markers for the quarterly scores; without it the figure is
+    exactly the annual one.
     """
     prices, markers = result.prices, result.markers
     y_column, axis_title = "adj_close", PRICE_AXIS_TITLE
@@ -173,6 +251,15 @@ def price_figure(result, market_df=None, event=None):
                 hoverinfo="text",
             )
         )
+    if quarterly_markers is not None and not quarterly_markers.empty:
+        quarterly_y = quarterly_markers
+        if market_df is not None:
+            # Rebased with the company's own line, so the diamonds stay
+            # on it (the same function as the 10-K markers).
+            quarterly_y = price_markers.rebase_to_100(
+                result.prices, quarterly_markers, market_df
+            )[2]
+        _add_quarterly_markers(figure, quarterly_y, y_column)
     if event is not None:
         _add_event_line(figure, *event)
     figure.update_layout(
@@ -232,12 +319,13 @@ def skipped_note(skipped):
     )
 
 
-def render_price_chart(cik, key, event=None):
+def render_price_chart(cik, key, event=None, quarterly=False):
     """Draw the chart for one company, or the no-data message.
 
     key keeps each page's comparison toggle separate (Streamlit needs a
     unique key per widget). event: optional (date, label) for a dashed
-    vertical line (see price_figure).
+    vertical line (see price_figure). quarterly: also draw the quarterly
+    (TTM) score markers.
     """
     data_dir = data.resolve_data_source()[1]
     result = load_chart_data(data_dir, int(cik))
@@ -248,8 +336,22 @@ def render_price_chart(cik, key, event=None):
         MARKET_TOGGLE_LABEL, value=False, key=f"price_chart_spy_{key}"
     )
     market_df = load_market(data_dir) if compare else None
-    st.plotly_chart(price_figure(result, market_df, event), width="stretch")
+    quarterly_df, quarterly_skipped = (
+        load_quarterly_markers(data_dir, int(cik))
+        if quarterly
+        else (None, None)
+    )
+    st.plotly_chart(
+        price_figure(result, market_df, event, quarterly_df), width="stretch"
+    )
     st.caption(CAPTION)
+    if quarterly:
+        st.caption(QUARTERLY_CAPTION)
+        if quarterly_skipped is not None and not quarterly_skipped.empty:
+            st.caption(
+                f"Not marked: {len(quarterly_skipped)} quarterly scores "
+                "available outside the price history."
+            )
     note = skipped_note(result.skipped)
     if note:
         st.caption(note)

@@ -223,8 +223,12 @@ if source != "full":
 st.subheader("Detail")
 # The stock price with a marker on each 10-K's filing date, colored by
 # the warnings that 10-K raised (app/components/price_chart.py).
-st.markdown("**Stock price and 10-K warnings**")
-price_chart.render_price_chart(cik, key="company")
+st.markdown(
+    "**Stock price, 10-K and quarterly warnings**"
+    if quarterly
+    else "**Stock price and 10-K warnings**"
+)
+price_chart.render_price_chart(cik, key="company", quarterly=quarterly)
 trends_tab, peers_tab, components_tab, trace_tab = st.tabs(
     [
         "Trends over time",
