@@ -8,13 +8,16 @@ five seconds and an expert can keep digging:
 4. Detail: trend charts, peer-rank bars and every score component.
 5. Trace: every number back to its SEC filing, from a button under each
    card (pop-up) or the "Trace to SEC filing" tab (app/trace_panel.py).
+
+In quarterly (TTM) mode the same layers show one fiscal quarter, with
+the wording from app/company_quarterly.py; annual mode is unchanged.
 """
 
 import streamlit as st
 
 import config
-from app import charts, company_view, data, labels, screening, style
-from app import trace, trace_panel
+from app import basis, charts, company_quarterly, company_view, data
+from app import labels, screening, style, trace, trace_panel
 from app.components import price_chart
 
 # The score behind each verdict card, in card order (M, Z'', F).
@@ -22,7 +25,12 @@ CARD_SCORES = ["m_score", "z_score", "f_score"]
 
 st.title("Company detail")
 
-scores_df = data.scores()
+quarterly = data.current_basis() == basis.QUARTERLY
+if quarterly:
+    st.info(basis.QUARTERLY_NOTE, icon=":material/warning:")
+    scores_df = data.scores_quarterly()
+else:
+    scores_df = data.scores()
 companies_df = data.companies()
 choices = company_view.company_choices(companies_df, scores_df)
 
@@ -54,22 +62,50 @@ cik = company_column.selectbox(
 
 # The analyst's screener cutoff, so both pages give the same verdict.
 cutoff = st.session_state.get(data.SCREENER_CUTOFF, config.BENEISH_FLAG_CUTOFF)
-history_df = company_view.company_scores(scores_df, cik, cutoff)
-years = sorted(history_df["fiscal_year"].tolist(), reverse=True)
-if st.session_state.get(data.SELECTED_YEAR) not in years:
-    st.session_state[data.SELECTED_YEAR] = years[0]
-fiscal_year = year_column.selectbox(
-    "Fiscal year",
-    years,
-    format_func=lambda year: f"FY{year}",
-    key=data.SELECTED_YEAR,
-)
-row = history_df[history_df["fiscal_year"] == fiscal_year].iloc[0]
+if quarterly:
+    # The quarter picker starts on the quarter handed over by the
+    # screener (or the latest), and writes the choice back to the same
+    # session keys, so it survives moving between pages.
+    quarters_df = company_quarterly.company_quarters(scores_df, cik, cutoff)
+    periods = company_quarterly.period_choices(quarters_df)
+    handed_over = (
+        st.session_state.get(data.SELECTED_YEAR),
+        st.session_state.get(data.SELECTED_QUARTER),
+    )
+    start = periods.index(handed_over) if handed_over in periods else 0
+    fiscal_year, fiscal_quarter = year_column.selectbox(
+        "Fiscal quarter",
+        periods,
+        index=start,
+        format_func=lambda period: basis.period_label(*period),
+    )
+    st.session_state[data.SELECTED_YEAR] = fiscal_year
+    st.session_state[data.SELECTED_QUARTER] = fiscal_quarter
+    row = basis.one_quarter(quarters_df, fiscal_year, fiscal_quarter).iloc[0]
+    # Trends: the same quarter across years, as the scores compare it.
+    history_df = company_quarterly.same_quarter_history(
+        quarters_df, fiscal_quarter
+    )
+else:
+    history_df = company_view.company_scores(scores_df, cik, cutoff)
+    years = sorted(history_df["fiscal_year"].tolist(), reverse=True)
+    if st.session_state.get(data.SELECTED_YEAR) not in years:
+        st.session_state[data.SELECTED_YEAR] = years[0]
+    fiscal_year = year_column.selectbox(
+        "Fiscal year",
+        years,
+        format_func=lambda year: f"FY{year}",
+        key=data.SELECTED_YEAR,
+    )
+    row = history_df[history_df["fiscal_year"] == fiscal_year].iloc[0]
 
 company = companies_df[companies_df["cik"] == cik].iloc[0]
-filing_text = company_view.filing_sentence(
-    data.financials_filings(), cik, fiscal_year
-)
+if quarterly:
+    filing_text = company_quarterly.ttm_sentence(row)
+else:
+    filing_text = company_view.filing_sentence(
+        data.financials_filings(), cik, fiscal_year
+    )
 st.caption(
     f"{company_view.company_label(company['name'], company['ticker'])} · "
     f"{screening.industry_label(company['sic'], company['sic_description'])}"
@@ -78,8 +114,12 @@ st.caption(
 )
 
 # ---- 1. Verdict ------------------------------------------------------------
-cards = company_view.verdict_cards(row, cutoff)
-st.subheader(company_view.verdict_summary(row))
+if quarterly:
+    cards = company_quarterly.quarterly_cards(row, cutoff)
+    st.subheader(company_quarterly.quarterly_summary(row))
+else:
+    cards = company_view.verdict_cards(row, cutoff)
+    st.subheader(company_view.verdict_summary(row))
 unscored_text = company_view.unscored_note(cards)
 if unscored_text:
     st.caption(unscored_text)
@@ -88,15 +128,20 @@ for column, card in zip(st.columns(len(cards)), cards):
 
 # One trace button per card, right under it, so the source of every
 # verdict is one click away (the headline traceability feature).
-for column, score in zip(st.columns(len(cards)), CARD_SCORES):
-    if column.button(
-        "🔎 Trace to the 10-K",
-        key=f"trace_button_{score}",
-        help="Show the formula, every input, its XBRL tag and a link to "
-        "the SEC filing it came from.",
-        width="stretch",
-    ):
-        trace_panel.trace_dialog(score, row)
+if quarterly:
+    # Annual trace would show the 10-K's numbers, not the quarterly
+    # inputs, so it is not offered here until it can trace TTM values.
+    st.caption("Click-to-trace for quarterly scores is not available yet.")
+else:
+    for column, score in zip(st.columns(len(cards)), CARD_SCORES):
+        if column.button(
+            "🔎 Trace to the 10-K",
+            key=f"trace_button_{score}",
+            help="Show the formula, every input, its XBRL tag and a link "
+            "to the SEC filing it came from.",
+            width="stretch",
+        ):
+            trace_panel.trace_dialog(score, row)
 # Shown on every company page (Phase 3 brief).
 st.caption(labels.SCOPE_NOTE)
 if cutoff != config.BENEISH_FLAG_CUTOFF:
@@ -107,11 +152,20 @@ if cutoff != config.BENEISH_FLAG_CUTOFF:
 
 # ---- 2. Why ----------------------------------------------------------------
 st.subheader("Why: what pushed the manipulation score up")
-drivers_df = company_view.driver_sentences(
-    data.score_drivers(), cik, fiscal_year
-)
+if quarterly:
+    drivers_df = company_quarterly.quarter_drivers(
+        data.score_drivers_quarterly(), cik, fiscal_year, fiscal_quarter
+    )
+else:
+    drivers_df = company_view.driver_sentences(
+        data.score_drivers(), cik, fiscal_year
+    )
 if drivers_df.empty:
-    st.markdown(company_view.no_driver_message(row))
+    st.markdown(
+        company_quarterly.no_driver_message(row)
+        if quarterly
+        else company_view.no_driver_message(row)
+    )
 for driver in drivers_df.itertuples():
     st.markdown(f"**{driver.driver_rank}.** {driver.explanation}")
     st.caption(
@@ -130,8 +184,17 @@ if missing:
 
 # ---- 3. Peers --------------------------------------------------------------
 st.subheader("Compared with similar companies")
-st.caption(company_view.peer_description(row))
-for score, sentence in company_view.peer_sentences(row).items():
+st.caption(
+    company_quarterly.quarterly_peer_description(row)
+    if quarterly
+    else company_view.peer_description(row)
+)
+sentences = (
+    company_quarterly.peer_sentences(row)
+    if quarterly
+    else company_view.peer_sentences(row)
+)
+for score, sentence in sentences.items():
     st.markdown(f"**{company_view.PEER_SCORE_NAMES[score]}.** {sentence}")
 if company_view.small_peer_group(row):
     st.warning(
@@ -152,14 +215,11 @@ st.subheader("Detail")
 # the warnings that 10-K raised (app/components/price_chart.py).
 st.markdown("**Stock price and 10-K warnings**")
 price_chart.render_price_chart(cik, key="company")
-trends_tab, peers_tab, components_tab, trace_tab = st.tabs(
-    [
-        "Trends over time",
-        "Peer ranks",
-        "All score components",
-        "🔎 Trace to SEC filing",
-    ]
-)
+tab_names = ["Trends over time", "Peer ranks", "All score components"]
+if not quarterly:
+    tab_names.append("🔎 Trace to SEC filing")
+tabs = st.tabs(tab_names)
+trends_tab, peers_tab, components_tab = tabs[:3]
 with trends_tab:
     # A score with no value in any year gets a sentence, not an empty
     # chart, so a blank plot is never mistaken for a loading problem.
@@ -179,7 +239,13 @@ with trends_tab:
             )
         else:
             st.plotly_chart(figure, width="stretch")
-    st.caption("Gaps mean the score could not be calculated that year.")
+    if quarterly:
+        st.caption(
+            f"Q{fiscal_quarter} of each year (trailing twelve months). "
+            "Gaps mean the score could not be calculated that quarter."
+        )
+    else:
+        st.caption("Gaps mean the score could not be calculated that year.")
 with peers_tab:
     percentile_chart = charts.percentile_figure(row)
     if len(percentile_chart.data[0].x) == 0:
@@ -199,6 +265,15 @@ with peers_tab:
 with components_tab:
     m_column, z_column = st.columns(2)
     m_text = labels.format_number(row["m_score"])
+    z_text = labels.format_number(row["z_score"])
+    f_value = row["f_score"]
+    f_text = "Not available" if labels.is_missing(f_value) else int(f_value)
+    if quarterly:
+        # A missing quarterly score always says why.
+        m_text, z_text, f_text = [
+            basis.NOT_ENOUGH_DATA if labels.is_missing(row[score]) else text
+            for score, text in zip(CARD_SCORES, [m_text, z_text, f_text])
+        ]
     m_column.markdown(f"**Earnings manipulation score: {m_text}**")
     m_column.caption("Index values: 1.00 means no change from last year.")
     m_column.dataframe(
@@ -206,23 +281,21 @@ with components_tab:
         hide_index=True,
         column_config={"Value": st.column_config.NumberColumn(format="%.3f")},
     )
-    z_text = labels.format_number(row["z_score"])
     z_column.markdown(f"**Financial distress score: {z_text}**")
     z_column.dataframe(
         company_view.z_ratio_table(row),
         hide_index=True,
         column_config={"Value": st.column_config.NumberColumn(format="%.3f")},
     )
-    f_value = row["f_score"]
-    f_text = "Not available" if labels.is_missing(f_value) else int(f_value)
     st.markdown(f"**Financial strength score: {f_text}**")
     st.dataframe(company_view.f_signal_table(row), hide_index=True)
 
-with trace_tab:
-    trace_score = st.selectbox(
-        "Which score?",
-        list(trace.SCORE_LABELS),
-        format_func=trace.SCORE_LABELS.get,
-        key="trace_tab_score",
-    )
-    trace_panel.render_trace(trace_score, row, key_prefix="tab")
+if not quarterly:
+    with tabs[3]:
+        trace_score = st.selectbox(
+            "Which score?",
+            list(trace.SCORE_LABELS),
+            format_func=trace.SCORE_LABELS.get,
+            key="trace_tab_score",
+        )
+        trace_panel.render_trace(trace_score, row, key_prefix="tab")

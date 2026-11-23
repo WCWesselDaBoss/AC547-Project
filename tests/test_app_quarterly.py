@@ -83,3 +83,42 @@ def test_switch_hidden_without_quarterly_tables(fixture_source):
         "Quarterly scores are not in this data source" in c.value
         for c in app_test.sidebar.caption
     )
+
+
+# A sample company-quarter with an M-Score but no F-Score (checked in the
+# committed sample), to show the missing-score card.
+MISSING_F = {"cik": 8858, "fiscal_year": 2027, "fiscal_quarter": 1}
+
+
+def test_quarterly_company_page_shows_why_a_score_is_missing(sample_source):
+    """In quarterly mode the company page draws one quarter: the note,
+    a quarter picker starting on the quarter handed over, a card saying
+    "Not enough quarterly data" for the missing F-Score, and no annual
+    trace buttons (quarterly trace comes later)."""
+    app_test = run()
+    basis_radio(app_test).set_value(basis.QUARTERLY)
+    app_test = run(app_test)
+    app_test.session_state["selected_cik"] = MISSING_F["cik"]
+    app_test.session_state["selected_fiscal_year"] = MISSING_F["fiscal_year"]
+    app_test.session_state["selected_fiscal_quarter"] = MISSING_F[
+        "fiscal_quarter"
+    ]
+    app_test.switch_page("views/company.py")
+    app_test.run()
+    assert not app_test.exception
+    assert not app_test.error
+    assert basis.QUARTERLY_NOTE in [box.value for box in app_test.info]
+    picker = next(s for s in app_test.selectbox if s.label == "Fiscal quarter")
+    assert picker.value == (2027, 1)
+    page_text = " ".join(m.value for m in app_test.markdown)
+    assert basis.NOT_ENOUGH_DATA in page_text
+    assert not [b for b in app_test.button if "Trace" in b.label]
+
+
+def test_annual_company_page_keeps_its_trace_buttons(sample_source):
+    """Annual mode (the default) still offers the three trace buttons."""
+    app_test = run()
+    app_test.switch_page("views/company.py")
+    app_test.run()
+    assert not app_test.exception
+    assert len([b for b in app_test.button if "Trace" in b.label]) == 3
