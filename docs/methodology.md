@@ -623,6 +623,67 @@ ADI FY2017 stays
 flagged (M -1.348 to -1.355) and AMD FY2018 stays flagged (-0.641 to
 -0.623; its FY2016-17 inputs were ASC 606 restatements).
 
+## Known data issues in the annual pipeline
+
+Found on 2026-11-22 while verifying the quarterly upgrade, by a
+read-only check of the annual tables. The annual tables were not
+changed before submission (the quarterly work changes no annual table,
+and `tests/test_annual_baseline.py` confirms it); the issues are
+recorded here so results can be read with them in mind. No case-study
+company (`data/case_studies.csv`) and none of the three tie-out
+companies (Apple, AMD, Analog Devices) is affected.
+
+### Two 10-Ks with the same fiscal-year label (167 company-years)
+
+`financials.annual_report_index` keeps one 10-K per company and fiscal
+year label and drops the later one (`dropped:duplicate_fiscal_year_label`
+in `data/logs/financials_annual_log.csv`: 167). By type:
+
+| Type | Company-years |
+| --- | --- |
+| Change of fiscal year end (the transition and the new year share a label) | 82 |
+| Two year ends within two weeks (a re-filed 10-K, or a 52/53-week date on either side of the May cutoff) | 68 |
+| Two real fiscal years about a year apart sharing one label (52/53-week years ending on May 31 and then June 1, as at Cal-Maine) | 17 |
+
+Effect on the annual scores:
+
+- 81 scored company-years across 25 companies use an affected year: 33
+  as year t, 26 as year t-1 and 22 only as year t-2.
+- For the 26 that use it as t-1, the "prior year" row is not always the
+  year before. For 23 of them the prior row is 12 to 24 months earlier
+  (10 exactly 24 months, 8 between 14 and 18 months, 5 at 12 months), so
+  their year-over-year indexes can span up to two years.
+- Verdicts near a cutoff in those 81 rows: 18 M-Scores within 0.5 of
+  the -1.78 cutoff, 8 Z'' scores within 0.5 of a zone edge, and 8
+  F-Scores one point from a band edge. The number of flags that would
+  actually change is likely smaller, fewer than about 20, but it has
+  not been computed, because that would require rebuilding those years.
+
+The quarterly tables avoid the problem: they drop and count a year
+whose label equals the previous year's (`fiscal_year_label_used_twice`,
+fix C).
+
+### Facts filed before their period ended (73 facts)
+
+73 facts in `facts_long` have a period end after their filing date,
+which no real report can have (mis-tagged contexts): 67 are originals,
+across 27 companies. 42 of their values, in 12 company-years, are used
+in `financials_annual`, and for 40 of those a later filing reports a
+different value.
+
+Only three scored company-years are touched, all Ligand
+Pharmaceuticals: FY2014 as year t, FY2015 as t-1 and FY2016 as t-2. The
+other affected companies are below the size floor. Ligand's FY2014 row
+repeats its FY2013 figures (for example total assets $104.7M, against
+$258.0M in its FY2014 10-K), taken from a 10-K filed on December 1,
+2014 that tags December 31, 2014 balances. Its FY2014 Z'' (-19.25,
+distress) and its F bands for FY2014 to FY2016 could change with the
+correct values; it has no M-Score.
+
+The quarterly tables avoid the problem: `facts_quarterly` drops such
+facts before choosing originals (`period_end_after_filed_date`, 776
+facts).
+
 ## Quarterly (TTM) upgrade
 
 Quarterly scores use TTM data from unaudited 10-Q filings, apply the
